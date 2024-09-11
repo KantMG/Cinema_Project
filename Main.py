@@ -16,6 +16,7 @@ import numpy as np
 import pylab as pl
 
 import Function_dataframe as fd
+import Documentations_dataframe as dd
 
 params = {'axes.labelsize': 28,
 
@@ -43,26 +44,32 @@ plt.rcParams["font.family"] = "serif"
    #============================================================================="""
 
 
-# Source for data set : https://developer.imdb.com/non-commercial-datasets/
+# Source for data set : 
+source_data = 'https://developer.imdb.com/non-commercial-datasets/'
 
 
+# Save the project on github with: !bash ./save_project_on_git.sh
+# GitHub adress: https://github.com/KantMG/Cinema_Project
 
 
-File_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
-File_name='name.basics.tsv'
+# File_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
+# File_name='name.basics.tsv'
 
-#Create class 'pandas.core.frame.DataFrame'
-csvFile = pd.read_csv(File_path+File_name,sep='\t')
-print(csvFile)
-print()
+# #Create class 'pandas.core.frame.DataFrame'
+# csvFile = pd.read_csv(File_path+File_name,sep='\t')
+# print(csvFile)
+# print()
 
-for col in csvFile.columns:    print(col)
-print('')
+# for col in csvFile.columns:    print(col)
+# print('')
 
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
  
+
+dd.info_source(source_data)
+
 
 # [13769111 rows x 6 columns]
 
