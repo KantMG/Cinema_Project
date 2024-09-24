@@ -39,8 +39,7 @@ def histogram(Para, y, yaxis):
     Returns:
     - An histogram where each bar contains several elements.
     """
-       
-       
+
     figname='Movies over the '+Para[0]
     fig, ax = plt.subplots(figsize=(22,12))
     ax.set_title(figname)
@@ -70,7 +69,6 @@ def histogram_multi(Para,y):
     Returns:
     - An histogram where each bar contains several elements.
     """
-
        
     figname='Movies over the '+Para[0]
     fig, ax = plt.subplots(figsize=(22,12))
@@ -111,8 +109,7 @@ def curve_multi(Para,y):
     Returns:
     - A curve.
     """
-    
-       
+           
     figname='Movies over the '+Para[0]
     fig, ax = plt.subplots(figsize=(22,12))
     ax.set_title(figname)

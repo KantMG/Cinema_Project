@@ -70,7 +70,7 @@ def explode_dataframe(df, Para):
    #=============================================================================
    #============================================================================="""
 
-def Pivot_table(csvFile,Para,remove_unknown_colmun):
+def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     """
     Goal: Get the pivot of the Count table of the dataframe.
     From a table of dimension x with n indexes to a table of dimension x+1 with n-1 index
@@ -85,16 +85,22 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun):
     """
     
     df = csvFile[Para]
-        
+    
+    if Large_file_memory==True:
+        #Convert the Dask DataFrame to a Pandas DataFrame
+        df = df.compute()
+    
     # Get the Count table of the dataframe  
-    y=df.value_counts(dropna=False).reset_index(name='Count') #dropna=False to count nan value
+    y=df.value_counts(dropna=False).reset_index(name='Count') #dropna=False to count nan value    
     
     # Pivot the Count table 
     pivot_table = y.pivot(index=Para[0], columns=Para[1], values='Count').fillna(0)
     
     # Remove unknown column name if remove_unknown_colmun==True
-    if remove_unknown_colmun==True:
+    if remove_unknown_colmun==True and Large_file_memory==False:
         pivot_table  = pivot_table.drop(['\\N'], axis=1)
+    elif remove_unknown_colmun==True and Large_file_memory==True:
+        pivot_table = pivot_table.dropna()
     
     #Add last column for the sum of each rows named Total
     s = sum ( [pivot_table[i] for i in  pivot_table.columns])
@@ -174,15 +180,14 @@ def avg_column_value_index(Pivot_table):
     """        
     
     #Get the sum of each rows, where each column element is multiplied by the column's name
-    s = sum([Pivot_table[i] * int(i) for i in Pivot_table.columns if i.isdigit()])
+    s = sum([Pivot_table[i] * int(i) for i in Pivot_table.columns if isinstance(i, str) and i.isdigit()])
     
     #Add avg_col as the last column of the dataframe and sort the dataframe
     pivot_table2 = Pivot_table.assign(Avg_minute=s).sort_values(by=['Avg_minute'], ascending=False)
-    
+        
     #Correct the avg_col by dividing the values with the total value
     pivot_table2['Avg_minute']=pivot_table2['Avg_minute']/pivot_table2['Total']
     
-        
     return pivot_table2['Avg_minute']   
 
 

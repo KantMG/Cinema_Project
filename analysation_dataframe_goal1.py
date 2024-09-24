@@ -18,6 +18,7 @@ Created on Sat Sep 14 18:46:14 2024
 
 
 import pandas as pd
+import dask.dataframe as dd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import matplotlib.colors as mcolors
@@ -27,6 +28,7 @@ import pylab as pl
 import Function_dataframe as fd
 import Function_errors as fe
 import Function_visualisation as fv
+
 
 params = {'axes.labelsize': 28,
 
@@ -69,15 +71,16 @@ plt.rcParams["font.family"] = "serif"
 # print(df.memory_usage(deep=True))  # Check memory usage of each column
 
 
-
-
+# if __name__ == "__main__":
+#     main()  # Calls the main function from file Main
+#     print("Continuation in file2.")
 
 
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
-def movie_making_over_year(Project_path):
+def movie_making_over_year(Project_path, Large_file_memory=False):
     """
     Make the analysis of the project by achieving the goals decribed below.
     Goals: 
@@ -93,7 +96,6 @@ def movie_making_over_year(Project_path):
     - The entire analysis described above.
     """
 
-    
     print("Goal 1: Evolution of the global movie making over the year.")
     print("1- How much is the growth of the movie making.")
     print("2- Which genres are the most popular.")
@@ -102,28 +104,51 @@ def movie_making_over_year(Project_path):
     print("5- Does the violence in movies increases.")
     print()
     
-    Goal1 = [True, False, True, True, False]
-
+    Goal1 = [False, False, False, False, True]
+    
     # List of the required data file.
     List_file=['title.basics.tsv']
     #Create class 'pandas.core.frame.DataFrame' with only the necessary columns
-    df = pd.read_csv(Project_path+List_file[0], sep=';', usecols=["tconst", "startYear", "runtimeMinutes", "genres", "isAdult"], encoding='utf-8', on_bad_lines='skip', quotechar='"')  #, index_col=0      
-    
+    if Large_file_memory==False:
+        df = pd.read_csv(Project_path+List_file[0], sep=';', usecols=["tconst", "startYear", "runtimeMinutes", "genres", "isAdult"], encoding='utf-8', on_bad_lines='skip', quotechar='"')  #, index_col=0      
+    else:
+        df = dd.read_csv(
+            Project_path+List_file[0],
+            sep='\t',
+            usecols=["tconst", "startYear", "runtimeMinutes", "genres", "isAdult"],
+            encoding='utf-8',
+            on_bad_lines='skip',
+            quotechar='"',
+            dtype={
+                'runtimeMinutes': 'object',   # Read as object to handle invalid values
+                'startYear': 'object',        # Read as object to handle invalid values
+                'isAdult': 'object'           # Read as object to handle invalid values
+            }
+        )
+        df = df.replace('\\N', np.nan)
+
+
+    #Exclude all elements of the dataframe where the column_to_exclude_element correspnds to the Name_element
+    column_to_exclude_element="genres"
+    Name_element="Short"   
+    # Handle NaN values by filling them with an empty string
+    df[column_to_exclude_element] = df[column_to_exclude_element].fillna('')
+    # Filter out rows where the column contains the specified name element
+    df = df[~df[column_to_exclude_element].str.contains(Name_element, na=False)]
+
     
     if Goal1[0] == True or Goal1[1] == True :
         print("Answer 1 and 2 of Goal 1")
         print()
-        
 
-        column_to_exclude_element="genres"
-        Name_element="Short"        
-        df = df[~df[column_to_exclude_element].str.contains(Name_element)]
-        
         #To count individual elements when multiple elements are stored in a single cell 
         df_exploded, element_counts = fd.explode_dataframe(df, 'genres')
         
+        print(df.head(100))
+        
+        
         Para=["startYear","genres_split"]
-        Pivot_table=fd.Pivot_table(df_exploded,Para,False)
+        Pivot_table=fd.Pivot_table(df_exploded,Para,False, Large_file_memory)
         
         y = fd.highest_dataframe_sorted_by(Pivot_table, 8, Para[0])
     
@@ -140,7 +165,11 @@ def movie_making_over_year(Project_path):
         print()
         
         Para=["startYear","runtimeMinutes"]
-        Pivot_table=fd.Pivot_table(df,Para,True)
+        Pivot_table=fd.Pivot_table(df,Para,True, Large_file_memory)
+        
+        # # Check if column is float and has no NaN values
+        # filtered_columns = [col for col in Pivot_table.columns if fe.is_float(col) and Pivot_table[col].notna().all()]
+        # Pivot_table = Pivot_table[filtered_columns]
         
         # add new column which is th avg value of all the other column times the column name
         y = fd.avg_column_value_index(Pivot_table)
@@ -167,7 +196,7 @@ def movie_making_over_year(Project_path):
         df_exploded, element_counts = fd.explode_dataframe(df, 'genres')
         
         Para=["genres_split","runtimeMinutes"]
-        Pivot_table=fd.Pivot_table(df_exploded,Para,True)
+        Pivot_table=fd.Pivot_table(df_exploded,Para,True, Large_file_memory)
         
         # add new column which is th avg value of all the other column times the column name
         y = fd.avg_column_value_index(Pivot_table)
@@ -188,16 +217,24 @@ def movie_making_over_year(Project_path):
         print()
             
         Para=["startYear","isAdult"]
-        Pivot_table=fd.Pivot_table(df,Para,False)
+        Pivot_table  = fd.Pivot_table(df,Para,False, Large_file_memory)
         Pivot_table  = Pivot_table.drop(['Total'], axis=1)
-    
+        
+        # Remove rows with NaN index
+        Pivot_table = Pivot_table[~Pivot_table.index.isna()]
+        # Remove columns with NaN column names
+        Pivot_table = Pivot_table.loc[:, Pivot_table.columns.notna()]
+        
         # sort the data in function of the index value
-        Pivot_table.sort_index(ascending=True, inplace=True)       
+        Pivot_table.sort_index(ascending=True, inplace=True)
+                                
+        # Now select the columns based on the output
+        y = Pivot_table.iloc[:, [0, 1]]  # This selects the first two columns
         
         # =============================================================================
         # Start Plot              
         # =============================================================================  
-        fv.histogram_multi(Para,Pivot_table)
+        fv.histogram_multi(Para,y)
         # =============================================================================
         # ============================================================================= 
 
@@ -211,9 +248,6 @@ def movie_making_over_year(Project_path):
     # print(df_short)
     # print(df_Documentary)
     
-    
+    return Para,y
 
 
-
-    
-    return None

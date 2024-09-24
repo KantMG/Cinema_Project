@@ -32,3 +32,15 @@ def myeval(s):
         return s
     except SyntaxError:
         return s
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+# Function to check if column name can be evaluated as float
+def is_float(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False

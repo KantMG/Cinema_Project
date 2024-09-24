@@ -39,9 +39,11 @@ Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Projec
 import pandas as pd
 
 import Function_dataframe as fd
+import Function_visualisation as fv
 import Documentations_dataframe as dd
 import Creation_test_dataframe as ctd
-import analysation_dataframe as ad
+import analysation_dataframe_goal1 as adg1
+import analysation_dataframe_goal2 as adg2
 
 
 """ # =============================================================================
@@ -56,7 +58,7 @@ import analysation_dataframe as ad
 'name.basics'   """
 #detail_file=None    :   'Yes' or 'No' to get the detail on each file asked
 
-# dd.info_source(source_data,['title.akas', 'title.basics', 'title.crew', 'name.basics'],'Yes')
+dd.info_source(source_data,['title.akas', 'title.basics', 'title.crew', 'name.basics'],'Yes')
 
 
 
@@ -82,22 +84,47 @@ import analysation_dataframe as ad
 # Choose to work on the source data set or the test data set 
 # =============================================================================
 
-Test_data = True
+Test_data = False
 
 if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
 # =============================================================================
 
+"""
+Make the analysis of the project by achieving the goals decribed below.
+Goals: 
+-1 PROJECT ENLIGHT THE EVOLUTION OVER THE YEARS OF THE MOVIE AND SERIE MAKING.
+-2 THE ADAPTATION OF THE WAY OF PRODUCTION AS WELL AS OUR WAY OF CONSOMATION ARE ANALYSED.
+-3 HOW MUCH THE COUNTRIES ARE INVESTING IN THE FILMS PRODUCTION.
+-4 WHICH IS THE LEVEL OF INFLUENCE OF A COUNTRY OVER THE OTHERS.
+
+Parameters:
+- Project_path: Directory where the data is located
+
+Returns:
+- The entire analysis described above.
+"""
+
+Large_file_memory = True
+if Test_data == True:
+    Large_file_memory = False
+    
+def main():
+    print("The analysis start from here.")
+    print()
+
+    Para, y = adg1.movie_making_over_year(Project_path,Large_file_memory)
+    
+    
+    
+    
+    return Para, y
 
 
-# =============================================================================
-# Amount of movie making by each country over the years
-# =============================================================================
 
-ad.movie_making_over_year(Project_path)
-
-
+if __name__ == "__main__":
+    Para, y = main()
 
 
 
