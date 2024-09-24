@@ -7,12 +7,14 @@ Created on Fri Sep  6 19:06:36 2024
 """
 
 
+"""
+                        THE SEVENTH ART, A STORY OF INFLUENCE
+THIS PROJECT ENLIGHT THE EVOLUTION OVER THE YEARS OF THE MOVIE AND SERIE MAKING.
+THE ADAPTATION OF THE WAY OF PRODUCTION AS WELL AS OUR WAY OF CONSOMATION ARE ANALYSED.
+HOW MUCH THE COUNTRIES ARE INVESTING IN THE FILMS PRODUCTION AND WHICH IS THE LEVEL OF INFLUENCE
+OF A COUNTRY OVER THE OTHERS.
+"""
 
-import pandas as pd
-
-import Function_dataframe as fd
-import Documentations_dataframe as dd
-import Creation_test_dataframe as ctd
 
 
 """#=============================================================================
@@ -33,14 +35,18 @@ Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Projec
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
- 
 
-# =============================================================================
-# Get data infos
-# =============================================================================
+import pandas as pd
 
-# All infos on the data set :  info_source( url of the data  , optional list of file  , detail_file )
+import Function_dataframe as fd
+import Documentations_dataframe as dd
+import Creation_test_dataframe as ctd
+import analysation_dataframe as ad
 
+
+""" # =============================================================================
+    # Get data infos
+    # ============================================================================= """
 
 # url                 :   url of the data
 # files=None          :   optional list of file, to only get info on specific files
@@ -49,13 +55,14 @@ Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Projec
 'title.episode'  'title.principals'   'title.ratings'
 'name.basics'   """
 #detail_file=None    :   'Yes' or 'No' to get the detail on each file asked
-dd.info_source(source_data,['title.akas','title.basics','title.crew','title.episode','title.principals','title.ratings','name.basics'],'No')
+
+# dd.info_source(source_data,['title.akas', 'title.basics', 'title.crew', 'name.basics'],'Yes')
 
 
 
-# =============================================================================
-# Create data test (optional and only to do it one time)
-# =============================================================================
+""" # =============================================================================
+    # Create test data set (optional and only to do it one time)
+    # ============================================================================= """
 
 # Project_path                :   Path of the current project
 # Files=None                  :   List of the files to work on
@@ -66,37 +73,31 @@ dd.info_source(source_data,['title.akas','title.basics','title.crew','title.epis
 
 
 
+""" # =============================================================================
+    # Start data analysis
+    # ============================================================================= """
+
+
 # =============================================================================
-# Start data analysis
+# Choose to work on the source data set or the test data set 
+# =============================================================================
+
+Test_data = True
+
+if Test_data == True:
+    Project_path=Project_path+'Test_data/'
+
 # =============================================================================
 
 
-# File_name='title.crew.tsv'
 
-# #Create class 'pandas.core.frame.DataFrame'
-# csvFile = pd.read_csv(Project_path+File_name,sep='\t')
-# print(csvFile)
-# print()
+# =============================================================================
+# Amount of movie making by each country over the years
+# =============================================================================
 
-
+ad.movie_making_over_year(Project_path)
 
 
 
-# title.crew.tsv.gz is an array of dimension 3
-# tconst
-# directors
-# writers
-
-# [10392848 rows x 3 columns]
 
 
-
-# name.basics.tsv.gz is an array of dimension 6
-# nconst
-# primaryName
-# birthYear
-# deathYear
-# primaryProfession
-# knownForTitles
-
-# [13769111 rows x 6 columns]

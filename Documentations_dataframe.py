@@ -34,7 +34,10 @@ from termcolor import colored
 
 
 def info_source(url,files=None, detail_file=None):
-
+    
+    print()
+    print("""################### Infos on sources ###################""")
+    
     # URL of the HTML page you want to read
     
     # Fetch the content of the URL (requests.get(url): Sends a GET request to the specified URL.)
@@ -101,7 +104,10 @@ def info_source(url,files=None, detail_file=None):
 
     else:
         print(f"Failed to retrieve the page. Status code: {response.status_code}")    
-
+    
+    print("""########################################################""")
+    print()
+          
 
 
 
