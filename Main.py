@@ -44,6 +44,7 @@ import Documentations_dataframe as dd
 import Creation_test_dataframe as ctd
 import analysation_dataframe_goal1 as adg1
 import analysation_dataframe_goal2 as adg2
+import interface_creation as ic
 
 
 """ # =============================================================================
@@ -58,7 +59,7 @@ import analysation_dataframe_goal2 as adg2
 'name.basics'   """
 #detail_file=None    :   'Yes' or 'No' to get the detail on each file asked
 
-dd.info_source(source_data,['title.akas', 'title.basics', 'title.crew', 'name.basics'],'Yes')
+# dd.info_source(source_data,['title.akas', 'title.basics', 'title.crew', 'name.basics'],'Yes')
 
 
 
@@ -84,7 +85,7 @@ dd.info_source(source_data,['title.akas', 'title.basics', 'title.crew', 'name.ba
 # Choose to work on the source data set or the test data set 
 # =============================================================================
 
-Test_data = False
+Test_data = True
 
 if Test_data == True:
     Project_path=Project_path+'Test_data/'
@@ -114,8 +115,9 @@ def main():
     print("The analysis start from here.")
     print()
 
-    Para, y = adg1.movie_making_over_year(Project_path,Large_file_memory)
+    # Para, y = adg2.movie_making_over_year(Project_path,Large_file_memory)
     
+    Para, y = ic.dask_interface(Project_path,Large_file_memory)
     
     
     
