@@ -18,7 +18,7 @@ Created on Tue Oct  1 16:44:52 2024
    #============================================================================="""
 
 import dash
-from dash import dcc, html, Input, Output, dash_table, callback
+from dash import dcc, html, Input, Output, dash_table, callback, callback_context
 import dash_bootstrap_components as dbc
 import pandas as pd
 from collections import OrderedDict
@@ -28,31 +28,17 @@ import webbrowser
 import Function_dataframe as fd
 import Function_errors as fe
 import Function_visualisation as fv
+import web_interface_style as wis
+import table_dropdown_style as tds
+import figure_dropdown_style as fds
+
 
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
-# Function to calculate maximum width for each column
-def calculate_max_width(df):
-    max_widths = {}
-    for col in df.columns:
-        max_length = max(df[col].astype(str).apply(len))  # Longest cell content
-        header_length = len(col)  # Length of column header
-        max_widths[col] = f"{max(max_length, header_length) * 4}px"  # Adjust multiplier for desired width
-    return max_widths
 
-def create_figure(df):
-    fig = px.bar(df, x='runtimeMinutes', y='genres', title='genres by runtimeMinutes')
-    fig.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#343a40',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        title_font=dict(size=20, color='white'),  # Title styling
-        xaxis=dict(title='runtimeMinutes', color='white'),  # X-axis styling
-        yaxis=dict(title='genres', color='white'),  # Y-axis styling
-    )
-    return fig
+
 
 
 def dask_interface(Project_path,Large_file_memory):
@@ -87,227 +73,73 @@ def dask_interface(Project_path,Large_file_memory):
     # Filter out rows where the column contains the specified name element
     df = df[~df[column_to_exclude_element].str.contains(Name_element, na=False)]
     
-    df = df.head(100)
-    
-    print(df)
-    
-
-    # #To count individual elements when multiple elements are stored in a single cell 
-    # df_exploded, element_counts = fd.explode_dataframe(df, 'genres')
-    
-    # Para=["startYear","genres_split"]
-    # Pivot_table=fd.Pivot_table(df_exploded,Para,False, Large_file_memory)
-    
-    # y = fd.highest_dataframe_sorted_by(Pivot_table, 8, Para[0])
-    
-    # print(y)
+    df = df.head(100) 
 
 
-    # Calculate fixed widths for all columns
-    fixed_widths = calculate_max_width(df)
-
-    # Initialize the Dash app with the dark theme
-    app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])  # Use the DARKLY theme from Bootstrap
+    # Initialize the Dash app with the dark theme (background, table, dropdown, etc)
+    app, fixed_widths, dark_dropdown_style = wis.web_interface_style(df)
 
     
-    # Get column names
-    columns = df.columns
+    # Create the table with the appropriate dropdowns for each column
+    dropdowns_with_labels, data_table = tds.dropdown_table(df, fixed_widths, dark_dropdown_style)
 
-    # Define dark theme styles
-    dark_dropdown_style = {
-        'backgroundColor': '#1e1e1e',  # Dark background for dropdown
-        'color': '#f8f9fa',  # White text color
-        'border': '1px solid #555',  # Border for dropdown
-        'borderRadius': '5px',
-        'width': '160px',
-    }
+    # Create the figure with the appropriate dropdowns for each axis
+    dropdowns_with_labels_for_fig, fig  = fds.dropdown_figure(df, dark_dropdown_style, Large_file_memory)
 
-    # CSS to style the dropdown's options menu (this will apply globally)
-    app.index_string = '''
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <title>Dash Dark Theme</title>
-            <style>
-                body {
-                    background-color: #343a40; /* Ensure dark background */
-                    color: white; /* Ensure white text */
-                }
-                
-                /* Dark theme for dropdown options */
-                .Select-menu-outer {
-                    background-color: #333 !important;  /* Dark background for the options menu */
-                    color: white !important;  /* White text for the options */
-                }
-                
-                .Select-option {
-                    background-color: #333 !important;  /* Dark background for individual options */
-                    color: white !important;  /* White text */
-                }
-                
-                .Select-option.is-focused {
-                    background-color: #444 !important;  /* Highlight option on hover */
-                    color: white !important;  /* Ensure the text stays white */
-                }
-                
-                .Select-control {
-                    background-color: #1e1e1e !important;  /* Dark background for the dropdown control */
-                    color: white !important;  /* White text */
-                    border: 1px solid #555 !important;  /* Dark border */
-                }
-                
-                /* Ensuring selected text in the dropdown remains white */
-                .Select-value-label {
-                    color: white !important;
-                }
-            </style>
-        </head>
-        <body>
-            <div id="react-entry-point">
-                {%app_entry%}
-            </div>
-            <footer>
-                {%config%}
-                {%scripts%}
-                {%renderer%}
-            </footer>
-        </body>
-    </html>
-    '''
 
-    # Create the dropdowns for each column
-    dropdowns_with_labels = []
-    for col in columns:
-        dropdown_with_label = html.Div([
-            html.Label(f'Select {col}'),  # Label for the dropdown
-            dcc.Dropdown(
-                id=f'{col}-dropdown',
-                options=[{'label': val, 'value': val} for val in df[col].unique()],
-                value=df[col].iloc[0],  # Default selected value
-                style=dark_dropdown_style,  # Apply dark theme style
-                className='dash-dropdown'  # Add custom class to target with CSS
-            )
-        ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
-        dropdowns_with_labels.append(dropdown_with_label)
     
-    
-    
-    # Create the data_table
-    data_table = dash_table.DataTable(
-    id='data-table',
-    data=df.to_dict('records'),
-    columns=[{'id': c, 'name': c} for c in df.columns],
-    fixed_rows={'headers': True},
-    style_table={'width': str(int(len(columns)*170))+'px'},
-    style_cell={
-        'backgroundColor': '#1e1e1e',  # Darker background for cells
-        'color': '#f8f9fa',
-        'overflow': 'hidden',
-        'textOverflow': 'ellipsis',
-        'whiteSpace': 'nowrap',  
-        'maxWidth': 0,  # Prevent the last column from stretching
-        'textAlign': 'center'  # Center-align text in data cells
-    },
-    fixed_columns={'headers': True, 'data': 0},
-    style_data_conditional=[
-         {
-             'if': {'column_id': col},
-             'width': fixed_widths[col]  # Fixed width for each column
-         } for col in df.columns
-    ],
-    style_header={
-        'backgroundColor': '#343a40',  # Dark gray
-        'color': 'white',
-        'whiteSpace': 'nowrap',  # Ensure headers don't wrap
-        'textAlign': 'center'      # Align headers to the left
-    },
-    style_data={
-        'whiteSpace': 'nowrap',   # Ensure data cells don't wrap
-        'textAlign': 'center',       # Align data cells to the left
-        'backgroundColor': '#1e1e1e',  # Darker background for data cells
-    }
-    )
-
-
     app.layout = html.Div([
-
-        html.H1("IMDB DataFrame Interface", className="text-light"),
-
-        
-        # Dropdowns aligned above the columns
-        html.Div(dropdowns_with_labels,
-                 style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'}),  # Align to the left
-        
-        # DataTable below the dropdowns
-        html.Div(data_table, style={'margin-top': '10px', 'display': 'flex', 'justify-content': 'flex-start'})
-    ], style={'padding': '20px'})  # Optional padding for better layout
-
-
     
-    # app.layout = dbc.Container([
-    #     html.H1("IMDB DataFrame Interface", className="text-light"),
-        
-    #     # Dropdown for filtering
-    #     dbc.Row([
-    #         dbc.Col(
-    #             dropdowns_with_labels
-    #         )
-    #     ]),
-        
-        
-    #     dbc.Row([
-    #         dbc.Col(
-    #             data_table,
-    #             width={"size": 8, "offset": 7}  # Center the table in the middle of the page
-    #         )
-    #     ], justify='center'), # Center the row content
-        
-       
-    #     # Graph
-    #     dbc.Row([
-    #         dbc.Col(
-    #             dcc.Graph(id='genres-graph',
-    #             figure=create_figure(df),
-    #             style={'height': '60vh'}  # Set the height of the graph
-    #             ),
-    #             width=8  # Adjust width as needed
-    #         )
-    #     ], justify='center')
-    # ])
+        # Title with custom style
+        html.H1("IMDB DataFrame Interface", style={"color": "#FFD700"}, className="text-light"),
+    
+        # First row of dropdowns
+        html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
+            html.Div(dropdowns_with_labels, style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'}),
+            html.Div(dropdowns_with_labels_for_fig, style={'display': 'flex', 'margin-left': '200px', 'justify-content': 'flex-start', 'gap': '5px'})
+        ]),  # Closing the html.Div for the dropdown row
+    
+        # Second row: Data table on the left, Plotly graph on the right
+        html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
+            html.Div(data_table, style={'width': '50%'}),  # Data table takes 50% of the space
+            html.Div([
+                dcc.Graph(id='graph-output', figure=fig, style={'width': '100%', 'height': '600px'})  # Plotly figure
+            ], style={'margin-left': '20px', 'width': '50%'})  # Adjusting width and margin for spacing
+        ])
+    ], style={'padding': '20px'})
 
-   
+
+
+
+
+    # Create a list of Input objects for each dropdown
+    dropdown_inputs = [Input(f'{col}-dropdown', 'value') for col in df.columns]
     
     @app.callback(
-        Output('data-table', 'data'),
-        # Output('genres-graph', 'figure'),
-        Input('startYear-dropdown', 'value')
+        [Output(f'{col}-dropdown', 'options') for col in df.columns] + [Output('data-table', 'data')],
+        dropdown_inputs
     )
+    def update_output(*selected_values):
+        # Start with the original DataFrame
+        filtered_df = df.copy()
     
-
-
-    def update_output(selected_cities):
-        
-        if selected_cities:
-            filtered_df = df[df['startYear'].isin(selected_cities)]
-        else:
-            filtered_df = df
-        
-        # Ensure the filtered DataFrame is in the correct format
-        data_records = filtered_df.to_dict('records')
-
-        # Create DataTable
-        table = html.Table(
-            # Header
-            [html.Tr([html.Th(col) for col in filtered_df.columns])] +
-            # Body
-            [html.Tr([html.Td(filtered_df.iloc[i][col]) for col in filtered_df.columns]) for i in range(len(filtered_df))]
-        )
+        # Filter the DataFrame based on selections
+        for i, selected_value in enumerate(selected_values):
+            if selected_value != 'All':  # Skip filtering if 'All' is selected
+                col_name = df.columns[i]
+                filtered_df = filtered_df[filtered_df[col_name] == selected_value]
     
-        # Create a bar graph
-        # fig = px.bar(filtered_df, x='runtimeMinutes', y='genres', title='genres by runtimeMinutes')
-        
+        # Create updated options for each dropdown based on the filtered DataFrame
+        updated_options = []
+        for col in df.columns:
+            # Get unique values in the filtered DataFrame for the current column
+            unique_values = sorted(filtered_df[col].unique())
+            # Prepare options, adding 'All' as the first option
+            options = [{'label': 'All', 'value': 'All'}] + [{'label': val, 'value': val} for val in unique_values]
+            updated_options.append(options)
     
-        return create_figure(filtered_df) #data_records, fig
+        # Return the updated options for all dropdowns and the filtered data for the table
+        return updated_options + [filtered_df.to_dict('records')]
 
     
     app.run_server(debug=True, port=8051)
@@ -316,7 +148,7 @@ def dask_interface(Project_path,Large_file_memory):
     url = "http://127.0.0.1:8051/"
     
     # Open the URL in the default web browser
-    webbrowser.open(url)
+    # webbrowser.open(url)
     
     
     return 0, df

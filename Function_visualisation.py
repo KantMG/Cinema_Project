@@ -94,6 +94,8 @@ def histogram_multi(Para,y):
     plt.tight_layout()
     
     plt.show()
+    
+    return fig
 
 
 """#=============================================================================
