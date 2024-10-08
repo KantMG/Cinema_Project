@@ -44,7 +44,7 @@ import data_plot_preparation as dpp
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory):
+def create_figure(df, x_column, y_column, z_column, f_column, g_column, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -63,7 +63,7 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
     
     if x_column is not None: 
         # Extract from data base the required column and prepare them for the figure.
-        Para, y = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, Large_file_memory)
+        Para, y = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, f_column, Large_file_memory)
     
     # =============================================================================
     # Start figure creation
@@ -75,8 +75,7 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
     
     # Create the label of the figure
     ax, xlabel, ylabel = label_fig(ax, x_column, y_column, z_column)
-    
-    print("start core")
+    x_values = []
     
     if x_column is not None: 
         # Add the core of the figure
@@ -99,6 +98,8 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
         title_font=dict(size=20, color='white'),  # Title styling
         # X-axis and Y-axis styling
         xaxis=dict(
+            tickvals=np.arange(len(x_values)),  # Set the tick positions
+            ticktext=x_values,  # Set the tick labels to the genre names
             title=dict(text=xlabel, font=dict(size=18, color='white')),  # X-axis label styling
             tickfont=dict(color='white'),  # X-axis tick color
             tickangle=0,  # Rotate the x-axis labels for better readability
@@ -113,7 +114,6 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
             gridcolor='gray',  # Grid color
             categoryorder='category ascending'  # Ensures categorical x-values are treated correctly
         ),
-        
         # Legend styling
         legend=dict(
             font=dict(color='white', size=12),  # Legend text color
@@ -134,6 +134,21 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
 
 
 def label_fig(ax, x_column, y_column, z_column):
+
+    """
+    Goal: Create the figure labels.
+
+    Parameters:
+    - ax: axis of fig.
+    - x_column: Column in the dataframe
+    - y_column: Column in the dataframe (can be None)
+    - z_column: Function to operate on df_temp[x_column,y_column]
+
+    Returns:
+    - ax: The figure axis. 
+    - xlabel: The xlabel of the axis
+    - ylabel: The ylabel of the axis
+    """
     
     if x_column is not None: 
         figname = 'Movies over the ' + x_column
@@ -193,32 +208,32 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
         else:
             x_values = list(y[Para[0]])
         
-        print(x_values)
-        print(y["Count"])
         
         if g_column=="Histogram":
-            ax.bar(x_values, y["Count"])
+            ax.bar(np.arange(len(x_values)), y["Count"])
         if g_column=="Curve":
-            ax.plot(x_values, y["Count"], linewidth=4.)
+            ax.plot(np.arange(len(x_values)), y["Count"], linewidth=4.)
 
             
     else:
         
+        # Convert the DataFrame index to a list
+        if x_column!="genres":
+            x_values = list(map(int, y.index))
+        else:
+            x_values = y.index
         
         if str(z_column)=='None':
             
             bottom = np.zeros(len(y.index))
-        
-            # Convert the DataFrame index to a list
-            x_values = list(map(int, y.index))
 
             # Plot the stacked bar chart
             bars_list = []  # List to hold bar objects for the legend
             for i, (element_col, y_val) in enumerate(y.items()):
                 if g_column=="Histogram":
-                    bars = ax.bar(x_values, y_val, label=element_col, bottom=bottom, color=colors[i % len(colors)])  # Color assignment
+                    bars = ax.bar(np.arange(len(x_values)), y_val, label=element_col, bottom=bottom, color=colors[i % len(colors)])  # Color assignment
                 if g_column=="Curve":
-                    bars = ax.plot(x_values, y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
+                    bars = ax.plot(np.arange(len(x_values)), y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
                 bars_list.append(bars)  # Store the bars
                 bottom += y_val              
                 
@@ -236,20 +251,16 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
     
         elif str(z_column) == "Avg":
                         
-            # Convert the DataFrame index to a list
-            if x_column!="genres":
-                x_values = x_values = list(map(int, y.index))
-            else:
-                x_values = y.index
-
             if g_column=="Histogram":
-                ax.bar(x_values, y)
+                ax.bar(np.arange(len(x_values)), y)
             if g_column=="Curve":
-                ax.plot(x_values, y, linewidth=4.)
+                ax.plot(np.arange(len(x_values)), y, linewidth=4.)
             
-            
+    print(np.arange(len(x_values)))
+    print(x_values)
+    
     # Set x-ticks to the actual index values
-    ax.set_xticks(x_values)  # Set the x-ticks to the index of y
+    ax.set_xticks(np.arange(len(x_values)))  # Set the x-ticks to the index of y
     ax.set_xticklabels(x_values, rotation=45, ha='right')  # Set labels and rotate them for better visibility
             
     ax.tick_params(axis='both', labelsize=10)
@@ -286,7 +297,14 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
     graph_type = ["Histogram", "Curve"]
     
     # Get the list of axis and graph function
-    axis = ["x", "y", "Func", "Graph"]
+    axis = ["x", "y", "Func", "Filter", "Graph"]
+
+    # Define a consistent style for both input and dropdown elements
+    uniform_style = {
+        'width': '160px',  # Set a consistent width
+        'height': '40px',  # Set a consistent width
+        'borderRadius': '5px',  # Optional: Add rounded corners
+    }
 
     # Create the dropdowns for each column
     dropdowns_with_labels = []
@@ -298,9 +316,21 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
                 dcc.Dropdown(
                     id=f'{axi}-dropdown',
                     options=[{'label': val, 'value': val} for val in graph_type],
-                    value='All',  # Set default to "All", meaning no filtering
-                    style=dark_dropdown_style,  # Apply dark theme style
+                    value='Histogram',  # Set default to "All", meaning no filtering
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        elif axi == 'Filter':
+            # Get unique values and sort them
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {axi} on y'),  # Label for the dropdown
+                dcc.Input(
+                    id=f'{axi}-dropdown',
+                    type='text',
+                    placeholder='Condition (e.g., 100-200)',
+                    debounce=True,  # Apply changes when pressing Enter or losing focus
+                    style={**dark_dropdown_style, **uniform_style} # Apply dark theme style
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
         elif axi == 'Func':
@@ -311,7 +341,7 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
                     id=f'{axi}-dropdown',
                     options=[{'label': val, 'value': val} for val in function_on_y],
                     value='All',  # Set default to "All", meaning no filtering
-                    style=dark_dropdown_style,  # Apply dark theme style
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
@@ -322,7 +352,7 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
                     id=f'{axi}-dropdown',
                     options=[{'label': 'None', 'value': 'None'}] + [{'label': val, 'value': val} for val in columns],
                     value='All',  # Set default to "All", meaning no filtering
-                    style=dark_dropdown_style,  # Apply dark theme style
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
@@ -333,7 +363,7 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
                     id=f'{axi}-dropdown',
                     options=[{'label': val, 'value': val} for val in columns],
                     value='All',  # Set default to "All", meaning no filtering
-                    style=dark_dropdown_style,  # Apply dark theme style
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically

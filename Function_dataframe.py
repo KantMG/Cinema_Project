@@ -219,11 +219,16 @@ def avg_column_value_index(Pivot_table):
     """        
     
     #Get the sum of each rows, where each column element is multiplied by the column's name
-    s = sum([Pivot_table[i] * int(i) for i in Pivot_table.columns if isinstance(i, str) and i.isdigit()])
+    # s = sum([Pivot_table[i] * int(i) for i in Pivot_table.columns if isinstance(i, str) and i.isdigit()])
+    s = Pivot_table.apply(lambda row: sum([row[i] * float(i) for i in Pivot_table.columns if isinstance(i, float)]), axis=1)
+    
+    print(s)
     
     #Add avg_col as the last column of the dataframe and sort the dataframe
     pivot_table2 = Pivot_table.assign(avg_col=s).sort_values(by=['avg_col'], ascending=False)
-        
+    
+    print(pivot_table2)
+    
     #Correct the avg_col by dividing the values with the total value
     pivot_table2['avg_col']=pivot_table2['avg_col']/pivot_table2['Total']
     

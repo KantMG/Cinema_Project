@@ -45,7 +45,7 @@ import data_plot_preparation as dpp
    #============================================================================="""
 
 
-def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_memory):
+def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, Large_file_memory):
 
     """
     Goal: Get the pivot of the Count table of the dataframe.
@@ -64,7 +64,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
     """
 
    
-    Para, df_temp = delete_rows_unknow(df_temp, x_column, y_column)
+    Para, df_temp = delete_rows_unknow_and_split(df_temp, x_column, y_column)
     
     print(Para)
     print(df_temp)
@@ -87,12 +87,14 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
         Pivot_table=fd.Pivot_table(df_temp,Para,False, Large_file_memory)
 
         if str(z_column)=='None':
-            
+            print("1")
             if x_column!='genres':
+                print("2")
                 y = fd.highest_dataframe_sorted_by(Pivot_table, 8, Para[0])
             else:
-                y = Pivot_table.sort_values(ascending=True)
-
+                print("3")
+                y = Pivot_table.sort_values(by=['Total'], ascending=True)
+            print("4")
 
 
             
@@ -100,12 +102,16 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
             
             # add new column which is th avg value of all the other column times the column name
             y = fd.avg_column_value_index(Pivot_table)
-
+            
+            print("2", y)
+            
             if x_column!='genres':
                 
                 # remove from the dataframe the index which cannot be eval
                 y = y[y.index.to_series().apply(lambda x: isinstance(fe.myeval(x), int))]
-
+                
+                print("3", y)
+                
                 # sort the data in function of column Para_sorted
                 y.sort_index(ascending=True, inplace=True)  
                 
@@ -123,6 +129,48 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
 
 
 def delete_rows_unknow(df_temp, x_column, y_column):
+
+    """
+    Goal: Delete the rows in a dataframe which correspond to '\\N'.
+
+    Parameters:
+    - df_temp: dataframe which has been created temporary.
+    - x_column: Column in the dataframe.
+    - y_column: Column in the dataframe (can be None).
+
+    Returns:
+    - Para: List of column in the dataframe (can be different of [x_column,y_column]).
+    - df_temp: dataframe which has been created temporary.
+    """
+        
+    #Case where y_column is None
+    if str(y_column)=='None':    
+
+        df_temp = df_temp[[x_column]]
+        Para=[x_column]
+
+        # Filter out rows where 'Value' is '\\N'
+        df_temp.replace('\\N', np.nan, inplace=True)
+        df_temp.dropna(inplace=True)         
+    
+    else:
+                
+        df_temp = df_temp[[x_column, y_column]]
+        Para=[x_column, y_column]
+        
+        # Filter out rows where 'Value' is '\\N'
+        df_temp.replace('\\N', np.nan, inplace=True)
+        df_temp.dropna(inplace=True)
+        
+    return Para, df_temp
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def delete_rows_unknow_and_split(df_temp, x_column, y_column):
 
     """
     Goal: Delete the rows in a dataframe which correspond to '\\N'.
@@ -179,5 +227,3 @@ def delete_rows_unknow(df_temp, x_column, y_column):
 
     
     return Para, df_temp
-
-

@@ -31,7 +31,7 @@ import Function_visualisation as fv
 import web_interface_style as wis
 import table_dropdown_style as tds
 import figure_dropdown_style as fds
-
+import data_plot_preparation as dpp
 
 """#=============================================================================
    #=============================================================================
@@ -96,7 +96,7 @@ def dask_interface(Project_path,Large_file_memory):
         # First row of dropdowns
         html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
             html.Div(dropdowns_with_labels, style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'}),
-            html.Div(dropdowns_with_labels_for_fig, style={'display': 'flex', 'margin-left': '150px', 'justify-content': 'flex-start', 'gap': '5px'})
+            html.Div(dropdowns_with_labels_for_fig, style={'display': 'flex', 'margin-left': '50px', 'justify-content': 'flex-start', 'gap': '5px'})
         ]),  # Closing the html.Div for the dropdown row
     
         # Second row: Data table on the left, Plotly graph on the right
@@ -125,15 +125,34 @@ def dask_interface(Project_path,Large_file_memory):
         [Input('x-dropdown', 'value'),
          Input('y-dropdown', 'value'),
          Input('Func-dropdown', 'value'),
+         Input('Filter-dropdown', 'value'),
          Input('Graph-dropdown', 'value')]
     )
-    def update_graph(x_column, y_column, z_column, g_column):
-        
-        # # If no valid selection is made, return an empty figure
-        # if x_column is None or z_column is None:
-        #     return fds.create_empty_figure('No data selected', x_column, y_column, z_column, g_column)
+    def update_graph(x_column, y_column, func_column, filter_value, graph_type):
 
-        fig = fds.create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
+        # Start with all data
+        filtered_data = df.copy()
+        
+        if x_column is not None and y_column is not None:
+            
+            # Ensure the column is numeric (to handle any non-numeric values)
+            filtered_data[y_column] = pd.to_numeric(filtered_data[y_column], errors='coerce')
+        
+            # Drop rows where y_column has NaN values after conversion
+            filtered_data = filtered_data.dropna(subset=[y_column])
+        
+            # Check if filter_value is a range (e.g., "100-200")
+            if filter_value:
+                try:
+                    # Ensure filter_value is a string before splitting
+                    if isinstance(filter_value, str):
+                        lower, upper = map(int, filter_value.split('-'))
+                        filtered_data = filtered_data[(filtered_data[y_column] >= lower) & (filtered_data[y_column] <= upper)]
+                except ValueError:
+                    # Handle cases where the filter_value is not in the expected format
+                    pass
+        
+        fig = fds.create_figure(filtered_data, x_column, y_column, func_column, filter_value, graph_type, Large_file_memory)
         
         return fig
 
