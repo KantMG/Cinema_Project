@@ -47,15 +47,17 @@ def explode_dataframe(df, Para):
     Warning:
     - Can create very large array if many cells contain many elements.
     """
-
+    
+    df_temp = df.copy()
+    
     # Step 1: Split the elements into lists of elements
-    df[Para+'_split'] = df[Para].str.split(',')
+    df_temp[Para+'_split'] = df_temp[Para].str.split(',')
     
     # Step 2: Explode the list of elements into individual rows
-    df_exploded = df.explode(Para+'_split')
+    df_temp = df_temp.explode(Para+'_split')
         
     # Step 3: Count the occurrences of each element
-    element_counts = df_exploded[Para+'_split'].str.strip().value_counts()
+    element_counts = df_temp[Para+'_split'].str.strip().value_counts()
     
     # Display the result
     print("Dataframe have been explode base on parameter "+Para)
@@ -63,7 +65,43 @@ def explode_dataframe(df, Para):
     print(element_counts)
     print()
     
-    return df_exploded, element_counts
+    return df_temp, element_counts
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+
+def reverse_explode_dataframe(df_exploded, Para):
+    """
+    Goal: 
+    - Revert the exploded data
+
+    Parameters:
+    - df_exploded: Dataframe
+    - Para: List of column in the df for which the table should explode the cells with multiple elements.
+
+    Returns:
+    - Dataframe which have been explode and the new counts of each elements.
+    
+    Warning:
+    - 
+    """
+
+    # Now let's revert back to the original DataFrame
+    # Step 4: Group by the original ID and aggregate back to the original format
+    df_reverted = df_exploded.groupby('tconst')[Para + '_split'].agg(lambda x: ', '.join(x.str.strip())).reset_index()
+    
+    # Rename the aggregated column back to the original name
+    df_reverted.rename(columns={Para + '_split': Para}, inplace=True)
+    
+    # Display the reverted DataFrame
+    print("Reverted DataFrame to original:")
+    print(df_reverted)
+    
+    return df_reverted
 
 
 """#=============================================================================
@@ -79,6 +117,7 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     - csvFile: dataframe
     - Para: List of column in the dataframe
     - remove_unknown_value: Bolean (True or False)
+    - Large_file_memory: Estimate if the file is too large to be open with panda
 
     Returns:
     - Dataframe which have been pivoted.
@@ -183,12 +222,12 @@ def avg_column_value_index(Pivot_table):
     s = sum([Pivot_table[i] * int(i) for i in Pivot_table.columns if isinstance(i, str) and i.isdigit()])
     
     #Add avg_col as the last column of the dataframe and sort the dataframe
-    pivot_table2 = Pivot_table.assign(Avg_minute=s).sort_values(by=['Avg_minute'], ascending=False)
+    pivot_table2 = Pivot_table.assign(avg_col=s).sort_values(by=['avg_col'], ascending=False)
         
     #Correct the avg_col by dividing the values with the total value
-    pivot_table2['Avg_minute']=pivot_table2['Avg_minute']/pivot_table2['Total']
+    pivot_table2['avg_col']=pivot_table2['avg_col']/pivot_table2['Total']
     
-    return pivot_table2['Avg_minute']   
+    return pivot_table2['avg_col']   
 
 
 """#=============================================================================

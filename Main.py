@@ -115,7 +115,7 @@ def main():
     print("The analysis start from here.")
     print()
 
-    # Para, y = adg2.movie_making_over_year(Project_path,Large_file_memory)
+    # Para, y = adg1.movie_making_over_year(Project_path,Large_file_memory)
     
     Para, y = ic.dask_interface(Project_path,Large_file_memory)
     

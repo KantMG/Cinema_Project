@@ -69,7 +69,7 @@ def histogram_multi(Para,y):
     Returns:
     - An histogram where each bar contains several elements.
     """
-       
+
     figname='Movies over the '+Para[0]
     fig, ax = plt.subplots(figsize=(22,12))
     ax.set_title(figname)

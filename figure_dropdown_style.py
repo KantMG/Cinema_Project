@@ -6,6 +6,16 @@ Created on Sat Oct  5 18:23:15 2024
 @author: quentin
 """
 
+"""#=============================================================================
+   #=============================================================================
+   #=============================================================================
+
+    Dictionnary of functions for visualisation of the dataframe
+
+#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
 
 import dash
 from dash import dcc, html, Input, Output, dash_table, callback, callback_context
@@ -15,6 +25,8 @@ from collections import OrderedDict
 import plotly.express as px
 import webbrowser
 
+import matplotlib
+matplotlib.use('Agg')  # Use the Agg backend (no GUI)
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -24,56 +36,53 @@ import plotly.graph_objects as go
 import Function_dataframe as fd
 import Function_errors as fe
 import Function_visualisation as fv
+import data_plot_preparation as dpp
 
 
-def histogram_multi(Para,y):
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
-    # Define a list of colors for the bars
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
+
+def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory):
+
+    """
+    Goal: Create a sophisticated figure which adapt to any input variable.
+
+    Parameters:
+    - df: dataframe
+    - x_column: Column in the dataframe
+    - y_column: Column in the dataframe (can be None)
+    - z_column: Function to operate on df_temp[x_column,y_column]
+    - g_column: Type of Graphyque for the figure.
+    - Large_file_memory: Estimate if the file is too large to be open with panda
+
+    Returns:
+    - fig_json_serializable: The finalized plotly figure. 
+    """
+    
+    if x_column is not None: 
+        # Extract from data base the required column and prepare them for the figure.
+        Para, y = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, Large_file_memory)
+    
+    # =============================================================================
+    # Start figure creation
+    # =============================================================================
 
     # Create the Matplotlib figure
-    figname = 'Movies over the ' + Para[0]
+    
     fig, ax = plt.subplots(figsize=(8.5, 6))
-    ax.set_title(figname)
     
-    ax.set_xlabel(Para[0], fontsize=15)
-    ax.set_ylabel('Amount of movies', fontsize=15)
+    # Create the label of the figure
+    ax, xlabel, ylabel = label_fig(ax, x_column, y_column, z_column)
     
-    bottom = np.zeros(len(y.index))
-
-    # Convert the DataFrame index to a list
-    x_values = list(map(int, y.index))
-    print(x_values)
+    print("start core")
     
-    # Plot the stacked bar chart
-    bars_list = []  # List to hold bar objects for the legend
-    for i, (element_col, y_val) in enumerate(y.items()):
-        bars = ax.bar(x_values, y_val, label=element_col, bottom=bottom, color=colors[i % len(colors)])  # Color assignment
-        bars_list.append(bars)  # Store the bars
-        bottom += y_val
-    
-    
-    ax.tick_params(axis='both', labelsize=10)
-    ax.grid(True, color='grey', linestyle='--', linewidth=2, alpha=0.5)
-    
-    # Set x-ticks to the actual index values
-    ax.set_xticks(x_values)  # Set the x-ticks to the index of y
-    ax.set_xticklabels(x_values, rotation=45, ha='right')  # Set labels and rotate them for better visibility
-
+    if x_column is not None: 
+        # Add the core of the figure
+        fig, ax, x_values, legend = figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y)  
     
     plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True, prune='both', nbins=10))
-
-    # Create a custom legend using the bars created
-    legend_handles = [plt.Line2D([0], [0], color=color, lw=4) for color in colors[:len(y)]]
-    legend_labels = y.columns.tolist()  # Get the labels from DataFrame columns
-    # Customize the legend to ensure it reflects the colors of the bars
-    legend = ax.legend(legend_handles, legend_labels, ncol=2, handletextpad=0.001)
-
-    # legend = ax.legend(ncol=2)
-    for text in legend.get_texts():
-        text.set_color('white')  # Set the color of the legend text
-        text.set_fontsize(15)  # Set the font size of the legend text
-
 
     plt.tight_layout()
     
@@ -90,16 +99,19 @@ def histogram_multi(Para,y):
         title_font=dict(size=20, color='white'),  # Title styling
         # X-axis and Y-axis styling
         xaxis=dict(
-            title=dict(text=Para[0], font=dict(size=18, color='white')),  # X-axis label styling
+            title=dict(text=xlabel, font=dict(size=18, color='white')),  # X-axis label styling
             tickfont=dict(color='white'),  # X-axis tick color
+            tickangle=0,  # Rotate the x-axis labels for better readability
             showgrid=True,  # Grid styling
-            gridcolor='gray'  # Grid color
+            gridcolor='gray',  # Grid color
+            categoryorder='category ascending'  # Ensures categorical x-values are treated correctly
         ),
         yaxis=dict(
-            title=dict(text='Amount of movies', font=dict(size=18, color='white')),  # Y-axis label styling
+            title=dict(text=ylabel, font=dict(size=18, color='white')),  # Y-axis label styling
             tickfont=dict(color='white'),  # Y-axis tick color
             showgrid=True,  # Grid styling
-            gridcolor='gray'  # Grid color
+            gridcolor='gray',  # Grid color
+            categoryorder='category ascending'  # Ensures categorical x-values are treated correctly
         ),
         
         # Legend styling
@@ -110,57 +122,230 @@ def histogram_multi(Para,y):
             borderwidth=1  # Optional: set the width of the border
         )
     )
-    plt.show()
+    plt.close()
+    # =============================================================================
     
     return fig_json_serializable
 
 
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def label_fig(ax, x_column, y_column, z_column):
+    
+    if x_column is not None: 
+        figname = 'Movies over the ' + x_column
+        ax.set_title(figname)
+        xlabel = x_column
+        if str(z_column)=='None':
+            ylabel = 'Number of movies'
+        elif str(z_column)=='Avg':
+            ylabel = 'Average '+y_column+' of the movies'
+        else:
+            ylabel = "None"
+
+    else: 
+        ax.set_title('No data selected')
+        xlabel, ylabel = "None","None"
+        
+    ax.set_xlabel(xlabel, fontsize=15)
+    ax.set_ylabel(ylabel, fontsize=15)
+    
+    return ax, xlabel, ylabel
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
+
+    """
+    Goal: Create the plot inside the figure regarding the inputs.
+
+    Parameters:
+    - fig: matplotlib figure.
+    - ax: axis of fig.
+    - x_column: Column in the dataframe
+    - y_column: Column in the dataframe (can be None)
+    - z_column: Function to operate on df_temp[x_column,y_column]
+    - g_column: Type of Graphyque for the figure.
+    - Para: List of column in the dataframe (can be different of [x_column,y_column])
+    - y: Data to plot.
+
+    Returns:
+    - dropdowns_with_labels: The finalized dropdowns figure. 
+    """
+    
+    # Define a list of colors for the bars
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
+    
+    legend = "None"
+    
+    if str(y_column)=='None':
+                
+        # Convert the DataFrame index to a list
+        if x_column!="genres":
+            x_values = list(map(int, y[Para[0]]))
+        else:
+            x_values = list(y[Para[0]])
+        
+        print(x_values)
+        print(y["Count"])
+        
+        if g_column=="Histogram":
+            ax.bar(x_values, y["Count"])
+        if g_column=="Curve":
+            ax.plot(x_values, y["Count"], linewidth=4.)
+
+            
+    else:
+        
+        
+        if str(z_column)=='None':
+            
+            bottom = np.zeros(len(y.index))
+        
+            # Convert the DataFrame index to a list
+            x_values = list(map(int, y.index))
+
+            # Plot the stacked bar chart
+            bars_list = []  # List to hold bar objects for the legend
+            for i, (element_col, y_val) in enumerate(y.items()):
+                if g_column=="Histogram":
+                    bars = ax.bar(x_values, y_val, label=element_col, bottom=bottom, color=colors[i % len(colors)])  # Color assignment
+                if g_column=="Curve":
+                    bars = ax.plot(x_values, y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
+                bars_list.append(bars)  # Store the bars
+                bottom += y_val              
+                
+
+            # Create a custom legend using the bars created
+            legend_handles = [plt.Line2D([0], [0], color=color, lw=4) for color in colors[:len(y)]]
+            legend_labels = y.columns.tolist()  # Get the labels from DataFrame columns
+            # Customize the legend to ensure it reflects the colors of the bars
+            legend = ax.legend(legend_handles, legend_labels, ncol=2, handletextpad=0.001)
+        
+            # legend = ax.legend(ncol=2)
+            for text in legend.get_texts():
+                text.set_color('white')  # Set the color of the legend text
+                text.set_fontsize(15)  # Set the font size of the legend text
+    
+        elif str(z_column) == "Avg":
+                        
+            # Convert the DataFrame index to a list
+            if x_column!="genres":
+                x_values = x_values = list(map(int, y.index))
+            else:
+                x_values = y.index
+
+            if g_column=="Histogram":
+                ax.bar(x_values, y)
+            if g_column=="Curve":
+                ax.plot(x_values, y, linewidth=4.)
+            
+            
+    # Set x-ticks to the actual index values
+    ax.set_xticks(x_values)  # Set the x-ticks to the index of y
+    ax.set_xticklabels(x_values, rotation=45, ha='right')  # Set labels and rotate them for better visibility
+            
+    ax.tick_params(axis='both', labelsize=10)
+    ax.grid(True, color='grey', linestyle='--', linewidth=2, alpha=0.5)  
+            
+    return fig, ax, x_values, legend
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
 
+    """
+    Goal: Create the dropdown associated to a figure.
+
+    Parameters:
+    - df: dataframe.
+    - dark_dropdown_style: Color style of the dropdown.
+    - Large_file_memory: Estimate if the file is too large to be open with panda.
+
+    Returns:
+    - dropdowns_with_labels: The finalized dropdowns figure. 
+    """
 
     # Get column names
     columns = df.columns
     
-    axis = ['x','y','z']
+    # Get the list of y function
+    function_on_y = ["None", "Avg"]
+    
+    # Get the type of graph
+    graph_type = ["Histogram", "Curve"]
+    
+    # Get the list of axis and graph function
+    axis = ["x", "y", "Func", "Graph"]
 
     # Create the dropdowns for each column
     dropdowns_with_labels = []
     for axi in axis:
-        # Get unique values and sort them
-        dropdown_with_label = html.Div([
-            html.Label(f'Select {axi}'),  # Label for the dropdown
-            dcc.Dropdown(
-                id=f'{axi}-dropdown',
-                options=[{'label': val, 'value': val} for val in columns],
-                value='All',  # Set default to "All", meaning no filtering
-                style=dark_dropdown_style,  # Apply dark theme style
-                className='dash-dropdown'  # Add custom class to target with CSS
-            )
-        ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        if axi == 'Graph':
+            # Get unique values and sort them
+            dropdown_with_label = html.Div([
+                html.Label(f'Select a {axi} type'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown',
+                    options=[{'label': val, 'value': val} for val in graph_type],
+                    value='All',  # Set default to "All", meaning no filtering
+                    style=dark_dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        elif axi == 'Func':
+            # Get unique values and sort them
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {axi} on y'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown',
+                    options=[{'label': val, 'value': val} for val in function_on_y],
+                    value='All',  # Set default to "All", meaning no filtering
+                    style=dark_dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        elif axi== 'y':
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {axi}'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown',
+                    options=[{'label': 'None', 'value': 'None'}] + [{'label': val, 'value': val} for val in columns],
+                    value='All',  # Set default to "All", meaning no filtering
+                    style=dark_dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        else:
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {axi}'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown',
+                    options=[{'label': val, 'value': val} for val in columns],
+                    value='All',  # Set default to "All", meaning no filtering
+                    style=dark_dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+
         dropdowns_with_labels.append(dropdown_with_label)
-
-
-    
-    print("Answer 1 and 2 of Goal 1")
-    print()
-
-    #To count individual elements when multiple elements are stored in a single cell 
-    df_exploded, element_counts = fd.explode_dataframe(df, 'genres')
-    
-    print(df.head(100))
-    
-    
-    Para=["startYear","genres_split"]
-    Pivot_table=fd.Pivot_table(df_exploded,Para,False, Large_file_memory)
-    
-    y = fd.highest_dataframe_sorted_by(Pivot_table, 8, Para[0])
-
-    # =============================================================================
-    # Start Plot              
-    # =============================================================================  
-    fig = histogram_multi(Para,y)
-    # =============================================================================
-    # ============================================================================= 
+      
         
-        
-    return dropdowns_with_labels, fig
+    return dropdowns_with_labels
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+    

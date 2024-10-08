@@ -104,7 +104,7 @@ def movie_making_over_year(Project_path, Large_file_memory=False):
     print("5- Does the violence in movies increases.")
     print()
     
-    Goal1 = [False, False, False, False, True]
+    Goal1 = [True, False, True, True, False]
     
     # List of the required data file.
     List_file=['title.basics.tsv']

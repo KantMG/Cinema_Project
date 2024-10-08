@@ -64,7 +64,8 @@ def dask_interface(Project_path,Large_file_memory):
         )
         df = df.replace('\\N', np.nan)
     
-    
+    # Get column names
+    columns = df.columns    
     #Exclude all elements of the dataframe where the column_to_exclude_element correspnds to the Name_element
     column_to_exclude_element="genres"
     Name_element="Short"   
@@ -78,13 +79,12 @@ def dask_interface(Project_path,Large_file_memory):
 
     # Initialize the Dash app with the dark theme (background, table, dropdown, etc)
     app, fixed_widths, dark_dropdown_style = wis.web_interface_style(df)
-
     
     # Create the table with the appropriate dropdowns for each column
     dropdowns_with_labels, data_table = tds.dropdown_table(df, fixed_widths, dark_dropdown_style)
 
     # Create the figure with the appropriate dropdowns for each axis
-    dropdowns_with_labels_for_fig, fig  = fds.dropdown_figure(df, dark_dropdown_style, Large_file_memory)
+    dropdowns_with_labels_for_fig = fds.dropdown_figure(df, dark_dropdown_style, Large_file_memory)
 
 
     
@@ -96,17 +96,46 @@ def dask_interface(Project_path,Large_file_memory):
         # First row of dropdowns
         html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
             html.Div(dropdowns_with_labels, style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'}),
-            html.Div(dropdowns_with_labels_for_fig, style={'display': 'flex', 'margin-left': '200px', 'justify-content': 'flex-start', 'gap': '5px'})
+            html.Div(dropdowns_with_labels_for_fig, style={'display': 'flex', 'margin-left': '150px', 'justify-content': 'flex-start', 'gap': '5px'})
         ]),  # Closing the html.Div for the dropdown row
     
         # Second row: Data table on the left, Plotly graph on the right
         html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
             html.Div(data_table, style={'width': '50%'}),  # Data table takes 50% of the space
             html.Div([
-                dcc.Graph(id='graph-output', figure=fig, style={'width': '100%', 'height': '600px'})  # Plotly figure
+                dcc.Graph(id='graph-output', style={'width': '100%', 'height': '600px'})  #, figure=fig Plotly figure
             ], style={'margin-left': '20px', 'width': '50%'})  # Adjusting width and margin for spacing
         ])
     ], style={'padding': '20px'})
+
+
+    # Callback to update y-dropdown options based on x-dropdown selection
+    @app.callback(
+        Output('y-dropdown', 'options'),
+        Input('x-dropdown', 'value')
+    )
+    def update_y_dropdown(selected_x):
+        # Exclude the selected x from the options in the y dropdown
+        return [{'label': 'None', 'value': 'None'}] + [{'label': col, 'value': col} for col in columns if col != selected_x]
+
+
+    # Callback to update the figure based on the dropdown selections
+    @app.callback(
+        Output('graph-output', 'figure'),
+        [Input('x-dropdown', 'value'),
+         Input('y-dropdown', 'value'),
+         Input('Func-dropdown', 'value'),
+         Input('Graph-dropdown', 'value')]
+    )
+    def update_graph(x_column, y_column, z_column, g_column):
+        
+        # # If no valid selection is made, return an empty figure
+        # if x_column is None or z_column is None:
+        #     return fds.create_empty_figure('No data selected', x_column, y_column, z_column, g_column)
+
+        fig = fds.create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
+        
+        return fig
 
 
 
@@ -140,6 +169,9 @@ def dask_interface(Project_path,Large_file_memory):
     
         # Return the updated options for all dropdowns and the filtered data for the table
         return updated_options + [filtered_df.to_dict('records')]
+
+
+
 
     
     app.run_server(debug=True, port=8051)
