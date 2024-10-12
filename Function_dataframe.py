@@ -220,7 +220,8 @@ def avg_column_value_index(Pivot_table):
     
     #Get the sum of each rows, where each column element is multiplied by the column's name
     # s = sum([Pivot_table[i] * int(i) for i in Pivot_table.columns if isinstance(i, str) and i.isdigit()])
-    s = Pivot_table.apply(lambda row: sum([row[i] * float(i) for i in Pivot_table.columns if isinstance(i, float)]), axis=1)
+    # s = Pivot_table.apply(lambda row: sum([row[i] * float(i) for i in Pivot_table.columns if isinstance(i, float)]), axis=1)
+    s = Pivot_table.apply(lambda row: sum([row[i] * int(i) for i in Pivot_table.columns[:-1]]), axis=1)
     
     print(s)
     

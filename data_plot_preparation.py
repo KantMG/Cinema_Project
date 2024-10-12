@@ -63,7 +63,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, L
     - y: Data to plot.
     """
 
-   
+    print("Delete the rows with unknown value and split the column with multiple value per cell.")
     Para, df_temp = delete_rows_unknow_and_split(df_temp, x_column, y_column)
     
     print(Para)
@@ -204,7 +204,7 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column):
         
     
     else:
-                
+
         df_temp = df_temp[[x_column, y_column]]
         Para=[x_column, y_column]
         

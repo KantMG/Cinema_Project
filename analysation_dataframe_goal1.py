@@ -80,7 +80,7 @@ plt.rcParams["font.family"] = "serif"
    #=============================================================================
    #============================================================================="""
 
-def movie_making_over_year(Project_path, Large_file_memory=False):
+def movie_making_over_year(Project_path, Large_file_memory, desired_number_of_partitions, Get_file_sys_mem):
     """
     Make the analysis of the project by achieving the goals decribed below.
     Goals: 
@@ -104,7 +104,7 @@ def movie_making_over_year(Project_path, Large_file_memory=False):
     print("5- Does the violence in movies increases.")
     print()
     
-    Goal1 = [True, False, True, True, False]
+    Goal1 = [True, False, False, False, False]
     
     # List of the required data file.
     List_file=['title.basics.tsv']

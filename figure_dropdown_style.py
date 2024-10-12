@@ -26,7 +26,7 @@ import plotly.express as px
 import webbrowser
 
 import matplotlib
-matplotlib.use('Agg')  # Use the Agg backend (no GUI)
+# matplotlib.use('Agg')  # Use the Agg backend (no GUI)
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -62,11 +62,11 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, Large_fi
     """
     
     if x_column is not None: 
-        # Extract from data base the required column and prepare them for the figure.
+        print("Extract from data base the required column and prepare them for the figure.")
         Para, y = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, f_column, Large_file_memory)
     
     # =============================================================================
-    # Start figure creation
+    print("Start figure creation")
     # =============================================================================
 
     # Create the Matplotlib figure
@@ -124,7 +124,7 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, Large_fi
     )
     plt.close()
     # =============================================================================
-    
+    print("=============================================================================")
     return fig_json_serializable
 
 
@@ -273,7 +273,7 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
    #============================================================================="""
 
 
-def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
+def dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memory):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -321,18 +321,38 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+
+        # elif axi == 'Filter':
+        #     # Get unique values and sort them
+        #     dropdown_with_label = html.Div([
+        #         html.Label(f'Select {axi} on y'),  # Label for the dropdown
+        #         dcc.Input(
+        #             id=f'{axi}-dropdown',
+        #             type='text',
+        #             placeholder='Condition (e.g., 100-200)',
+        #             debounce=True,  # Apply changes when pressing Enter or losing focus
+        #             style={**dark_dropdown_style, **uniform_style} # Apply dark theme style
+        #         )
+        #     ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+
+        # elif axi == 'Filter':
+        #     # Get unique values and sort them
+        #     dropdown_with_label = html.Div(id='Filter-dropdown-container', children=[
+        #     # Placeholder or initial content for the dropdown/input
+        #     html.Div("Select Filter on y")
+        #     ])
         elif axi == 'Filter':
             # Get unique values and sort them
-            dropdown_with_label = html.Div([
-                html.Label(f'Select {axi} on y'),  # Label for the dropdown
-                dcc.Input(
-                    id=f'{axi}-dropdown',
-                    type='text',
-                    placeholder='Condition (e.g., 100-200)',
-                    debounce=True,  # Apply changes when pressing Enter or losing focus
-                    style={**dark_dropdown_style, **uniform_style} # Apply dark theme style
+            dropdown_with_label = html.Div(id='Filter-dropdown-container', children=[
+                html.Label(f'Select Filter on y'),
+                dcc.Dropdown(
+                    id='Filter-dropdown',  # Ensure this ID is correct
+                    placeholder='Select values',
+                    style={**dark_dropdown_style, **uniform_style}
                 )
-            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+            ])
+
+
         elif axi == 'Func':
             # Get unique values and sort them
             dropdown_with_label = html.Div([
@@ -369,7 +389,16 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
 
         dropdowns_with_labels.append(dropdown_with_label)
-      
+
+
+    # # Get unique values and sort them
+    # dropdown_with_label = html.Div([
+    #     dcc.Dropdown(
+    #         id=f'Filter-dropdown',
+    #         options = [],
+    #         style={'display': 'none'})])
+
+    # dropdowns_with_labels.append(dropdown_with_label)
         
     return dropdowns_with_labels
 
@@ -378,4 +407,22 @@ def dropdown_figure(df, dark_dropdown_style, Large_file_memory):
    #=============================================================================
    #============================================================================="""
 
+
+def get_dropdown_options(filtered_data, y_column):
+    print("""Generate dropdown options based on the type of y_column.""")
+    # Convert column to numeric, forcing errors to NaN
+    filtered_data[y_column] = pd.to_numeric(filtered_data[y_column], errors='coerce')
+    filtered_data = filtered_data.dropna(subset=[y_column]).copy()
+
+    # Generate options based on the type of y_column
+    if y_column in list_col_num:
+        # Generate numeric ranges
+        min_val, max_val = int(filtered_data[y_column].min()), int(filtered_data[y_column].max())
+        ranges = [f"{i}-{i + 10}" for i in range(min_val, max_val, 10)]  # Adjust range size as needed
+        return ranges
+    else:
+        # For string columns like genres, return unique string values
+        filtered_data[y_column] = filtered_data[y_column].astype(str)  # Ensure column is string type
+        unique_values = filtered_data[y_column].dropna().unique().tolist()
+        return unique_values
     

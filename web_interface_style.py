@@ -31,7 +31,7 @@ def web_interface_style(df):
     fixed_widths = calculate_max_width(df)
 
     # Initialize the Dash app with the dark theme
-    app = dash.Dash(__name__, external_stylesheets=[dbc.themes.DARKLY])  # Use the DARKLY theme from Bootstrap
+    app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.DARKLY])  # Use the DARKLY theme from Bootstrap
 
     # Define dark theme styles
     dark_dropdown_style = {
@@ -40,6 +40,14 @@ def web_interface_style(df):
         'border': '1px solid #555',  # Border for dropdown
         'borderRadius': '5px',
         'width': '160px',
+    }
+
+
+    # Define a consistent style for both input and dropdown elements
+    uniform_style = {
+        'width': '160px',  # Set a consistent width
+        'height': '40px',  # Set a consistent width
+        'borderRadius': '5px',  # Optional: Add rounded corners
     }
 
     # CSS to style the dropdown's options menu (this will apply globally)
@@ -95,5 +103,5 @@ def web_interface_style(df):
     </html>
     '''
     
-    return app, fixed_widths, dark_dropdown_style
+    return app, fixed_widths, dark_dropdown_style, uniform_style
     

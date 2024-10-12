@@ -15,7 +15,7 @@ import plotly.express as px
 import webbrowser
 
 
-def dropdown_table(df, fixed_widths, dark_dropdown_style):
+def dropdown_table(df, fixed_widths, dark_dropdown_style, uniform_style, list_col_num):
 
     # Get column names
     columns = df.columns
@@ -25,17 +25,35 @@ def dropdown_table(df, fixed_widths, dark_dropdown_style):
     for col in columns:
         # Get unique values and sort them
         unique_values = sorted(df[col].unique())  # Sort unique values
-        dropdown_with_label = html.Div([
-            html.Label(f'Select {col}'),  # Label for the dropdown
-            dcc.Dropdown(
-                id=f'{col}-dropdown',
-                options=[{'label': 'All', 'value': 'All'}] + [{'label': val, 'value': val} for val in unique_values],
-                value='All',  # Set default to "All", meaning no filtering
-                style=dark_dropdown_style,  # Apply dark theme style
-                className='dash-dropdown'  # Add custom class to target with CSS
-            )
-        ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        if col in list_col_num:
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {col}'),  # Label for the dropdown
+                dcc.Input(
+                    id=f'{col}-dropdown',
+                    type='text',
+                    placeholder='Condition (e.g., 100-200)',
+                    debounce=True,  # Apply changes when pressing Enter or losing focus
+                    style={**dark_dropdown_style, **uniform_style} # Apply dark theme style
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        else:
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {col}'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{col}-dropdown',
+                    options=[{'label': 'All', 'value': 'All'}] + [{'label': val, 'value': val} for val in unique_values],
+                    value='All',  # Set default to "All", meaning no filtering
+                    style=dark_dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+
+
+
         dropdowns_with_labels.append(dropdown_with_label)
+
+
+
     
     
     # Create the data_table

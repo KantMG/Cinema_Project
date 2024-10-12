@@ -37,6 +37,7 @@ Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Projec
    #============================================================================="""
 
 import pandas as pd
+import time
 
 import Function_dataframe as fd
 import Function_visualisation as fv
@@ -44,7 +45,8 @@ import Documentations_dataframe as dd
 import Creation_test_dataframe as ctd
 import analysation_dataframe_goal1 as adg1
 import analysation_dataframe_goal2 as adg2
-import interface_creation as ic
+import analysation_dataframe_goal3 as adg3
+# import interface_creation as ic
 
 
 """ # =============================================================================
@@ -59,7 +61,7 @@ import interface_creation as ic
 'name.basics'   """
 #detail_file=None    :   'Yes' or 'No' to get the detail on each file asked
 
-# dd.info_source(source_data,['title.akas', 'title.basics', 'title.crew', 'name.basics'],'Yes')
+# dd.info_source(source_data,['title.basics', 'title.crew', 'title.ratings', 'title.principals', 'name.basics'],'Yes')
 
 
 
@@ -85,7 +87,7 @@ import interface_creation as ic
 # Choose to work on the source data set or the test data set 
 # =============================================================================
 
-Test_data = True
+Test_data = False
 
 if Test_data == True:
     Project_path=Project_path+'Test_data/'
@@ -108,6 +110,8 @@ Returns:
 """
 
 Large_file_memory = True
+Get_file_sys_mem = False
+desired_number_of_partitions = 10
 if Test_data == True:
     Large_file_memory = False
     
@@ -115,9 +119,9 @@ def main():
     print("The analysis start from here.")
     print()
 
-    # Para, y = adg1.movie_making_over_year(Project_path,Large_file_memory)
+    Para, y = adg3.movie_making_over_year(Project_path,Large_file_memory, desired_number_of_partitions, Get_file_sys_mem)
     
-    Para, y = ic.dask_interface(Project_path,Large_file_memory)
+    # Para, y = ic.dask_interface(Project_path,Large_file_memory)
     
     
     
