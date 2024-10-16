@@ -63,11 +63,6 @@ plt.rcParams["font.family"] = "serif"
    #============================================================================="""
 
 
-def custom_merge(partition1, partition2):
-    # Perform a pandas merge on each partition
-    return partition1.merge(partition2, on="tconst", how="inner")
-
-
 def movie_making_over_year(Project_path,Large_file_memory, desired_number_of_partitions, Get_file_sys_mem):
 
 
@@ -82,26 +77,39 @@ def movie_making_over_year(Project_path,Large_file_memory, desired_number_of_par
     print("5- Does the violence in movies increases.")
     print()
     
+    look_by_name = True
+    if look_by_name :
+
+        List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
+        
+        List_filter = [None, "William K.L. Dickson*", None, None]
+
+        name_info = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+        
+        if name_info['nconst'].count() > 1:
+            print("The DataFrame has more than one row.")
+            return None, None
+        else:
+            # Code to execute if the DataFrame has zero or one row
+            print("The DataFrame has one or zero rows.")
+            Name_to_look_for = str(name_info['nconst'].iloc[0])
+            print(Name_to_look_for)
+            print()
+        
+    # Name_to_look_for = "nm0000001"
+
+    List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
     
-    List_col = ["averageRating", "directors", "startYear"]
+    List_filter = [None, None, None, None, None, None, ">=5.6", None, Name_to_look_for, None, None, None, True]
     
-    List_filter = [">=5.6", "nm0005690", None]
+    # List_col = ["nconst", "title", "isOriginalTitle"]
 
-    #Problem with ["nconst", "category", "characters"] from file title.principals.tsv got empty
-    List_col = ["directors", "averageRating", "characters"]
-    
-    List_filter = ["nm0005690", ">=5.6", None]
-
-
-
-    # List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters"]
-    
-    # List_filter = [None, None, None, None, "nm0005690", None, ">=5.6", None, None, None, None]
-
+    # List_filter = [Name_to_look_for, None, True]
 
     df = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-
-
+    
+    od.log_performance("Full research", start_time)
+    od.plot_performance_logs()
     
     Goal1 = [False, False, False, False, False]
 

@@ -56,7 +56,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, L
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Function to operate on df_temp[x_column,y_column]
-    - Large_file_memory: Estimate if the file is too large to be open with panda
+    - Large_file_memory: Estimate if the file is too large to be open with panda and use dask instead.
 
     Returns:
     - Para: List of column in the dataframe (can be different of [x_column,y_column])

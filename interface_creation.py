@@ -17,8 +17,10 @@ Created on Tue Oct  1 16:44:52 2024
    #=============================================================================
    #============================================================================="""
 
+import time
+
 import dash
-from dash import dcc, html, Input, Output, dash_table, callback, callback_context
+from dash import dcc, html, Input, Output, State, dash_table, callback, callback_context
 import dash_bootstrap_components as dbc
 import pandas as pd
 import dask.dataframe as dd
@@ -36,6 +38,7 @@ import web_interface_style as wis
 import table_dropdown_style as tds
 import figure_dropdown_style as fds
 import data_plot_preparation as dpp
+import open_dataframe as od
 
 """#=============================================================================
    #=============================================================================
@@ -45,52 +48,89 @@ import data_plot_preparation as dpp
 
 
 
-def dask_interface(Project_path,Large_file_memory):
+def dask_interface(Project_path, Large_file_memory, Get_file_sys_mem):
     
-    # List of the required data file.
-    List_file=['title.basics.tsv']
-    #Create class 'pandas.core.frame.DataFrame' with only the necessary columns
-    if Large_file_memory==False:
-        df = pd.read_csv(Project_path+List_file[0], sep=';', usecols=["tconst", "startYear", "runtimeMinutes", "genres", "isAdult"], encoding='utf-8', on_bad_lines='skip', quotechar='"')  #, index_col=0      
-    else:
-        df = dd.read_csv(
-            Project_path+List_file[0],
-            sep='\t',
-            usecols=["tconst", "startYear", "runtimeMinutes", "genres", "isAdult"],
-            encoding='utf-8',
-            on_bad_lines='skip',
-            quotechar='"',
-            dtype={
-                'runtimeMinutes': 'object',   # Read as object to handle invalid values
-                'startYear': 'object',        # Read as object to handle invalid values
-                'isAdult': 'object'           # Read as object to handle invalid values
-            }
-        )
-        df = df.replace('\\N', np.nan)
 
-    list_col_num = ["startYear", "runtimeMinutes"]
+    # Start the timer
+    start_time = time.time()    
     
-    # Get column names
-    columns = df.columns    
-    #Exclude all elements of the dataframe where the column_to_exclude_element correspnds to the Name_element
-    column_to_exclude_element="genres"
-    Name_element="Short"   
-    # Handle NaN values by filling them with an empty string
-    df[column_to_exclude_element] = df[column_to_exclude_element].fillna('')
-    # Filter out rows where the column contains the specified name element
-    df = df[~df[column_to_exclude_element].str.contains(Name_element, na=False)]
+    look_by_name = True
+    if look_by_name :
+
+        List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
+        
+        List_filter = [None, "William K.L. Dickson*", None, None]
+
+        name_info = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+        
+        if name_info['nconst'].count() > 1:
+            print("The DataFrame has more than one row.")
+            return None, None
+        else:
+            # Code to execute if the DataFrame has zero or one row
+            print("The DataFrame has one or zero rows.")
+            Name_to_look_for = str(name_info['nconst'].iloc[0])
+            print(Name_to_look_for)
+            print()
+        
+
+    List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
     
-    df = df.head(100) 
+    List_filter = [None, None, None, None, None, None, None, None, Name_to_look_for, None, None, None, True]
+    
+    df = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+    exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
+    df = df.drop(columns=exclude_col)
+    
+    od.log_performance("Full research", start_time)
+    # od.plot_performance_logs()
 
 
     # Initialize the Dash app with the dark theme (background, table, dropdown, etc)
-    app, fixed_widths, dark_dropdown_style, uniform_style = wis.web_interface_style(df)
-    
+    app, dark_dropdown_style, uniform_style = wis.web_interface_style()
+
     # Create the table with the appropriate dropdowns for each column
-    dropdowns_with_labels, data_table = tds.dropdown_table(df, fixed_widths, dark_dropdown_style, uniform_style, list_col_num)
+    dropdowns_with_labels, data_table = tds.dropdown_table(df, dark_dropdown_style, uniform_style)
 
     # Create the figure with the appropriate dropdowns for each axis
     dropdowns_with_labels_for_fig = fds.dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memory)
+
+    # =============================================================================
+    # Main
+    # =============================================================================
+    # Define the layout with Tabs
+    app.layout = html.Div([
+        dcc.Tabs(id="tabs", value='tab-1', children=[
+            dcc.Tab(label='IMDB Data Table', value='tab-1'),
+            dcc.Tab(label='Data Visualization', value='tab-2'),
+            dcc.Tab(label='Summary Statistics', value='tab-3')
+        ]),
+        html.Div(id='tabs-content')  # This Div will hold the content of each tab
+    ])
+
+    # Callback to update the content based on the selected tab
+    @app.callback(Output('tabs-content', 'children'),
+                  [Input('tabs', 'value')])
+    def render_content(tab):
+        if tab == 'tab-1':
+            # Tab 1: IMDB Data Table
+            return layout_for_tab1(dropdowns_with_labels, data_table)
+        elif tab == 'tab-2':
+            # Tab 2: Data Visualization
+            return layout_for_tab2(dropdowns_with_labels_for_fig)
+        elif tab == 'tab-3':
+            # Tab 3: Summary Statistics
+            return html.Div([
+                html.H3('Summary Statistics'),
+                html.Div([
+                    html.P(f'Total Rows: {len(df)}'),
+                    html.P(f'Number of Unique Genres: {df["genres"].nunique()}'),
+                    # Add more statistics as needed
+                ])
+            ])
+    # =============================================================================
+    # End Main
+    # =============================================================================
 
 
 
@@ -118,7 +158,9 @@ def dask_interface(Project_path,Large_file_memory):
                 html.Div(" Select an y column.", style={"color": "red"})
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and input vertically
         
-        if y_value not in list_col_num:  # If a valid column is selected
+        # if y_value not in list_col_num:  # If a valid column is selected
+        dtype = df[y_value].dtype
+        if dtype != "float64":
             # unique_values = sorted(df[y_value].dropna().unique())  # Sort unique values and drop NaNs
             unique_values = sorted(set(val.strip() for sublist in df[y_value].dropna().str.split(',') for val in sublist))
             print("Filter 1 - Unique Values:", unique_values)  # Debugging print
@@ -173,7 +215,7 @@ def dask_interface(Project_path,Large_file_memory):
             print(filter_value)
             # Only apply filtering if y_column is valid
             if y_column is not None and y_column != 'None' and filter_value:
-                filtered_data, error_msg = filter_data_by_value(filtered_data, x_column, y_column, filter_value, list_col_num)        
+                filtered_data, error_msg = filter_data_by_value(filtered_data, x_column, y_column, filter_value)        
  
             # Create the figure based on filtered data
             fig = fds.create_figure(filtered_data, x_column, y_column, func_column, filter_value, graph_type, Large_file_memory)
@@ -181,7 +223,6 @@ def dask_interface(Project_path,Large_file_memory):
             return fig
         else:
             return go.Figure()  # Return a blank figure if not in the right tab
-
 
 
 
@@ -198,49 +239,13 @@ def dask_interface(Project_path,Large_file_memory):
         # Filter the DataFrame based on selections
         for i, selected_value in enumerate(selected_values):
             col_name = df.columns[i]
-            filtered_df = filter_data_by_value_array(filtered_df, col_name, selected_value, list_col_num)
+            filtered_df = filter_data_by_value_array(filtered_df, col_name, selected_value)
         # Return the updated options for all dropdowns and the filtered data for the table
         return filtered_df.to_dict('records')
 
 
 
-    # =============================================================================
-    # Main
-    # =============================================================================
-    # Define the layout with Tabs
-    app.layout = html.Div([
-        dcc.Tabs(id="tabs", value='tab-1', children=[
-            dcc.Tab(label='IMDB Data Table', value='tab-1'),
-            dcc.Tab(label='Data Visualization', value='tab-2'),
-            dcc.Tab(label='Summary Statistics', value='tab-3')
-        ]),
-        html.Div(id='tabs-content')  # This Div will hold the content of each tab
-    ])
 
-
-    # Callback to update the content based on the selected tab
-    @app.callback(Output('tabs-content', 'children'),
-                  [Input('tabs', 'value')])
-    def render_content(tab):
-        if tab == 'tab-1':
-            # Tab 1: IMDB Data Table
-            return layout_for_tab1(dropdowns_with_labels, data_table)
-        elif tab == 'tab-2':
-            # Tab 2: Data Visualization
-            return layout_for_tab2(dropdowns_with_labels_for_fig)
-        elif tab == 'tab-3':
-            # Tab 3: Summary Statistics
-            return html.Div([
-                html.H3('Summary Statistics'),
-                html.Div([
-                    html.P(f'Total Rows: {len(df)}'),
-                    html.P(f'Number of Unique Genres: {df["genres"].nunique()}'),
-                    # Add more statistics as needed
-                ])
-            ])
-    # =============================================================================
-    # End Main
-    # =============================================================================
 
     
     app.run_server(debug=True, port=8051)
@@ -249,27 +254,28 @@ def dask_interface(Project_path,Large_file_memory):
     url = "http://127.0.0.1:8051/"
     
     # Open the URL in the default web browser
-    # webbrowser.open(url)
+    webbrowser.open(url)
     
     
     return 0, df
 
 
-
-
 def layout_for_tab1(dropdowns_with_labels, data_table):
     return html.Div([
-        html.H1("IMDB DataFrame Interface", style={"color": "#FFD700"}, className="text-light"),
-        html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
+        html.Div([
+            html.P(f'This interface is dedicated to the research on specific artist.'),
+        ]),
+        html.Div(style={'display': 'flex', 'margin-top': '10px', 'flex-wrap': 'wrap'}, children=[
             html.Div(dropdowns_with_labels, style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'})
         ]),
         html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
-            html.Div(data_table, style={'width': '50%'})
+            html.Div(data_table, style={'width': '100%'})  # Adjusted to take full width
         ])
     ], style={'padding': '20px'})
 
 
 def layout_for_tab2(dropdowns_with_labels_for_fig):
+
     return html.Div([
         html.H1("IMDB DataFrame Interface", style={"color": "#FFD700"}, className="text-light"),
         html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
@@ -281,11 +287,24 @@ def layout_for_tab2(dropdowns_with_labels_for_fig):
     ], style={'padding': '20px'})
 
 
+def layout_for_tab3(df):
+    return html.Div([
+        html.H1("IMDB DataFrame Interface", style={"color": "#FFD700"}, className="text-light"),
+        html.Div([
+                html.H3('Summary Statistics'),
+                html.Div([
+                    html.P(f'Total Rows: {len(df)}'),
+                    html.P(f'Number of Unique Genres: {df["genres"].nunique()}'),
+                    # Add more statistics as needed
+                ])
+            ])
+    ], style={'padding': '20px'})
 
 
 
 
-def filter_data_by_value(df, x_column, y_column, filter_value, list_col_num):
+
+def filter_data_by_value(df, x_column, y_column, filter_value):
 
     """
     Filters the DataFrame based on the provided x and y columns, and the filter value.
@@ -295,7 +314,6 @@ def filter_data_by_value(df, x_column, y_column, filter_value, list_col_num):
     - x_column: Selected x column.
     - y_column: Selected y column.
     - filter_value: The value or range to filter on.
-    - list_col_num: List of columns considered as numeric.
     
     Returns:
     - df: Filtered DataFrame.
@@ -305,7 +323,9 @@ def filter_data_by_value(df, x_column, y_column, filter_value, list_col_num):
     error_msg = None  # Initialize error message
 
     if x_column is not None and y_column is not None:
-        if y_column in list_col_num:
+        # if y_column in list_col_num:
+        dtype = df[y_column].dtype
+        if dtype != "float64":
             print(f"{y_column} is numeric data")
             
             # Ensure the y_column is numeric and drop NaNs
@@ -344,7 +364,7 @@ def filter_data_by_value(df, x_column, y_column, filter_value, list_col_num):
 
 
 
-def filter_data_by_value_array(df, y_column, filter_value, list_col_num):
+def filter_data_by_value_array(df, y_column, filter_value):
 
     """
     Filters the DataFrame based on the provided x and y columns, and the filter value.
@@ -353,7 +373,6 @@ def filter_data_by_value_array(df, y_column, filter_value, list_col_num):
     - df: DataFrame to filter.
     - y_column: Selected y column.
     - filter_value: The value or range to filter on.
-    - list_col_num: List of columns considered as numeric.
     
     Returns:
     - df: Filtered DataFrame.
@@ -363,7 +382,9 @@ def filter_data_by_value_array(df, y_column, filter_value, list_col_num):
     error_msg = None  # Initialize error message
     print(y_column)
     if y_column is not None:
-        if y_column in list_col_num:
+        # if y_column in list_col_num:
+        dtype = df[y_column].dtype
+        if dtype == "float64":
             print(f"{y_column} is numeric data")
             
             # Ensure the y_column is numeric and drop NaNs

@@ -117,7 +117,7 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     - csvFile: dataframe
     - Para: List of column in the dataframe
     - remove_unknown_value: Bolean (True or False)
-    - Large_file_memory: Estimate if the file is too large to be open with panda
+    - Large_file_memory: Estimate if the file is too large to be open with panda and use dask instead.
 
     Returns:
     - Dataframe which have been pivoted.

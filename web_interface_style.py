@@ -15,20 +15,17 @@ from collections import OrderedDict
 import plotly.express as px
 import webbrowser
 
-# Function to calculate maximum width for each column
-def calculate_max_width(df):
-    max_widths = {}
-    for col in df.columns:
-        max_length = max(df[col].astype(str).apply(len))  # Longest cell content
-        header_length = len(col)  # Length of column header
-        max_widths[col] = f"{max(max_length, header_length) * 4}px"  # Adjust multiplier for desired width
-    return max_widths
+# # Function to calculate maximum width for each column
+# def calculate_max_width(df):
+#     max_widths = {}
+#     for col in df.columns:
+#         max_length = max(df[col].astype(str).apply(len))  # Longest cell content
+#         header_length = len(col)  # Length of column header
+#         max_widths[col] = f"{max(max_length, header_length) * 4}px"  # Adjust multiplier for desired width
+#     return max_widths
 
 
-def web_interface_style(df):
-    
-    # Calculate fixed widths for all columns
-    fixed_widths = calculate_max_width(df)
+def web_interface_style():
 
     # Initialize the Dash app with the dark theme
     app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.DARKLY])  # Use the DARKLY theme from Bootstrap
@@ -103,5 +100,5 @@ def web_interface_style(df):
     </html>
     '''
     
-    return app, fixed_widths, dark_dropdown_style, uniform_style
+    return app, dark_dropdown_style, uniform_style
     

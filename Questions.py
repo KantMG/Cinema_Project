@@ -380,9 +380,10 @@ after the concatenation operation of the list df_list the value in  directors wr
 ####################################################################################################
 ####################################################################################################
 
-List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters"]
 
-List_filter = [None, None, None, None, "nm0005690", None, ">=5.6", None, None, None, None]
+List_col = ["directors", "writers", "averageRating", "numVotes"]
+
+List_filter = ["nm0005690", None, ">=5.6", None]
 
 
 
@@ -401,7 +402,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
             "types": {
                 "tconst": str,
                 "startYear": float,
-                "runtimeMinutes": float,
+                "runtimeMinutes": str,
                 "genres": str,
                 "isAdult": float
             }
@@ -419,7 +420,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
             "types": {
                 "tconst": str,
                 "averageRating": float,
-                "numVotes": int
+                "numVotes": float
             }
         },
         'title.principals.tsv': {
@@ -489,9 +490,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
         usecols = list(info["columns"])
 
         # Create a dictionary to define the dtypes for the DataFrame
-        dtype_mapping = {col: info["types"][col] for col in usecols if col in info["types"]}
-        # dtype_mapping = {col: 'float' if info["types"][col] == int else info["types"][col] for col in usecols if col in info["types"]}
-        
+        dtype_mapping = {col: info["types"][col] for col in usecols if col in info["types"]}       
         
         # Read the file into a DataFrame
         if Large_file_memory==False:
@@ -512,15 +511,18 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
 
        # Convert columns to the specified types
         for col, expected_type in info["types"].items():
-            if expected_type == int:
+            if expected_type == float:
                 if Large_file_memory:
+                    print(col)
+                    df[col] = dd.to_numeric(df[col], errors='coerce')
                     na_count = df[col].isna().sum().compute()  # Evaluate the count
                     print(f"NA count in '{col}': {na_count}")
     
                     # Handle NA values
                     df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary
     
-                df[col] = df[col].astype('Int64')  # Use 'Int64' for nullable integers
+                df[col] = df[col].astype('float64')  # Use 'Int64' for nullable integers
+                
             elif expected_type == str:
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
 
@@ -539,7 +541,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     # Print a preview of each loaded and filtered DataFrame
     for idx, df in enumerate(dataframes):
         print(f"\nDataFrame {idx + 1} from {files_to_open[idx]}:")
-        print(df.head())
+        print(df.head(10))
         print()
             
     
@@ -548,11 +550,13 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     
     # Merge Dask DataFrames on 'tconst' to create a single unified DataFrame
     if len(dataframes) > 1:
-        merged_df = dataframes[0]
+        merged_df = dataframes[0].compute()
         print(merged_df.dtypes)
+        print(merged_df.head(10))
         for df in dataframes[1:]:
             print(df.dtypes)
-            merged_df = dd.merge(merged_df, df, on='tconst', how='inner')
+            print(df.head(10))
+            merged_df = dd.merge(merged_df, df.compute(), on='tconst', how='inner')
     else:
         merged_df = dataframes[0]
     
@@ -569,9 +573,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
 def apply_filter(df, col, filters):
     
     for col, filter_value in filters.items():
-        
-        print(filter_value)
-        
+                
         if filter_value != None:
             if ">=" in filter_value:
                 # Handle greater than or equal filters (e.g., ">=7.0")
@@ -592,130 +594,41 @@ def apply_filter(df, col, filters):
     return df
 
 
-it returns
+it returns 
 
-
-Files to open: ['title.basics.tsv', 'title.crew.tsv', 'title.ratings.tsv', 'title.principals.tsv']
+Files to open: ['title.crew.tsv', 'title.ratings.tsv']
 Common columns across all selected files: {'tconst'}
 Columns, filters, and types in each selected file:
-title.basics.tsv:
-  Columns: {'tconst', 'runtimeMinutes', 'isAdult', 'genres', 'startYear'}
-  Filters: {'runtimeMinutes': None, 'isAdult': None, 'genres': None, 'startYear': None}
-  Types: {'tconst': <class 'str'>, 'runtimeMinutes': <class 'float'>, 'isAdult': <class 'float'>, 'genres': <class 'str'>, 'startYear': <class 'float'>}
 title.crew.tsv:
-  Columns: {'writers', 'directors', 'tconst'}
+  Columns: {'tconst', 'writers', 'directors'}
   Filters: {'writers': None, 'directors': 'nm0005690'}
-  Types: {'writers': <class 'str'>, 'directors': <class 'str'>, 'tconst': <class 'str'>}
+  Types: {'tconst': <class 'str'>, 'writers': <class 'str'>, 'directors': <class 'str'>}
 title.ratings.tsv:
-  Columns: {'numVotes', 'tconst', 'averageRating'}
-  Filters: {'numVotes': None, 'averageRating': '>=5.6'}
-  Types: {'numVotes': <class 'int'>, 'tconst': <class 'str'>, 'averageRating': <class 'float'>}
-title.principals.tsv:
-  Columns: {'category', 'nconst', 'tconst', 'characters'}
-  Filters: {'category': None, 'nconst': None, 'characters': None}
-  Types: {'category': <class 'str'>, 'nconst': <class 'str'>, 'tconst': <class 'str'>, 'characters': <class 'str'>}
-Data types after loading:
-tconst             object
-isAdult           float64
-startYear         float64
-runtimeMinutes    float64
-genres             object
-dtype: object
-None
-None
-None
-None
+  Columns: {'tconst', 'averageRating', 'numVotes'}
+  Filters: {'averageRating': '>=5.6', 'numVotes': None}
+  Types: {'tconst': <class 'str'>, 'averageRating': <class 'float'>, 'numVotes': <class 'float'>}
 Data types after loading:
 tconst       object
 directors    object
 writers      object
 dtype: object
-None
-nm0005690
 Data types after loading:
-tconst            object
-averageRating    float64
-numVotes           int64
-dtype: object
-NA count in 'numVotes': 0
-None
->=5.6
-Data types after loading:
-tconst        object
-nconst        object
-category      object
-characters    object
-dtype: object
-None
-None
-None
-
-DataFrame 1 from title.basics.tsv:
-      tconst  isAdult  startYear  runtimeMinutes                    genres
-0  tt0000001      0.0     1894.0             1.0         Documentary,Short
-1  tt0000002      0.0     1892.0             5.0           Animation,Short
-2  tt0000003      0.0     1892.0             5.0  Animation,Comedy,Romance
-3  tt0000004      0.0     1892.0            12.0           Animation,Short
-4  tt0000005      0.0     1893.0             1.0              Comedy,Short
-
-
-DataFrame 2 from title.crew.tsv:
-      tconst            directors writers
-0  tt0000001            nm0005690        
-4  tt0000005            nm0005690        
-5  tt0000006            nm0005690        
-6  tt0000007  nm0005690,nm0374658        
-7  tt0000008            nm0005690        
-
-
-DataFrame 3 from title.ratings.tsv:
-      tconst  averageRating  numVotes
-0  tt0000001            5.7      2081
-1  tt0000002            5.6       280
-2  tt0000003            6.5      2078
-4  tt0000005            6.2      2816
-9  tt0000010            6.8      7671
-
-
-DataFrame 4 from title.principals.tsv:
-      tconst     nconst         category characters
-0  tt0000001  nm1588970             self   ["Self"]
-1  tt0000001  nm0005690         director           
-2  tt0000001  nm0005690         producer           
-3  tt0000001  nm0374658  cinematographer           
-4  tt0000002  nm0721526         director           
-
-Time taken to load all dataframe: 6.15 seconds
-
-tconst             object
-isAdult           float64
-startYear         float64
-runtimeMinutes    float64
-genres             object
-dtype: object
-tconst       object
-directors    object
-writers      object
-dtype: object
 tconst            object
 averageRating    float64
 numVotes         float64
 dtype: object
-tconst        object
-nconst        object
-category      object
-characters    object
-dtype: object
-
-Final Merged DataFrame:
+averageRating
+NA count in 'averageRating': 0
+numVotes
 Traceback (most recent call last):
 
-  File parsers.pyx:1161 in pandas._libs.parsers.TextReader._convert_tokens
+  File ~/.local/lib/python3.10/site-packages/pandas/core/arrays/integer.py:53 in _safe_cast
+    return values.astype(dtype, casting="safe", copy=copy)
 
-TypeError: Cannot cast array data from dtype('O') to dtype('float64') according to the rule 'safe'
+TypeError: Cannot cast array data from dtype('float64') to dtype('int64') according to the rule 'safe'
 
 
-During handling of the above exception, another exception occurred:
+The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
 
@@ -728,17 +641,11 @@ Traceback (most recent call last):
   File ~/Documents/Work/Data_analytics/Programs/Python/Cinema_Project/Main.py:122 in main
     Para, y = adg3.movie_making_over_year(Project_path,Large_file_memory, desired_number_of_partitions, Get_file_sys_mem)
 
-  File ~/Documents/Work/Data_analytics/Programs/Python/Cinema_Project/analysation_dataframe_goal3.py:97 in movie_making_over_year
+  File ~/Documents/Work/Data_analytics/Programs/Python/Cinema_Project/analysation_dataframe_goal3.py:109 in movie_making_over_year
     df = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
-  File ~/Documents/Work/Data_analytics/Programs/Python/Cinema_Project/open_dataframe.py:200 in open_dataframe
-    print(merged_df.head(100))
-
-  File ~/.local/lib/python3.10/site-packages/dask/dataframe/core.py:1557 in head
-    return self._head(n=n, npartitions=npartitions, compute=compute, safe=safe)
-
-  File ~/.local/lib/python3.10/site-packages/dask/dataframe/core.py:1591 in _head
-    result = result.compute()
+  File ~/Documents/Work/Data_analytics/Programs/Python/Cinema_Project/open_dataframe.py:158 in open_dataframe
+    na_count = df[col].isna().sum().compute()  # Evaluate the count
 
   File ~/.local/lib/python3.10/site-packages/dask/base.py:372 in compute
     (result,) = compute(self, traverse=False, **kwargs)
@@ -746,89 +653,553 @@ Traceback (most recent call last):
   File ~/.local/lib/python3.10/site-packages/dask/base.py:660 in compute
     results = schedule(dsk, keys, **kwargs)
 
-  File ~/.local/lib/python3.10/site-packages/dask/dataframe/io/csv.py:142 in __call__
-    df = pandas_read_text(
+  File ~/.local/lib/python3.10/site-packages/pandas/core/arrays/integer.py:59 in _safe_cast
+    raise TypeError(
 
-  File ~/.local/lib/python3.10/site-packages/dask/dataframe/io/csv.py:195 in pandas_read_text
-    df = reader(bio, **kwargs)
+TypeError: cannot safely cast non-equivalent float64 to int64
 
-  File ~/.local/lib/python3.10/site-packages/pandas/io/parsers/readers.py:1026 in read_csv
-    return _read(filepath_or_buffer, kwds)
 
-  File ~/.local/lib/python3.10/site-packages/pandas/io/parsers/readers.py:626 in _read
-    return parser.read(nrows)
 
-  File ~/.local/lib/python3.10/site-packages/pandas/io/parsers/readers.py:1923 in read
-    ) = self._engine.read(  # type: ignore[attr-defined]
 
-  File ~/.local/lib/python3.10/site-packages/pandas/io/parsers/c_parser_wrapper.py:234 in read
-    chunks = self._reader.read_low_memory(nrows)
+print(name_info.head())
 
-  File parsers.pyx:838 in pandas._libs.parsers.TextReader.read_low_memory
+print(name_info['nconst'].compute())
 
-  File parsers.pyx:921 in pandas._libs.parsers.TextReader._read_rows
+      nconst   primaryName  birthYear  deathYear
+0  nm0000001  Fred Astaire     1899.0     1987.0
 
-  File parsers.pyx:1066 in pandas._libs.parsers.TextReader._convert_column_data
-
-  File parsers.pyx:1167 in pandas._libs.parsers.TextReader._convert_tokens
-
-ValueError: could not convert string to float: 'Comedy,Drama,Horror'
+0          nm0000001
+383145    nm10313850
+363499    nm12584561
+560026     nm3013608
+Name: nconst, dtype: object
 
 
 
 
 
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+def dask_interface(Project_path, Large_file_memory, Get_file_sys_mem):
+    
+
+    # Start the timer
+    start_time = time.time()    
+    
+    look_by_name = True
+    if look_by_name :
+
+        List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
+        
+        List_filter = [None, "William K.L. Dickson*", None, None]
+
+        name_info = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+        
+        if name_info['nconst'].count() > 1:
+            print("The DataFrame has more than one row.")
+            return None, None
+        else:
+            # Code to execute if the DataFrame has zero or one row
+            print("The DataFrame has one or zero rows.")
+            Name_to_look_for = str(name_info['nconst'].iloc[0])
+            print(Name_to_look_for)
+            print()
+        
+
+    List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
+    
+    List_filter = [None, None, None, None, None, None, None, None, Name_to_look_for, None, None, None, True]
+    
+    df = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+    exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
+    df = df.drop(columns=exclude_col)
+    
+    od.log_performance("Full research", start_time)
+    od.plot_performance_logs()
+
+
+
+    # Initialize the Dash app with the dark theme (background, table, dropdown, etc)
+    app, dark_dropdown_style, uniform_style = wis.web_interface_style()
+    
+    # Create the table with the appropriate dropdowns for each column
+    dropdowns_with_labels, data_table = tds.dropdown_table(df, dark_dropdown_style, uniform_style)
+
+    # Create the figure with the appropriate dropdowns for each axis
+    dropdowns_with_labels_for_fig = fds.dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memory)
+
+
+
+    @app.callback(
+        Output('y-dropdown', 'options'),
+        Input('x-dropdown', 'value'),
+        Input('tabs', 'value')  # Include tab value to conditionally trigger callback
+    )
+    def update_y_dropdown(selected_x, selected_tab):
+        if selected_tab == 'tab-2':  # Only execute if in the Data Visualization tab
+            return [{'label': 'None', 'value': 'None'}] + [{'label': col, 'value': col} for col in df.columns if col != selected_x]
+        return []  # Return empty if not in the right tab
+
+    # Define the callback to update the Filter input based on the selected value in the y dropdown
+    @app.callback(
+        Output('Filter-dropdown-container', 'children'),  # Output for the Filter container
+        Input('y-dropdown', 'value')  # Input from y dropdown
+    )
+    def update_filter_input(y_value):
+        print(f"Selected y_value: {y_value}")  # Debugging print
+    
+        if y_value is None or y_value == 'None':
+            return html.Div([
+                html.Label('Select Filter on y'),  # Label for the input
+                html.Div(" Select an y column.", style={"color": "red"})
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and input vertically
+        
+        # if y_value not in list_col_num:  # If a valid column is selected
+        dtype = df[y_value].dtype
+        if dtype != "float64":
+            # unique_values = sorted(df[y_value].dropna().unique())  # Sort unique values and drop NaNs
+            unique_values = sorted(set(val.strip() for sublist in df[y_value].dropna().str.split(',') for val in sublist))
+            print("Filter 1 - Unique Values:", unique_values)  # Debugging print
+            return html.Div([
+                html.Label(f'Select Filter on y'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id='Filter-dropdown',  # Ensure this ID is correct
+                    options=[{'label': val, 'value': val} for val in unique_values],  # Populate with unique values
+                    multi=True,  # Enable multiple selection
+                    placeholder='Select values',  # Placeholder text
+                    style={**dark_dropdown_style, **uniform_style}  # Apply dark theme style
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        else:  # Default behavior for 'None' or 'All'
+            print("Filter 2")  # Debugging print
+            return html.Div([
+                html.Label(f'Select Filter on y'),  # Label for the input
+                dcc.Input(
+                    id='Filter-dropdown',  # Ensure this ID is correct
+                    type='text',
+                    placeholder='Condition (e.g., 100-200)',
+                    debounce=True,  # Apply changes when pressing Enter or losing focus
+                    style={**dark_dropdown_style, **uniform_style}  # Apply dark theme style
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and input vertically
+
+
+    # Callback to update the figure based on the dropdown selections
+    @app.callback(
+        Output('graph-output', 'figure'),
+        [Input('x-dropdown', 'value'),
+         Input('y-dropdown', 'value'),
+         Input('Func-dropdown', 'value'),
+         # Input('Filter-dropdown', 'value'),
+         Input('Graph-dropdown', 'value')],
+        Input('tabs', 'value')  # Include tab value to conditionally trigger callback
+    )
+    def update_graph(x_column, y_column, func_column, graph_type, selected_tab):
+        if selected_tab == 'tab-2':  # Only execute if in the Data Visualization tab
+            print()
+            print("Start with all data")
+            filtered_data = df.copy()  # Make sure to work with a copy of the original DataFrame
+
+            # Get the `Filter-dropdown` value only if it exists
+            filter_value = None
+            triggered = [p['prop_id'] for p in callback_context.triggered]
+        
+            # Check if the `Filter-dropdown` exists before trying to use its value
+            if 'Filter-dropdown.value' in triggered or any('Filter-dropdown-container' in trigger for trigger in triggered):
+                filter_value = callback_context.inputs.get('Filter-dropdown.value', None)
+            
+            print(filter_value)
+            # Only apply filtering if y_column is valid
+            if y_column is not None and y_column != 'None' and filter_value:
+                filtered_data, error_msg = filter_data_by_value(filtered_data, x_column, y_column, filter_value)        
+ 
+            # Create the figure based on filtered data
+            fig = fds.create_figure(filtered_data, x_column, y_column, func_column, filter_value, graph_type, Large_file_memory)
+            
+            return fig
+        else:
+            return go.Figure()  # Return a blank figure if not in the right tab
+
+
+
+
+    # Create a list of Input objects for each dropdown
+    dropdown_inputs = [Input(f'{col}-dropdown', 'value') for col in df.columns]   
+    @app.callback(
+        Output('data-table', 'data'),
+        dropdown_inputs
+    )
+    
+    def update_output(*selected_values):
+        # Start with the original DataFrame
+        filtered_df = df.copy()
+        # Filter the DataFrame based on selections
+        for i, selected_value in enumerate(selected_values):
+            col_name = df.columns[i]
+            filtered_df = filter_data_by_value_array(filtered_df, col_name, selected_value)
+        # Return the updated options for all dropdowns and the filtered data for the table
+        return filtered_df.to_dict('records')
+
+
+
+    # =============================================================================
+    # Main
+    # =============================================================================
+    # Define the layout with Tabs
+    app.layout = html.Div([
+        dcc.Tabs(id="tabs", value='tab-1', children=[
+            dcc.Tab(label='IMDB Data Table', value='tab-1'),
+            dcc.Tab(label='Data Visualization', value='tab-2'),
+            dcc.Tab(label='Summary Statistics', value='tab-3')
+        ]),
+        html.Div(id='tabs-content')  # This Div will hold the content of each tab
+    ])
+
+
+    # Callback to update the content based on the selected tab
+    @app.callback(Output('tabs-content', 'children'),
+                  [Input('tabs', 'value')])
+    def render_content(tab):
+        if tab == 'tab-1':
+            # Tab 1: IMDB Data Table
+            return layout_for_tab1(dropdowns_with_labels, data_table)
+        elif tab == 'tab-2':
+            # Tab 2: Data Visualization
+            return layout_for_tab2(dropdowns_with_labels_for_fig)
+        elif tab == 'tab-3':
+            # Tab 3: Summary Statistics
+            return layout_for_tab3(df)
+    # =============================================================================
+    # End Main
+    # =============================================================================
+
+    
+    app.run_server(debug=True, port=8051)
+    
+    # Specify the URL you want to open
+    url = "http://127.0.0.1:8051/"
+    
+    # Open the URL in the default web browser
+    # webbrowser.open(url)
+    
+    
+    return 0, df
+
+
+def layout_for_tab1(dropdowns_with_labels, data_table):
+    return html.Div([
+        html.Div([
+            html.P(f'This interface is dedicated to the research on specific artist.'),
+        ]),
+        html.Div(style={'display': 'flex', 'margin-top': '10px', 'flex-wrap': 'wrap'}, children=[
+            html.Div(dropdowns_with_labels, style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'})
+        ]),
+        html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
+            html.Div(data_table, style={'width': '100%'})  # Adjusted to take full width
+        ])
+    ], style={'padding': '20px'})
+
+
+def layout_for_tab2(dropdowns_with_labels_for_fig):
+    return html.Div([
+        html.H1("IMDB DataFrame Interface", style={"color": "#FFD700"}, className="text-light"),
+        html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
+            html.Div(dropdowns_with_labels_for_fig, style={'display': 'flex', 'margin-left': '50px', 'justify-content': 'flex-start', 'gap': '5px'})
+        ]),
+        html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
+            html.Div([dcc.Graph(id='graph-output', style={'width': '100%', 'height': '600px'})], style={'margin-left': '20px', 'width': '50%'})
+        ])
+    ], style={'padding': '20px'})
+
+
+def layout_for_tab3(df):
+    return html.Div([
+        html.H1("IMDB DataFrame Interface", style={"color": "#FFD700"}, className="text-light"),
+        html.Div([
+                html.H3('Summary Statistics'),
+                html.Div([
+                    html.P(f'Total Rows: {len(df)}'),
+                    html.P(f'Number of Unique Genres: {df["genres"].nunique()}'),
+                    # Add more statistics as needed
+                ])
+            ])
+    ], style={'padding': '20px'})
 
 
 
 
 
+def filter_data_by_value(df, x_column, y_column, filter_value):
 
-DataFrame 1 from title.crew.tsv:
-      tconst            directors
-0  tt0000001            nm0005690
-4  tt0000005            nm0005690
-5  tt0000006            nm0005690
-6  tt0000007  nm0005690,nm0374658
-7  tt0000008            nm0005690
+    """
+    Filters the DataFrame based on the provided x and y columns, and the filter value.
+    
+    Parameters:
+    - df: DataFrame to filter.
+    - x_column: Selected x column.
+    - y_column: Selected y column.
+    - filter_value: The value or range to filter on.
+    
+    Returns:
+    - df: Filtered DataFrame.
+    - error_msg: Any error message that occurred during filtering (None if no error).
+    """    
+    
+    error_msg = None  # Initialize error message
+
+    if x_column is not None and y_column is not None:
+        # if y_column in list_col_num:
+        dtype = df[y_column].dtype
+        if dtype != "float64":
+            print(f"{y_column} is numeric data")
+            
+            # Ensure the y_column is numeric and drop NaNs
+            df[y_column] = pd.to_numeric(df[y_column], errors='coerce')
+            df = df.dropna(subset=[y_column])
+            
+            # Handle numeric filtering
+            if filter_value:
+                try:
+                    if isinstance(filter_value, str):
+                        lower, upper = map(int, filter_value.split('-'))
+                        if lower > upper:
+                            error_msg = f"Invalid range: {lower} is greater than {upper}."
+                            print(error_msg)
+                        else:
+                            df = df[(df[y_column] >= lower) & (df[y_column] <= upper)]
+                except ValueError:
+                    error_msg = f"Invalid filter format: {filter_value}. Please enter in 'lower-upper' format."
+                    print(f"Filter value error: {error_msg}")
+        else:
+            print(f"{y_column} is string data")
+
+            # Handle string filtering for non-numeric columns
+            df[y_column] = df[y_column].astype(str)  # Ensure string type
+            if filter_value and isinstance(filter_value, str):
+                # Check if the filter value exists in the data
+                unique_values = df[y_column].unique()
+                if filter_value in unique_values:
+                    df = df[df[y_column].str.contains(filter_value, case=False, na=False)]
+                else:
+                    error_msg = f"Filter value '{filter_value}' not found in column '{y_column}'."
+                    print(error_msg)
+                        
+    
+    return df, error_msg
 
 
-DataFrame 2 from title.ratings.tsv:
-      tconst  averageRating
-0  tt0000001            5.7
-1  tt0000002            5.6
-2  tt0000003            6.5
-4  tt0000005            6.2
-9  tt0000010            6.8
 
-Time taken to load all dataframe: 2.73 seconds
+def filter_data_by_value_array(df, y_column, filter_value):
 
-tconst       object
-directors    object
-dtype: object
-tconst            object
-averageRating    float64
-dtype: object
+    """
+    Filters the DataFrame based on the provided x and y columns, and the filter value.
+    
+    Parameters:
+    - df: DataFrame to filter.
+    - y_column: Selected y column.
+    - filter_value: The value or range to filter on.
+    
+    Returns:
+    - df: Filtered DataFrame.
+    - error_msg: Any error message that occurred during filtering (None if no error).
+    """    
+    
+    error_msg = None  # Initialize error message
+    print(y_column)
+    if y_column is not None:
+        # if y_column in list_col_num:
+        dtype = df[y_column].dtype
+        if dtype == "float64":
+            print(f"{y_column} is numeric data")
+            
+            # Ensure the y_column is numeric and drop NaNs
+            df[y_column] = pd.to_numeric(df[y_column], errors='coerce')
+            df = df.dropna(subset=[y_column])
+            
+            # Handle numeric filtering
+            if filter_value:
+                try:
+                    if isinstance(filter_value, str):
+                        lower, upper = map(int, filter_value.split('-'))
+                        if lower > upper:
+                            error_msg = f"Invalid range: {lower} is greater than {upper}."
+                            print(error_msg)
+                        else:
+                            df = df[(df[y_column] >= lower) & (df[y_column] <= upper)]
+                except ValueError:
+                    error_msg = f"Invalid filter format: {filter_value}. Please enter in 'lower-upper' format."
+                    print(f"Filter value error: {error_msg}")
+        else:
+            
+            print(f"{y_column} is string data")
+
+            # Handle string filtering for non-numeric columns
+            df[y_column] = df[y_column].astype(str)  # Ensure string type
+            if filter_value and isinstance(filter_value, str):
+                # Check if the filter value exists in the data
+                unique_values = df[y_column].unique()
+                if filter_value in unique_values:
+                    df = df[df[y_column].str.contains(filter_value, case=False, na=False)]
+                elif filter_value == 'All':
+                    df = df
+                else:
+                    error_msg = f"Filter value '{filter_value}' not found in column '{y_column}'."
+                    print(error_msg)
+                        
+    return df
 
 
 
-Final Merged DataFrame:
-       tconst            directors  averageRating
-0   tt0000001            nm0005690            5.7
-1   tt0000005            nm0005690            6.2
-2   tt0000060            nm0005690            7.2
-3   tt0000135            nm0005690            6.3
-4   tt0000201            nm0005690            6.1
-5   tt0154152  nm0005690,nm0374658            6.5
-6   tt0177707            nm0005690            6.7
-7   tt0203883            nm0005690            5.7
-8   tt0205065  nm0005690,nm0374658            5.6
-9   tt0219560  nm0005690,nm0374658            5.8
-10  tt0219824            nm0005690            5.8
-11  tt0227039            nm0005690            5.8
-12  tt0229217            nm0005690            5.9
-13  tt0229220            nm0005690            6.3
-14  tt0229300  nm0005690,nm0374658            5.6
-15  tt0241282            nm0005690            6.1
-16  tt0277115            nm0005690            5.6
-17  tt0390024            nm0005690            5.6
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def open_data_name(requested_columns, requested_filters, Project_path, Large_file_memory, Get_file_sys_mem):
+    """
+    Goal: 
+    - Read and rename the DataFrame.
+    
+    Parameters:
+    - requested_columns: List of columns to extract from the DataFrame located in several file.
+    - requested_filters: List of filter to apply on each column.
+    - Project_path: Path of the tsv file.
+    - Large_file_memory: Estimate if the file is too large to be open with panda and use dask instead.
+    - Get_file_sys_mem: Estimate the memory consuming by the files.
+    
+    Returns:
+    - df: DataFrame
+    """
+    
+    
+    # Define the mapping of files to their columns and their types
+    file_columns_mapping = {
+        'name.basics.tsv': {
+            "columns": ["nconst", "primaryName", "birthYear", "deathYear", "primaryProfession", "knownForTitles"],
+            "types": {
+                "nconst": str,
+                "primaryName": str,
+                "birthYear": float,
+                "deathYear": float,
+                "primaryProfession": str,
+                "knownForTitles": str
+            }
+        }
+    }
+    
+    # Create a dictionary to map each requested column to its filter
+    column_filter_mapping = dict(zip(requested_columns, requested_filters))
+    
+    # Determine which files need to be opened
+    files_to_open = []
+    columns_in_files = {}
+    
+    # Iterate through each file and check if it has any of the requested columns
+    for file, info in file_columns_mapping.items():
+        columns = info["columns"]
+        types = info["types"]
+        
+        # Find the intersection of requested columns and columns in the current file
+        common_columns = set(requested_columns).intersection(columns)
+        if common_columns:  # Only consider files that have at least one requested column
+            files_to_open.append(file)
+            # Track the columns that should be used from this file, always including 'tconst' if present
+            if "tconst" in columns:
+                common_columns.add("tconst")
+            columns_in_files[file] = {
+                "columns": common_columns,
+                "types": {col: types[col] for col in common_columns if col in types},  # Map each column to its type
+                "filters": {col: column_filter_mapping[col] for col in common_columns if col in column_filter_mapping}
+            }
+    
+    # Identify common columns between files to be opened
+    if len(files_to_open) > 1:
+        # Find common columns among all files using set intersection
+        common_columns_all_files = set.intersection(*(columns_in_files[file]["columns"] for file in files_to_open))
+    else:
+        common_columns_all_files = set(columns_in_files[files_to_open[0]]["columns"])
+    
+    # Ensure 'tconst' is added as a common column if at least two files are being opened and 'tconst' exists in those files
+    tconst_in_files = all("tconst" in file_columns_mapping[file]["columns"] for file in files_to_open)
+    if len(files_to_open) > 1 and tconst_in_files:
+        common_columns_all_files.add("tconst")
+    
+    # Print the results
+    print("Files to open:", files_to_open)
+    print("Common columns across all selected files:", common_columns_all_files)
+    
+    print("Columns, filters, and types in each selected file:")
+    for file, info in columns_in_files.items():
+        print(f"{file}:")
+        print("  Columns:", info["columns"])
+        print("  Filters:", info["filters"])
+        print("  Types:", info["types"])
+
+    # Create DataFrames based on the files, columns, and filters
+    for file, info in columns_in_files.items():
+        # Define the columns to read from the file
+        usecols = list(info["columns"])
+
+        # Create a dictionary to define the dtypes for the DataFrame
+        dtype_mapping = {col: info["types"][col] for col in usecols if col in info["types"]}       
+        
+        file_start_time = time.time()    
+        # Read the file into a DataFrame
+        filepath = f"{Project_path}/{file}"
+        # Log the time taken for each file reading
+        df = read_and_rename(
+            filepath,
+            usecols,
+            dtype_mapping,
+            rename_map=None,
+            large_file=Large_file_memory
+        )
+             
+       # Convert columns to the specified types
+        for col, expected_type in info["types"].items():
+            if expected_type == float:
+                if Large_file_memory:
+                    df[col] = dd.to_numeric(df[col], errors='coerce')
+                    # Handle NA values
+                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary                    
+            elif expected_type == str:
+                df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
+
+
+        # df=df.repartition(npartitions=desired_number_of_partitions)
+        
+        # Get the infos on the DataFrame
+        dis.infos_on_data(df) if Get_file_sys_mem==True else None
+
+        # Apply the filter to the DataFrame
+        df = apply_filter(df, usecols, info["filters"])
+        df = df[df['birthYear'] != -1]
+        
+        log_performance(f"Reading {file}", file_start_time)    
+    
+    df = df.compute()
+            
+    # Print the final merged DataFrame (head only, to avoid loading too much data)
+    print("\nFinal Merged DataFrame:")
+    print(df.head(100))
+    # print(merged_df.compute())
+
+    return df
+
+
+
+
+I now want to create an input to enter "primaryName" which can "William K.L. Dickson*" or anything else.
+Depending of this input it must returns
+        if name_info['nconst'].count() > 1:
+            print("The DataFrame has more than one row.")
+            return None, None
+        else:
+            # Code to execute if the DataFrame has zero or one row
+            print("The DataFrame has one or zero rows.")
+            Name_to_look_for = str(name_info['nconst'].iloc[0])
+            print(Name_to_look_for)
+            print()
