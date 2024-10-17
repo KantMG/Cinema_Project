@@ -45,55 +45,52 @@ import open_dataframe as od
    #============================================================================="""
 
 
-
-
-
 def dask_interface(Project_path, Large_file_memory, Get_file_sys_mem):
     
 
     # Start the timer
     start_time = time.time()    
     
-    look_by_name = True
-    if look_by_name :
+    # look_by_name = True
+    # if look_by_name :
 
-        List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
+    #     List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
         
-        List_filter = [None, "William K.L. Dickson*", None, None]
+    #     List_filter = [None, "William K.L. Dickson*", None, None]
 
-        name_info = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+    #     name_info = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
         
-        if name_info['nconst'].count() > 1:
-            print("The DataFrame has more than one row.")
-            return None, None
-        else:
-            # Code to execute if the DataFrame has zero or one row
-            print("The DataFrame has one or zero rows.")
-            Name_to_look_for = str(name_info['nconst'].iloc[0])
-            print(Name_to_look_for)
-            print()
+    #     if name_info['nconst'].count() > 1:
+    #         print("The DataFrame has more than one row.")
+    #         return None, None
+    #     else:
+    #         # Code to execute if the DataFrame has zero or one row
+    #         print("The DataFrame has one or zero rows.")
+    #         Name_to_look_for = str(name_info['nconst'].iloc[0])
+    #         print(Name_to_look_for)
+    #         print()
         
 
-    List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
+    # List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
     
-    List_filter = [None, None, None, None, None, None, None, None, Name_to_look_for, None, None, None, True]
+    # List_filter = [None, None, None, None, None, None, None, None, Name_to_look_for, None, None, None, True]
     
-    df = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-    exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
-    df = df.drop(columns=exclude_col)
+    # df = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+    # exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
+    # df = df.drop(columns=exclude_col)
     
-    od.log_performance("Full research", start_time)
-    # od.plot_performance_logs()
+    # od.log_performance("Full research", start_time)
+    # # od.plot_performance_logs()
 
 
     # Initialize the Dash app with the dark theme (background, table, dropdown, etc)
     app, dark_dropdown_style, uniform_style = wis.web_interface_style()
 
-    # Create the table with the appropriate dropdowns for each column
-    dropdowns_with_labels, data_table = tds.dropdown_table(df, dark_dropdown_style, uniform_style)
+    # # Create the table with the appropriate dropdowns for each column
+    # dropdowns_with_labels, data_table = tds.dropdown_table(df, dark_dropdown_style, uniform_style)
 
-    # Create the figure with the appropriate dropdowns for each axis
-    dropdowns_with_labels_for_fig = fds.dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memory)
+    # # Create the figure with the appropriate dropdowns for each axis
+    # dropdowns_with_labels_for_fig = fds.dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memory)
 
     # =============================================================================
     # Main
@@ -113,24 +110,85 @@ def dask_interface(Project_path, Large_file_memory, Get_file_sys_mem):
                   [Input('tabs', 'value')])
     def render_content(tab):
         if tab == 'tab-1':
-            # Tab 1: IMDB Data Table
-            return layout_for_tab1(dropdowns_with_labels, data_table)
-        elif tab == 'tab-2':
-            # Tab 2: Data Visualization
-            return layout_for_tab2(dropdowns_with_labels_for_fig)
-        elif tab == 'tab-3':
-            # Tab 3: Summary Statistics
+            # This is the content for Tab 1 - the existing layout we created
             return html.Div([
-                html.H3('Summary Statistics'),
-                html.Div([
-                    html.P(f'Total Rows: {len(df)}'),
-                    html.P(f'Number of Unique Genres: {df["genres"].nunique()}'),
-                    # Add more statistics as needed
-                ])
+                dcc.Input(id='input-value', type='text', placeholder='Enter a value...', style={'margin-bottom': '20px'}),
+                html.Div(id='dynamic-content')
             ])
+            # return layout_for_tab1(input_value)
+        elif tab == 'tab-2':
+            # Placeholder for Tab 2 content
+            return html.Div([
+                html.H3('Tab 2 Content'),
+                html.P('This is a placeholder for Tab 2. You can add any content you like here.')
+            ])
+        elif tab == 'tab-3':
+            # Placeholder for Tab 3 content
+            return html.Div([
+                html.H3('Tab 3 Content'),
+                html.P('This is a placeholder for Tab 3. You can add any content you like here.')
+            ])
+
+        # elif tab == 'tab-2':
+        #     # Tab 2: Data Visualization
+        #     # Create the figure with the appropriate dropdowns for each axis
+        #     dropdowns_with_labels_for_fig = fds.dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memory)
+        #     return layout_for_tab2(dropdowns_with_labels_for_fig)
+        # elif tab == 'tab-3':
+        #     # Tab 3: Summary Statistics
+        #     return html.Div([
+        #         html.H3('Summary Statistics'),
+        #         html.Div([
+        #             html.P(f'Total Rows: {len(df)}'),
+        #             html.P(f'Number of Unique Genres: {df["genres"].nunique()}'),
+        #             # Add more statistics as needed
+        #         ])
+        #     ])
     # =============================================================================
     # End Main
     # =============================================================================
+
+
+    # Callback to update UI based on input value in Tab 1
+    @app.callback(
+        Output('dynamic-content', 'children'),
+        Input('input-value', 'value')
+    )
+    def update_ui(input_value):
+        if not input_value:  # Return nothing if input is empty or None
+            return ''
+        
+        if input_value.lower() == 'dropdown':  # Show dropdowns if the correct condition is met
+            # Create dropdown options based on df2
+            dropdown_options = [
+                {'label': row['Value'], 'value': row['ID']} for index, row in df2.iterrows()
+            ]
+            
+            return html.Div([
+                # Dropdown created dynamically
+                html.Label("Select an Option:"),
+                dcc.Dropdown(
+                    id='dropdown-1',
+                    options=dropdown_options,
+                    placeholder="Select an option..."
+                ),
+                html.Br(),
+                # Div placeholder for the table which will be conditionally shown
+                html.Div(id='table-container')
+            ])
+        
+        # Default case: show table based on df1
+        return dash_table.DataTable(
+            id='table-df1',
+            columns=[{"name": i, "id": i} for i in df1.columns],
+            data=df1.to_dict('records'),
+            style_table={'overflowX': 'auto'},
+            style_cell={'textAlign': 'left'}
+        )
+
+
+
+
 
 
 
@@ -243,10 +301,6 @@ def dask_interface(Project_path, Large_file_memory, Get_file_sys_mem):
         # Return the updated options for all dropdowns and the filtered data for the table
         return filtered_df.to_dict('records')
 
-
-
-
-
     
     app.run_server(debug=True, port=8051)
     
@@ -254,13 +308,14 @@ def dask_interface(Project_path, Large_file_memory, Get_file_sys_mem):
     url = "http://127.0.0.1:8051/"
     
     # Open the URL in the default web browser
-    webbrowser.open(url)
+    # webbrowser.open(url)
     
     
     return 0, df
 
 
 def layout_for_tab1(dropdowns_with_labels, data_table):
+
     return html.Div([
         html.Div([
             html.P(f'This interface is dedicated to the research on specific artist.'),
@@ -272,6 +327,8 @@ def layout_for_tab1(dropdowns_with_labels, data_table):
             html.Div(data_table, style={'width': '100%'})  # Adjusted to take full width
         ])
     ], style={'padding': '20px'})
+    
+
 
 
 def layout_for_tab2(dropdowns_with_labels_for_fig):
@@ -302,6 +359,9 @@ def layout_for_tab3(df):
 
 
 
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
 
 def filter_data_by_value(df, x_column, y_column, filter_value):

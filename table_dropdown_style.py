@@ -15,17 +15,20 @@ import plotly.express as px
 import webbrowser
 
 
-def dropdown_table(df, dark_dropdown_style, uniform_style):
+def get_max_width(col_data, col_name):
+    max_length = max(col_data.apply(lambda x: len(str(x))))
+    print(max_length,col_name)
+    # Set a higher max width for 'title' column
+    if col_name == 'title':
+        return max(150, min(max_length * 10, 600))  # Minimum 150px, maximum 400px for 'title'
+    return max(80, min(max_length * 8, 300))  # Ensure minimum 80px and maximum 300px width for others
+    
+
+
+def dropdown_table(df, id_table, dark_dropdown_style, uniform_style):
     columns = df.columns
     
-    def get_max_width(col_data, col_name):
-        max_length = max(col_data.apply(lambda x: len(str(x))))
-        print(max_length,col_name)
-        # Set a higher max width for 'title' column
-        if col_name == 'title':
-            return max(150, min(max_length * 10, 600))  # Minimum 150px, maximum 400px for 'title'
-        return max(80, min(max_length * 8, 300))  # Ensure minimum 80px and maximum 300px width for others
-    
+
     # Calculate widths, ensuring 'title' is handled specifically
     column_widths = {col: get_max_width(df[col], col) for col in columns}
     
@@ -60,7 +63,7 @@ def dropdown_table(df, dark_dropdown_style, uniform_style):
     
     # Ensure the DataTable columns use the same calculated widths
     data_table = dash_table.DataTable(
-        id='data-table',
+        id=id_table,
         data=df.to_dict('records'),
         columns=[{'id': c, 'name': c} for c in columns],
         fixed_rows={'headers': True},

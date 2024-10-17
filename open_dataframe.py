@@ -266,7 +266,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
         dis.infos_on_data(df) if Get_file_sys_mem==True else None
                 
         # Log the time taken to apply filters
-        df = apply_filter(df, usecols, info["filters"])
+        df = apply_filter(df, info["filters"])
         log_performance(f"Read {file}", file_start_time)
                 
         # Add the DataFrame to the list
@@ -301,7 +301,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
             print()
             print("Time taken to merge dataframe "+str(i)+": {:.2f} seconds".format(time.time() - start_time))
             print()
-            print(df.head(50))
+            # print(df.head(50))
     else:
         merged_df = dataframes[0]
     log_performance("Merging DataFrames", merge_start_time)
@@ -371,7 +371,7 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
    #============================================================================="""
 
 
-def apply_filter(df, col, filters):
+def apply_filter(df, filters):
     """
     Goal: 
     - Apply the given filters to the DataFrame.
@@ -385,8 +385,11 @@ def apply_filter(df, col, filters):
     - df: Filtered DataFrame
     """    
     
+    print(filters)
+    
     for col, filter_value in filters.items():
-        if filter_value is not None:
+        print(col, filter_value)
+        if filter_value is not None and filter_value != 'All':  
             if isinstance(filter_value, bool):
                 # Handle boolean filters directly
                 df = df[df[col] == filter_value]
@@ -409,6 +412,7 @@ def apply_filter(df, col, filters):
             else:
                 # Handle other string-based filters (e.g., "actor")
                 df = df[df[col].str.contains(str(filter_value), na=False)]  
+            print(df)
     return df
     
 
@@ -534,7 +538,7 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
         dis.infos_on_data(df) if Get_file_sys_mem==True else None
 
         # Apply the filter to the DataFrame
-        df = apply_filter(df, usecols, info["filters"])
+        df = apply_filter(df, info["filters"])
         df = df[df['birthYear'] != -1]
         
         log_performance(f"Reading {file}", file_start_time)    
@@ -542,8 +546,8 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
     df = df.compute()
             
     # Print the final merged DataFrame (head only, to avoid loading too much data)
-    print("\nFinal Merged DataFrame:")
-    print(df.head(100))
+    # print("\nFinal Merged DataFrame:")
+    # print(df.head(100))
     # print(merged_df.compute())
 
     return df

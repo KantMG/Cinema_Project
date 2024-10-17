@@ -122,9 +122,9 @@ def main():
     print("The analysis start from here.")
     print()
 
-    # Para, y = adg3.movie_making_over_year(Project_path,Large_file_memory, desired_number_of_partitions, Get_file_sys_mem)
+    Para, y = adg3.movie_making_over_year(Project_path,Large_file_memory, desired_number_of_partitions, Get_file_sys_mem)
     
-    Para, y = ic.dask_interface(Project_path,Large_file_memory, Get_file_sys_mem)
+    # Para, y = ic.dask_interface(Project_path,Large_file_memory, Get_file_sys_mem)
     
     
     
