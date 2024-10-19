@@ -66,8 +66,16 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
     df_col_string = ["genres", "directors", "writers", "category"]
     
-    print("Delete the rows with unknown value and split the column with multiple value per cell.")
-    Para, df_temp = delete_rows_unknow_and_split(df_temp, x_column, y_column)
+    # print("Delete the rows with unknown value and split the column with multiple value per cell.")
+    # Para, df_temp = delete_rows_unknow_and_split(df_temp, x_column, y_column)
+
+    #Case where y_column is None
+    if str(y_column)=='None':    
+        df_temp = df_temp[[x_column]]
+        Para=[x_column]   
+    else:
+        df_temp = df_temp[[x_column, y_column]]
+        Para=[x_column, y_column]
     
     print(Para)
     print(df_temp)
@@ -131,41 +139,62 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
    #============================================================================="""
 
 
-def delete_rows_unknow(df_temp, x_column, y_column):
+def replace_rows_unknow(df_temp):
 
     """
     Goal: Delete the rows in a dataframe which correspond to '\\N'.
 
     Parameters:
     - df_temp: dataframe which has been created temporary.
-    - x_column: Column in the dataframe.
-    - y_column: Column in the dataframe (can be None).
 
     Returns:
-    - Para: List of column in the dataframe (can be different of [x_column,y_column]).
     - df_temp: dataframe which has been created temporary.
     """
         
-    #Case where y_column is None
-    if str(y_column)=='None':    
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres", "directors", "writers", "category"]
 
-        df_temp = df_temp[[x_column]]
-        Para=[x_column]
-
-        # Filter out rows where 'Value' is '\\N'
-        df_temp.replace('\\N', np.nan, inplace=True)
-        df_temp.dropna(inplace=True)         
+    # Columns in the dataframe which are numerics.
+    df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
     
-    else:
-                
-        df_temp = df_temp[[x_column, y_column]]
-        Para=[x_column, y_column]
+    for col in df_temp.columns:
+        if str(col) in df_col_numeric:
+            df_temp[col] = df_temp[col].replace('', '0').fillna('0').astype(int)
+        if str(col) in df_col_string:
+            df_temp[col] = df_temp[col].replace('', 'Unknown').astype(str)
+
+    return df_temp
+
+# """#=============================================================================
+#    #=============================================================================
+#    #============================================================================="""
+
+
+# def dataframe_split(df_temp):
+
+#     """
+#     Goal: Split the dataframe for the columns which corresponds to t.
+
+#     Parameters:
+#     - df_temp: dataframe which has been created temporary.
+
+#     Returns:
+#     - df_temp: dataframe which has been created temporary.
+#     """
         
-        # Filter out rows where 'Value' is '\\N'
-        df_temp.replace('\\N', np.nan, inplace=True)
-        df_temp.dropna(inplace=True)
-        
-    return Para, df_temp
+#     # Columns in the dataframe which are strings and where the cell can contain multiple values.
+#     df_col_string = ["genres", "directors", "writers", "category"]
+
+#     # Columns in the dataframe which are numerics.
+#     df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
+    
+#     for col in df_temp.columns:
+#         if str(col) in df_col_numeric:
+#             df_temp[col] = df_temp[col].replace('', '0').fillna('0').astype(int)
+#         if str(col) in df_col_string:
+#             df_temp[col] = df_temp[col].replace('', 'Unknown').astype(str)
+
+#     return df_temp
 
 
 """#=============================================================================

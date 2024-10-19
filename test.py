@@ -12,6 +12,7 @@ import dash
 from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output, State
 import pandas as pd
+import plotly.graph_objects as go
 
 import webbrowser
 
@@ -51,9 +52,54 @@ app, dark_dropdown_style, uniform_style = wis.web_interface_style()
 app.layout = html.Div([
     # Tabs Component
     dcc.Tabs(id='tabs-example', value='tab-1', children=[
-        dcc.Tab(label='Tab 1', value='tab-1'),
-        dcc.Tab(label='Tab 2', value='tab-2'),
-        dcc.Tab(label='Tab 3', value='tab-3'),
+        dcc.Tab(label='Tab 1', value='tab-1', 
+                 style={
+                     'backgroundColor': '#000000',  # Dark black background
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                     'position': 'relative'  # Relative position for pseudo-element
+                 },
+                 selected_style={
+                     'backgroundColor': '#222222',  # Slightly lighter for selected tab
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                 }),
+        dcc.Tab(label='Tab 2', value='tab-2', 
+                 style={
+                     'backgroundColor': '#000000',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                     'position': 'relative'
+                 },
+                 selected_style={
+                     'backgroundColor': '#222222',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                 }),
+        dcc.Tab(label='Tab 3', value='tab-3', 
+                 style={
+                     'backgroundColor': '#000000',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                     'position': 'relative'
+                 },
+                 selected_style={
+                     'backgroundColor': '#222222',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                 }),
     ]),
 
     # Hidden store to hold df2 data
@@ -134,12 +180,12 @@ def update_ui(input_value):
 
             # Create the table with the appropriate dropdowns for each column
             dropdowns_with_labels, data_table = tds.dropdown_table(df2, 'table-df2', dark_dropdown_style, uniform_style)
-
+            
             exclude_col = ["title", "characters"]
             df2_filter = df2.drop(columns=exclude_col)            
             dropdowns_with_labels_for_fig = fds.dropdown_figure(df2_filter, 'graph-df2', dark_dropdown_style, uniform_style, Large_file_memory)
                         
-            dropdowns_with_labels_for_fig_filter = fds.dropdown_figure_filter(df2_filter, 'table-df2', dark_dropdown_style, uniform_style)
+            dropdowns_with_labels_for_fig_filter = fds.dropdown_figure_filter(df2_filter, 'graph-df2', dark_dropdown_style, uniform_style)
             
             return html.Div([
                 html.P(f'The artist '+input_value+' is born in '+str(birthYear_value)+' and died in '+str(deathYear_value)+' during its career as '+', '.join(primaryProfession)+' he participated to the creation of the following productions.'),
@@ -257,33 +303,48 @@ def update_ui(input_value):
     ), None
 
 
-# Create a list of Input objects for each dropdown
-List_col = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "characters", "title"]
-dropdown_inputs = [Input(f'{col}-dropdown', 'value') for col in List_col]
 
+
+# =============================================================================
+# Callback for table-df2 in tab-1
+# =============================================================================
+
+# Create a list of Input objects for each dropdown
+List_col_tab = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "characters", "title"]
+dropdown_inputs_tab = [Input(f'{col}-dropdown', 'value') for col in List_col_tab]
 
 @app.callback(
     Output('table-df2', 'data'),
-    dropdown_inputs,
+    dropdown_inputs_tab,
     State('stored-df2', 'data')  # Ensure this is included as State
 )
 def filter_df2(*args):
     
     stored_df2 = args[-1]         # The last argument is stored_df2
-    selected_values = {col: args[i] for i, col in enumerate(List_col)}
-    
-    
+    selected_values = {col: args[i] for i, col in enumerate(List_col_tab)}
+        
     if stored_df2 is None:  # Check if stored_df2 is None or empty
         return []
-    
     # Convert the stored data back to a DataFrame
     df2 = pd.DataFrame(stored_df2)
-    
-    df2 = od.apply_filter(df2, selected_values)
-    print(df2)
+    # Create a copy of the DataFrame to avoid modifying the original stored data
+    filtered_data_table = df2.copy()
+    print("Update table")
+    filtered_data_table = od.apply_filter(filtered_data_table, selected_values)
 
-    return df2.to_dict('records')
+    return filtered_data_table.to_dict('records')
 
+# =============================================================================
+# =============================================================================
+
+
+# =============================================================================
+# Callback for graph in tab-1
+# =============================================================================
+
+# Create a list of Input objects for each dropdown
+List_col_fig = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
+dropdown_inputs_fig = [Input(f'{col}-fig-dropdown', 'value') for col in List_col_fig]
 
 @app.callback(
     Output('y-dropdown', 'options'),
@@ -299,7 +360,7 @@ def update_y_dropdown(selected_x, selected_tab, stored_df2):
             # Convert the stored data back to a DataFrame
             df2 = pd.DataFrame(stored_df2)
             exclude_col = ["title", "characters"]
-            df2_filter = df2.drop(columns=exclude_col)  
+            df2_filter = df2.drop(columns=exclude_col)
             return [{'label': col, 'value': col} for col in df2_filter.columns if col != selected_x]  #[{'label': 'None', 'value': 'None'}] + 
     return []  # Return empty if not in the right tab
 
@@ -326,10 +387,6 @@ def update_func_dropdown(selected_y, selected_tab, stored_df2):
     return []  # Return empty if not in the right tab
 
 
-# Create a list of Input objects for each dropdown
-List_col = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
-dropdown_inputs = [Input(f'{col}-dropdown', 'value') for col in List_col]
-
 # Callback to update the figure based on the dropdown selections
 @app.callback(
     Output('graph-output', 'figure'),
@@ -337,29 +394,34 @@ dropdown_inputs = [Input(f'{col}-dropdown', 'value') for col in List_col]
      Input('y-dropdown', 'value'),
      Input('Func-dropdown', 'value'),
      Input('Graph-dropdown', 'value'),
-     Input('tabs-example', 'value')] + dropdown_inputs,  # Include tab value to conditionally trigger callback
+     Input('tabs-example', 'value')] + dropdown_inputs_fig,  # Include tab value to conditionally trigger callback
     State('stored-df2', 'data')
 )
 def update_graph(*args):
     
     x_column, y_column, func_column, graph_type, selected_tab = args[0], args[1], args[2], args[3], args[4]
-    selected_values = {col: args[i+5] for i, col in enumerate(List_col)}
+    selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig)}
     stored_df2 = args[-1]
-        
+    
     if selected_tab == 'tab-1':  # Only execute if in the Data Visualization tab
         if stored_df2 is None:  # Check if stored_df2 is None or empty
             return []
         else:
             # Convert the stored data back to a DataFrame
             df2 = pd.DataFrame(stored_df2)
+            # Create a copy of the DataFrame to avoid modifying the original stored data
+            filtered_data_graph = df2.copy()
             # Apply filters on the dataframe df2
-            filtered_data = od.apply_filter(df2, selected_values)
+            print("Update graph")
+            filtered_data_graph = od.apply_filter(filtered_data_graph, selected_values)
             # Create the figure based on filtered data
-            fig = fds.create_figure(filtered_data, x_column, y_column, func_column, graph_type, Large_file_memory)
+            fig = fds.create_figure(filtered_data_graph, x_column, y_column, func_column, graph_type, Large_file_memory)
         return fig
     else:
         return go.Figure()  # Return a blank figure if not in the right tab
 
+# =============================================================================
+# =============================================================================
 
 
 

@@ -357,7 +357,7 @@ def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file
                 dcc.Dropdown(
                     id=f'{axi}-dropdown',
                     options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                    value='All',  # Set default to "All", meaning no filtering
+                    # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -368,7 +368,7 @@ def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file
                 dcc.Dropdown(
                     id=f'{axi}-dropdown',
                     options=[{'label': val, 'value': val} for val in columns],
-                    value='All',  # Set default to "All", meaning no filtering
+                    # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -402,22 +402,33 @@ def dropdown_figure_filter(df, id_graph, dark_dropdown_style, uniform_style):
             dropdown_with_label = html.Div([
                 html.Label(f'{col}'),
                 dcc.Input(
-                    id=f'{col}-dropdown',
+                    id=f'{col}-fig-dropdown',
                     type='text',
                     debounce=True,
                     style=dropdown_style
                 )
             ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
         else:
-            unique_values = sorted(df[col].unique())
+            # Collect all unique values, splitting them by commas and ensuring uniqueness
+            all_roles = set()
+            for value in df[col].dropna().unique():
+                # Split the value by comma and strip any extra spaces
+                roles = [role.strip() for role in str(value).split(',')]
+                all_roles.update(roles)
+            
+            # Convert to a sorted list
+            unique_values = sorted(all_roles)
+            
+            # unique_values = sorted(df[col].unique())
             dropdown_with_label = html.Div([
                 html.Label(f'{col}'),
                 dcc.Dropdown(
-                    id=f'{col}-dropdown',
-                    options=[{'label': 'All', 'value': 'All'}] + [{'label': val, 'value': val} for val in unique_values],
-                    value='All',
+                    id=f'{col}-fig-dropdown',
+                    options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
+                    # value='All',
                     style=dropdown_style,
-                    className='dash-dropdown'
+                    className='dash-dropdown',
+                    multi=True
                 )
             ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
     

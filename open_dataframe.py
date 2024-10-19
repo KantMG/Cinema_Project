@@ -24,7 +24,7 @@ import dask.dataframe as dd
 import matplotlib.pyplot as plt
 import numpy as np
 import pylab as pl
-
+import re
 
 # Initialize a list to store execution times
 performance_logs = []
@@ -88,7 +88,7 @@ def file_columns_dtype():
                 "originalTitle": str,
                 "startYear": float,
                 "endYear": float,
-                "runtimeMinutes": str,
+                "runtimeMinutes": float,
                 "genres": str,
                 "isAdult": float
             }
@@ -384,7 +384,7 @@ def apply_filter(df, filters):
     - df: Filtered DataFrame
     """    
     
-    print(filters)
+    print("Apply filter.")
     
     for col, filter_value in filters.items():
         print(col, filter_value)
@@ -409,9 +409,19 @@ def apply_filter(df, filters):
                 exact_value = filter_value[:-1]
                 df = df[df[col] == exact_value]
             else:
-                # Handle other string-based filters (e.g., "actor")
-                df = df[df[col].str.contains(str(filter_value), na=False)]  
-            print(df)
+                if 'All' in filter_value:
+                    return df
+                else:
+                    # Check if 'value' is a list and apply the filter accordingly
+                    if isinstance(filter_value, list):
+                        # Use regex pattern to match any of the values in the list
+                        pattern = '|'.join(map(re.escape, filter_value))  # Escape special characters to avoid regex issues
+                        df = df[df[col].str.contains(pattern, na=False)]
+                    else:
+                        # Single value case, handle as before
+                        df = df[df[col].str.contains(str(filter_value), na=False)]
+            print(df[col])
+    print()
     return df
     
 

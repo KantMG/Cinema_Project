@@ -48,14 +48,24 @@ def dropdown_table(df, id_table, dark_dropdown_style, uniform_style):
                 )
             ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
         else:
-            unique_values = sorted(df[col].unique())
+            # Collect all unique values, splitting them by commas and ensuring uniqueness
+            all_roles = set()
+            for value in df[col].dropna().unique():
+                # Split the value by comma and strip any extra spaces
+                roles = [role.strip() for role in str(value).split(',')]
+                all_roles.update(roles)
+            
+            # Convert to a sorted list
+            unique_values = sorted(all_roles)
+            # unique_values = sorted(df[col].unique())
             dropdown_with_label = html.Div([
                 dcc.Dropdown(
                     id=f'{col}-dropdown',
-                    options=[{'label': 'All', 'value': 'All'}] + [{'label': val, 'value': val} for val in unique_values],
-                    value='All',
+                    options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
+                    # value='All',
                     style=dropdown_style,
-                    className='dash-dropdown'
+                    className='dash-dropdown',
+                    multi=True
                 )
             ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
     
