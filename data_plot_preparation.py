@@ -45,7 +45,7 @@ import data_plot_preparation as dpp
    #============================================================================="""
 
 
-def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, Large_file_memory):
+def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_memory):
 
     """
     Goal: Get the pivot of the Count table of the dataframe.
@@ -62,7 +62,10 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, L
     - Para: List of column in the dataframe (can be different of [x_column,y_column])
     - y: Data to plot.
     """
-
+    
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres", "directors", "writers", "category"]
+    
     print("Delete the rows with unknown value and split the column with multiple value per cell.")
     Para, df_temp = delete_rows_unknow_and_split(df_temp, x_column, y_column)
     
@@ -84,11 +87,11 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, L
     #Case where y_column is not None
     else:
 
-        Pivot_table=fd.Pivot_table(df_temp,Para,False, Large_file_memory)
+        Pivot_table=fd.Pivot_table(df_temp,Para,False, False)
 
         if str(z_column)=='None':
             print("1")
-            if x_column!='genres':
+            if x_column not in df_col_string:
                 print("2")
                 y = fd.highest_dataframe_sorted_by(Pivot_table, 8, Para[0])
             else:
@@ -105,7 +108,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, L
             
             print("2", y)
             
-            if x_column!='genres':
+            if x_column not in df_col_string:
                 
                 # remove from the dataframe the index which cannot be eval
                 y = y[y.index.to_series().apply(lambda x: isinstance(fe.myeval(x), int))]
@@ -185,23 +188,32 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column):
     - df_temp: dataframe which has been created temporary.
     """
     
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres", "directors", "writers", "category"]
+
+    # Columns in the dataframe which are numerics.
+    df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
+
+    if str(x_column) in df_col_numeric:
+        df_temp[x_column] = df_temp[x_column].replace('', '0').fillna('0').astype(int)
+    if str(y_column) in df_col_numeric:
+        df_temp[y_column] = df_temp[y_column].replace('', '0').fillna('0').astype(int)
+
+    if str(x_column) in df_col_string:
+        df_temp[x_column] = df_temp[x_column].replace('', 'Unknown').astype(str)
+    if str(y_column) in df_col_string:
+        df_temp[y_column] = df_temp[y_column].replace('', 'Unknown').astype(str)
+
     
     #Case where y_column is None
     if str(y_column)=='None':    
 
         df_temp = df_temp[[x_column]]
         Para=[x_column]
-
-        # Filter out rows where 'Value' is '\\N'
-        df_temp.replace('\\N', np.nan, inplace=True)
-        df_temp.dropna(inplace=True)
-
-        # # remove from the dataframe the index which cannot be eval
-        # df_temp = df_temp[df_temp.index.to_series().apply(lambda x: isinstance(fe.myeval(x), int))] 
-        
+                
         # # Filter out rows where 'Value' is '\\N'
-        # df_temp = df_temp[df_temp != '\\N']      
-        
+        # df_temp.replace('\\N', np.nan, inplace=True)
+        # df_temp.dropna(inplace=True)
     
     else:
 
@@ -214,13 +226,13 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column):
         
     
     
-    if x_column=='genres':
+    if x_column in df_col_string:
         #To count individual elements when multiple elements are stored in a single cell 
         df_temp, element_counts = fd.explode_dataframe(df_temp, x_column)
         Para=[x_column+"_split",y_column]
 
     
-    if y_column=='genres':
+    if y_column in df_col_string:
         #To count individual elements when multiple elements are stored in a single cell 
         df_temp, element_counts = fd.explode_dataframe(df_temp, y_column)
         Para=[x_column,y_column+"_split"]    

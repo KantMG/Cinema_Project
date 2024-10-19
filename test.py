@@ -13,6 +13,8 @@ from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output, State
 import pandas as pd
 
+import webbrowser
+
 import Function_dataframe as fd
 import Function_errors as fe
 import Function_visualisation as fv
@@ -38,7 +40,9 @@ List_filter = [None, None, None, None]
 
 df1 = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
-print(df1)
+
+
+
 
 
 # Initialize the Dash app with suppress_callback_exceptions set to True
@@ -98,12 +102,10 @@ def update_ui(input_value):
     
     # Check if the input value exists in the 'nconst' column of df1
     if input_value in df1['primaryName'].values:
-        # Create dropdown options based on df2
-        # dropdown_options = [
-        #     {'label': row['directors'], 'value': row['directors']} for index, row in df2.iterrows()
-        # ]
 
         nconst_value = df1[df1['primaryName'] == input_value]['nconst'].iloc[0]
+        birthYear_value = int(df1[df1['primaryName'] == input_value]['birthYear'].iloc[0])
+        deathYear_value = int(df1[df1['primaryName'] == input_value]['deathYear'].iloc[0])
         
         # Display the found nconst value (for debugging purposes)
         print(f"Matched nconst: {nconst_value}")
@@ -124,16 +126,84 @@ def update_ui(input_value):
                 ])
                 ], style={'padding': '20px'}), df2.to_dict('records')        
         else:
+
+            # Step 1: Split the strings into individual elements and flatten the list
+            all_elements = df2['category'].str.split(',').explode().str.strip()
+            primaryProfession = all_elements.value_counts()
+            primaryProfession = primaryProfession[primaryProfession > 1].index.tolist()
+
             # Create the table with the appropriate dropdowns for each column
             dropdowns_with_labels, data_table = tds.dropdown_table(df2, 'table-df2', dark_dropdown_style, uniform_style)
-    
+
+            exclude_col = ["title", "characters"]
+            df2_filter = df2.drop(columns=exclude_col)            
+            dropdowns_with_labels_for_fig = fds.dropdown_figure(df2_filter, 'graph-df2', dark_dropdown_style, uniform_style, Large_file_memory)
+                        
+            dropdowns_with_labels_for_fig_filter = fds.dropdown_figure_filter(df2_filter, 'table-df2', dark_dropdown_style, uniform_style)
+            
             return html.Div([
+                html.P(f'The artist '+input_value+' is born in '+str(birthYear_value)+' and died in '+str(deathYear_value)+' during its career as '+', '.join(primaryProfession)+' he participated to the creation of the following productions.'),
                 html.Div(style={'display': 'flex', 'margin-top': '10px', 'flex-wrap': 'wrap'}, children=[
                     html.Div(dropdowns_with_labels, style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'})
                 ]),
                 html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
                     html.Div(data_table, style={'width': '100%'})  # Adjusted to take full width
-                ])
+                ]),
+
+                html.Div([
+                    html.H1("Graphic interface dedicated to the dataframe related to the artist "+input_value+".", style={"color": "#FFD700"}, className="text-light"),
+                
+                    html.Div(
+                        style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},  # Use column direction for vertical stacking
+                        children=[
+                            # Dropdowns for the graph filters (above the graph)
+                            html.Div(
+                                dropdowns_with_labels_for_fig,
+                                style={
+                                    'display': 'flex',
+                                    'margin-left': '300px',
+                                    'justify-content': 'flex-start',
+                                    'gap': '5px',
+                                    'margin-bottom': '20px'  # Add space below the dropdowns
+                                }
+                            ),
+                            # Graph and dropdowns on the right (below the first set of dropdowns)
+                            html.Div(
+                                style={'display': 'flex'}, 
+                                children=[
+                                    # Graph on the left
+                                    html.Div(
+                                        [dcc.Graph(id='graph-output', style={'width': '100%', 'height': '600px'})], 
+                                        style={'margin-left': '20px', 'width': '70%'}
+                                    ),
+                                    # Dropdowns and heading in a vertical column on the right
+                                    html.Div(
+                                        style={'margin-left': '20px', 'width': '30%'},  # Container for the heading and dropdowns
+                                        children=[
+                                            # Heading above dropdowns
+                                            html.H1(
+                                                'Select filters on the dataframe.',
+                                                style={'margin-bottom': '10px'},  # Add some space below the heading
+                                                className="text-light"
+                                            ),
+                                            # Dropdowns in a vertical column
+                                            html.Div(
+                                                dropdowns_with_labels_for_fig_filter,
+                                                style={
+                                                    'display': 'flex',
+                                                    'flex-direction': 'column',  # Arrange dropdowns vertically
+                                                    'justify-content': 'flex-start',
+                                                    'gap': '10px',  # Add spacing between dropdowns
+                                                }
+                                            )
+                                        ]
+                                    )
+                                ]
+                            )
+                        ]
+                    )
+                ], style={'padding': '20px'})
+                                
             ], style={'padding': '20px'}), df2.to_dict('records')
         
     
@@ -202,20 +272,95 @@ def filter_df2(*args):
     stored_df2 = args[-1]         # The last argument is stored_df2
     selected_values = {col: args[i] for i, col in enumerate(List_col)}
     
-
-    print(selected_values)
     
     if stored_df2 is None:  # Check if stored_df2 is None or empty
         return []
     
     # Convert the stored data back to a DataFrame
     df2 = pd.DataFrame(stored_df2)
-    print(df2)
     
     df2 = od.apply_filter(df2, selected_values)
     print(df2)
 
     return df2.to_dict('records')
+
+
+@app.callback(
+    Output('y-dropdown', 'options'),
+    Input('x-dropdown', 'value'),
+    Input('tabs-example', 'value'),  # Include tab value to conditionally trigger callback
+    State('stored-df2', 'data')
+)
+def update_y_dropdown(selected_x, selected_tab, stored_df2):
+    if selected_tab == 'tab-1':  # Only execute if in the Data Visualization tab
+        if stored_df2 is None:  # Check if stored_df2 is None or empty
+            return []
+        else:
+            # Convert the stored data back to a DataFrame
+            df2 = pd.DataFrame(stored_df2)
+            exclude_col = ["title", "characters"]
+            df2_filter = df2.drop(columns=exclude_col)  
+            return [{'label': col, 'value': col} for col in df2_filter.columns if col != selected_x]  #[{'label': 'None', 'value': 'None'}] + 
+    return []  # Return empty if not in the right tab
+
+
+@app.callback(
+    Output('Func-dropdown', 'options'),
+    Input('y-dropdown', 'value'),
+    Input('tabs-example', 'value'),  # Include tab value to conditionally trigger callback
+    State('stored-df2', 'data')
+)
+def update_func_dropdown(selected_y, selected_tab, stored_df2):
+
+    # Columns in the dataframe which are numerics.
+    df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
+
+    # Get the list of y function
+    function_on_y = ["Avg"]
+
+    if selected_tab == 'tab-1':  # Only execute if in the Data Visualization tab
+        if selected_y not in df_col_numeric:  # Check if stored_df2 is None or empty
+            return []
+        else:
+            return [{'label': col, 'value': col} for col in function_on_y]
+    return []  # Return empty if not in the right tab
+
+
+# Create a list of Input objects for each dropdown
+List_col = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
+dropdown_inputs = [Input(f'{col}-dropdown', 'value') for col in List_col]
+
+# Callback to update the figure based on the dropdown selections
+@app.callback(
+    Output('graph-output', 'figure'),
+    [Input('x-dropdown', 'value'),
+     Input('y-dropdown', 'value'),
+     Input('Func-dropdown', 'value'),
+     Input('Graph-dropdown', 'value'),
+     Input('tabs-example', 'value')] + dropdown_inputs,  # Include tab value to conditionally trigger callback
+    State('stored-df2', 'data')
+)
+def update_graph(*args):
+    
+    x_column, y_column, func_column, graph_type, selected_tab = args[0], args[1], args[2], args[3], args[4]
+    selected_values = {col: args[i+5] for i, col in enumerate(List_col)}
+    stored_df2 = args[-1]
+        
+    if selected_tab == 'tab-1':  # Only execute if in the Data Visualization tab
+        if stored_df2 is None:  # Check if stored_df2 is None or empty
+            return []
+        else:
+            # Convert the stored data back to a DataFrame
+            df2 = pd.DataFrame(stored_df2)
+            # Apply filters on the dataframe df2
+            filtered_data = od.apply_filter(df2, selected_values)
+            # Create the figure based on filtered data
+            fig = fds.create_figure(filtered_data, x_column, y_column, func_column, graph_type, Large_file_memory)
+        return fig
+    else:
+        return go.Figure()  # Return a blank figure if not in the right tab
+
+
 
 
 
@@ -226,4 +371,4 @@ if __name__ == '__main__':
     url = "http://127.0.0.1:8052/"
     
     # Open the URL in the default web browser
-    # webbrowser.open(url)
+    webbrowser.open(url)

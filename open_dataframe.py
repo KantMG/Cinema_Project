@@ -378,7 +378,6 @@ def apply_filter(df, filters):
     
     Parameters:
     - df: DataFrame to filter
-    - columns: List of columns present in the DataFrame
     - filters: Dictionary where keys are columns and values are filter conditions
     
     Returns:

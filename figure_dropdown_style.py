@@ -44,7 +44,7 @@ import data_plot_preparation as dpp
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, f_column, g_column, Large_file_memory):
+def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -63,7 +63,7 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, Large_fi
     
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
-        Para, y = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, f_column, Large_file_memory)
+        Para, y = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, Large_file_memory)
     
     # =============================================================================
     print("Start figure creation")
@@ -71,11 +71,11 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, Large_fi
 
     # Create the Matplotlib figure
     
-    fig, ax = plt.subplots(figsize=(8.5, 6))
+    fig, ax = plt.subplots(figsize=(11.5, 7))
     
     # Create the label of the figure
     ax, xlabel, ylabel = label_fig(ax, x_column, y_column, z_column)
-    x_values = []
+    x_values, legend = [], []
     
     if x_column is not None: 
         # Add the core of the figure
@@ -100,16 +100,16 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, Large_fi
         xaxis=dict(
             tickvals=np.arange(len(x_values)),  # Set the tick positions
             ticktext=x_values,  # Set the tick labels to the genre names
-            title=dict(text=xlabel, font=dict(size=18, color='white')),  # X-axis label styling
-            tickfont=dict(color='white'),  # X-axis tick color
+            title=dict(text=xlabel, font=dict(size=20, color='white')),  # X-axis label styling
+            tickfont=dict(color='white', size=18),  # X-axis tick color
             tickangle=0,  # Rotate the x-axis labels for better readability
             showgrid=True,  # Grid styling
             gridcolor='gray',  # Grid color
             categoryorder='category ascending'  # Ensures categorical x-values are treated correctly
         ),
         yaxis=dict(
-            title=dict(text=ylabel, font=dict(size=18, color='white')),  # Y-axis label styling
-            tickfont=dict(color='white'),  # Y-axis tick color
+            title=dict(text=ylabel, font=dict(size=20, color='white')),  # Y-axis label styling
+            tickfont=dict(color='white', size=18),  # Y-axis tick color
             showgrid=True,  # Grid styling
             gridcolor='gray',  # Grid color
             categoryorder='category ascending'  # Ensures categorical x-values are treated correctly
@@ -195,6 +195,9 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
     - dropdowns_with_labels: The finalized dropdowns figure. 
     """
     
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres", "directors", "writers", "category"]
+    
     # Define a list of colors for the bars
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
     
@@ -203,7 +206,7 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
     if str(y_column)=='None':
                 
         # Convert the DataFrame index to a list
-        if x_column!="genres":
+        if x_column not in df_col_string:
             x_values = list(map(int, y[Para[0]]))
         else:
             x_values = list(y[Para[0]])
@@ -218,7 +221,7 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
     else:
         
         # Convert the DataFrame index to a list
-        if x_column!="genres":
+        if x_column not in df_col_string:
             x_values = list(map(int, y.index))
         else:
             x_values = y.index
@@ -268,12 +271,27 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
             
     return fig, ax, x_values, legend
 
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
 
-def dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memory):
+def get_max_width(col_data, col_name):
+    max_length = max(col_data.apply(lambda x: len(str(x))))
+    print(max_length,col_name)
+    # Set a higher max width for 'title' column
+    if col_name == 'title':
+        return max(150, min(max_length * 10, 600))  # Minimum 150px, maximum 400px for 'title'
+    return max(80, min(max_length * 8, 300))  # Ensure minimum 80px and maximum 300px width for others
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file_memory):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -291,13 +309,13 @@ def dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memo
     columns = df.columns
     
     # Get the list of y function
-    function_on_y = ["None", "Avg"]
+    function_on_y = ["Avg"]
     
     # Get the type of graph
     graph_type = ["Histogram", "Curve"]
     
     # Get the list of axis and graph function
-    axis = ["x", "y", "Func", "Filter", "Graph"]
+    axis = ["x", "y", "Func", "Graph"]
 
     # Define a consistent style for both input and dropdown elements
     uniform_style = {
@@ -321,38 +339,6 @@ def dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memo
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
-
-        # elif axi == 'Filter':
-        #     # Get unique values and sort them
-        #     dropdown_with_label = html.Div([
-        #         html.Label(f'Select {axi} on y'),  # Label for the dropdown
-        #         dcc.Input(
-        #             id=f'{axi}-dropdown',
-        #             type='text',
-        #             placeholder='Condition (e.g., 100-200)',
-        #             debounce=True,  # Apply changes when pressing Enter or losing focus
-        #             style={**dark_dropdown_style, **uniform_style} # Apply dark theme style
-        #         )
-        #     ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
-
-        # elif axi == 'Filter':
-        #     # Get unique values and sort them
-        #     dropdown_with_label = html.Div(id='Filter-dropdown-container', children=[
-        #     # Placeholder or initial content for the dropdown/input
-        #     html.Div("Select Filter on y")
-        #     ])
-        elif axi == 'Filter':
-            # Get unique values and sort them
-            dropdown_with_label = html.Div(id='Filter-dropdown-container', children=[
-                html.Label(f'Select Filter on y'),
-                dcc.Dropdown(
-                    id='Filter-dropdown',  # Ensure this ID is correct
-                    placeholder='Select values',
-                    style={**dark_dropdown_style, **uniform_style}
-                )
-            ])
-
-
         elif axi == 'Func':
             # Get unique values and sort them
             dropdown_with_label = html.Div([
@@ -370,7 +356,7 @@ def dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memo
                 html.Label(f'Select {axi}'),  # Label for the dropdown
                 dcc.Dropdown(
                     id=f'{axi}-dropdown',
-                    options=[{'label': 'None', 'value': 'None'}] + [{'label': val, 'value': val} for val in columns],
+                    options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
                     value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
@@ -390,16 +376,54 @@ def dropdown_figure(app, df, dark_dropdown_style, uniform_style, Large_file_memo
 
         dropdowns_with_labels.append(dropdown_with_label)
 
-
-    # # Get unique values and sort them
-    # dropdown_with_label = html.Div([
-    #     dcc.Dropdown(
-    #         id=f'Filter-dropdown',
-    #         options = [],
-    #         style={'display': 'none'})])
-
-    # dropdowns_with_labels.append(dropdown_with_label)
         
+    return dropdowns_with_labels
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+def dropdown_figure_filter(df, id_graph, dark_dropdown_style, uniform_style):
+
+    columns = df.columns
+    
+
+    # Calculate widths, ensuring 'title' is handled specifically
+    column_widths = {col: get_max_width(df[col], col) for col in columns}
+    
+    # Create dropdowns using calculated widths
+    dropdowns_with_labels = []
+    for col in columns:
+        dtype = df[col].dtype
+        dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
+
+        if dtype == "float64":
+            dropdown_with_label = html.Div([
+                html.Label(f'{col}'),
+                dcc.Input(
+                    id=f'{col}-dropdown',
+                    type='text',
+                    debounce=True,
+                    style=dropdown_style
+                )
+            ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+        else:
+            unique_values = sorted(df[col].unique())
+            dropdown_with_label = html.Div([
+                html.Label(f'{col}'),
+                dcc.Dropdown(
+                    id=f'{col}-dropdown',
+                    options=[{'label': 'All', 'value': 'All'}] + [{'label': val, 'value': val} for val in unique_values],
+                    value='All',
+                    style=dropdown_style,
+                    className='dash-dropdown'
+                )
+            ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+    
+        dropdowns_with_labels.append(dropdown_with_label)
+
+    
     return dropdowns_with_labels
 
 
