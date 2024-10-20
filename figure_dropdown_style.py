@@ -443,6 +443,68 @@ def dropdown_figure_filter(df, id_graph, dark_dropdown_style, uniform_style):
    #============================================================================="""
 
 
+def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
+    
+    return html.Div(
+        style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},  # Use column direction for vertical stacking
+        children=[
+            # Dropdowns for the graph filters (above the graph)
+            html.Div(
+                dropdowns_with_labels_for_fig,
+                style={
+                    'display': 'flex',
+                    'margin-left': '300px',
+                    'justify-content': 'flex-start',
+                    'gap': '5px',
+                    'margin-bottom': '20px'  # Add space below the dropdowns
+                }
+            ),
+            # Graph and dropdowns on the right (below the first set of dropdowns)
+            html.Div(
+                style={'display': 'flex'}, 
+                children=[
+                    # Graph on the left
+                    html.Div(
+                        [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'})], 
+                        style={'margin-left': '20px', 'width': '70%'}
+                    ),
+                    # Dropdowns and heading in a vertical column on the right
+                    html.Div(
+                        style={'margin-left': '20px', 'width': '30%'},  # Container for the heading and dropdowns
+                        children=[
+                            # Heading above dropdowns
+                            html.H1(
+                                'Select filters on the dataframe.',
+                                style={'margin-bottom': '10px'},  # Add some space below the heading
+                                className="text-light"
+                            ),
+                            # Dropdowns in a vertical column
+                            html.Div(
+                                dropdowns_with_labels_for_fig_filter,
+                                style={
+                                    'display': 'flex',
+                                    'flex-direction': 'column',  # Arrange dropdowns vertically
+                                    'justify-content': 'flex-start',
+                                    'gap': '10px',  # Add spacing between dropdowns
+                                }
+                            )
+                        ]
+                    )
+                ]
+            )
+        ]
+    )
+
+
+
+
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def get_dropdown_options(filtered_data, y_column):
     print("""Generate dropdown options based on the type of y_column.""")
     # Convert column to numeric, forcing errors to NaN

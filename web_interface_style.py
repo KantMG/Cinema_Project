@@ -47,7 +47,6 @@ def web_interface_style():
         'borderRadius': '5px',  # Optional: Add rounded corners
     }
 
-    # CSS to style the dropdown's options menu (this will apply globally)
     app.index_string = '''
     <!DOCTYPE html>
     <html>
@@ -57,33 +56,6 @@ def web_interface_style():
                 body {
                     background-color: #343a40; /* Ensure dark background */
                     color: white; /* Ensure white text */
-                }
-                
-                /* Dark theme for dropdown options */
-                .Select-menu-outer {
-                    background-color: #333 !important;  /* Dark background for the options menu */
-                    color: white !important;  /* White text for the options */
-                }
-                
-                .Select-option {
-                    background-color: #333 !important;  /* Dark background for individual options */
-                    color: white !important;  /* White text */
-                }
-                
-                .Select-option.is-focused {
-                    background-color: #444 !important;  /* Highlight option on hover */
-                    color: white !important;  /* Ensure the text stays white */
-                }
-                
-                .Select-control {
-                    background-color: #1e1e1e !important;  /* Dark background for the dropdown control */
-                    color: white !important;  /* White text */
-                    border: 1px solid #555 !important;  /* Dark border */
-                }
-                
-                /* Ensuring selected text in the dropdown remains white */
-                .Select-value-label {
-                    color: white !important;
                 }
             </style>
         </head>
@@ -99,6 +71,61 @@ def web_interface_style():
         </body>
     </html>
     '''
+
+
+    # # CSS to style the dropdown's options menu (this will apply globally)
+    # app.index_string = '''
+    # <!DOCTYPE html>
+    # <html>
+    #     <head>
+    #         <title>Dash Dark Theme</title>
+    #         <link rel="stylesheet" href="/assets/style.css">  <!-- Add this line -->
+    #         <style>
+    #             body {
+    #                 background-color: #343a40; /* Ensure dark background */
+    #                 color: white; /* Ensure white text */
+    #             }
+                
+    #             /* Dark theme for dropdown options */
+    #             .Select-menu-outer {
+    #                 background-color: #333 !important;  /* Dark background for the options menu */
+    #                 color: white !important;  /* White text for the options */
+    #             }
+                
+    #             .Select-option {
+    #                 background-color: #333 !important;  /* Dark background for individual options */
+    #                 color: white !important;  /* White text */
+    #             }
+                
+    #             .Select-option.is-focused {
+    #                 background-color: #444 !important;  /* Highlight option on hover */
+    #                 color: white !important;  /* Ensure the text stays white */
+    #             }
+                
+    #             .Select-control {
+    #                 background-color: #1e1e1e !important;  /* Dark background for the dropdown control */
+    #                 color: white !important;  /* White text */
+    #                 border: 1px solid #555 !important;  /* Dark border */
+    #             }
+                
+    #             /* Ensuring selected text in the dropdown remains white */
+    #             .Select-value-label {
+    #                 color: white !important;
+    #             }
+    #         </style>
+    #     </head>
+    #     <body>
+    #         <div id="react-entry-point">
+    #             {%app_entry%}
+    #         </div>
+    #         <footer>
+    #             {%config%}
+    #             {%scripts%}
+    #             {%renderer%}
+    #         </footer>
+    #     </body>
+    # </html>
+    # '''
     
     return app, dark_dropdown_style, uniform_style
     

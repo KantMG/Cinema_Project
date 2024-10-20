@@ -44,15 +44,30 @@ df1 = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, 
 
 
 
-
-
 # Initialize the Dash app with suppress_callback_exceptions set to True
 app, dark_dropdown_style, uniform_style = wis.web_interface_style()
+
+
+# app.layout = html.Div([
+#     # Tabs Component
+#     dcc.Tabs(id='tabs-example', value='tab-1', children=[
+#         dcc.Tab(label='🏠 Home', value='tab-1', className='tab-3d', selected_className='tab-3d-selected'),
+#         dcc.Tab(label='📈 Analytics', value='tab-2', className='tab-3d', selected_className='tab-3d-selected'),
+#         dcc.Tab(label='Tab 3', value='tab-3', className='tab-3d', selected_className='tab-3d-selected'),
+#     ]),
+
+#     # Hidden store to hold df2 data
+#     dcc.Store(id='stored-df2', data=None),
+    
+#     # Content Div for Tabs
+#     html.Div(id='tabs-content')
+# ])
+
 
 app.layout = html.Div([
     # Tabs Component
     dcc.Tabs(id='tabs-example', value='tab-1', children=[
-        dcc.Tab(label='Tab 1', value='tab-1', 
+        dcc.Tab(id='tabs-1', label='🏠 Home', value='tab-1', 
                  style={
                      'backgroundColor': '#000000',  # Dark black background
                      'color': 'white',
@@ -68,7 +83,7 @@ app.layout = html.Div([
                      'borderBottom': '2px solid white',
                      'borderRight': '2px solid white',
                  }),
-        dcc.Tab(label='Tab 2', value='tab-2', 
+        dcc.Tab(id='tabs-2', label='📈 Analytics', value='tab-2', 
                  style={
                      'backgroundColor': '#000000',
                      'color': 'white',
@@ -84,7 +99,7 @@ app.layout = html.Div([
                      'borderBottom': '2px solid white',
                      'borderRight': '2px solid white',
                  }),
-        dcc.Tab(label='Tab 3', value='tab-3', 
+        dcc.Tab(id='tabs-3', label='Tab 3', value='tab-3', 
                  style={
                      'backgroundColor': '#000000',
                      'color': 'white',
@@ -129,6 +144,7 @@ def render_content(tab):
         return html.Div([
             html.H3('Tab 2 Content'),
             html.P('This is a placeholder for Tab 2. You can add any content you like here.')
+            # tab2_content()
         ])
     elif tab == 'tab-3':
         # Placeholder for Tab 3 content
@@ -136,6 +152,15 @@ def render_content(tab):
             html.H3('Tab 3 Content'),
             html.P('This is a placeholder for Tab 3. You can add any content you like here.')
         ])
+
+
+# =============================================================================
+# =============================================================================
+# =============================================================================
+# Tab-1
+# =============================================================================
+# =============================================================================
+# =============================================================================
 
 # Callback to update UI based on input value in Tab 1
 @app.callback(
@@ -198,56 +223,9 @@ def update_ui(input_value):
 
                 html.Div([
                     html.H1("Graphic interface dedicated to the dataframe related to the artist "+input_value+".", style={"color": "#FFD700"}, className="text-light"),
-                
-                    html.Div(
-                        style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},  # Use column direction for vertical stacking
-                        children=[
-                            # Dropdowns for the graph filters (above the graph)
-                            html.Div(
-                                dropdowns_with_labels_for_fig,
-                                style={
-                                    'display': 'flex',
-                                    'margin-left': '300px',
-                                    'justify-content': 'flex-start',
-                                    'gap': '5px',
-                                    'margin-bottom': '20px'  # Add space below the dropdowns
-                                }
-                            ),
-                            # Graph and dropdowns on the right (below the first set of dropdowns)
-                            html.Div(
-                                style={'display': 'flex'}, 
-                                children=[
-                                    # Graph on the left
-                                    html.Div(
-                                        [dcc.Graph(id='graph-output', style={'width': '100%', 'height': '600px'})], 
-                                        style={'margin-left': '20px', 'width': '70%'}
-                                    ),
-                                    # Dropdowns and heading in a vertical column on the right
-                                    html.Div(
-                                        style={'margin-left': '20px', 'width': '30%'},  # Container for the heading and dropdowns
-                                        children=[
-                                            # Heading above dropdowns
-                                            html.H1(
-                                                'Select filters on the dataframe.',
-                                                style={'margin-bottom': '10px'},  # Add some space below the heading
-                                                className="text-light"
-                                            ),
-                                            # Dropdowns in a vertical column
-                                            html.Div(
-                                                dropdowns_with_labels_for_fig_filter,
-                                                style={
-                                                    'display': 'flex',
-                                                    'flex-direction': 'column',  # Arrange dropdowns vertically
-                                                    'justify-content': 'flex-start',
-                                                    'gap': '10px',  # Add spacing between dropdowns
-                                                }
-                                            )
-                                        ]
-                                    )
-                                ]
-                            )
-                        ]
-                    )
+                    
+                    fds.figure_position_dash('graph-output', dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter)
+                    
                 ], style={'padding': '20px'})
                                 
             ], style={'padding': '20px'}), df2.to_dict('records')
@@ -316,23 +294,27 @@ dropdown_inputs_tab = [Input(f'{col}-dropdown', 'value') for col in List_col_tab
 @app.callback(
     Output('table-df2', 'data'),
     dropdown_inputs_tab,
+    Input('tabs-example', 'value'),  # Include tab value to conditionally trigger callback
     State('stored-df2', 'data')  # Ensure this is included as State
 )
 def filter_df2(*args):
     
+    selected_tab = args[-2]
     stored_df2 = args[-1]         # The last argument is stored_df2
     selected_values = {col: args[i] for i, col in enumerate(List_col_tab)}
-        
-    if stored_df2 is None:  # Check if stored_df2 is None or empty
-        return []
-    # Convert the stored data back to a DataFrame
-    df2 = pd.DataFrame(stored_df2)
-    # Create a copy of the DataFrame to avoid modifying the original stored data
-    filtered_data_table = df2.copy()
-    print("Update table")
-    filtered_data_table = od.apply_filter(filtered_data_table, selected_values)
 
-    return filtered_data_table.to_dict('records')
+    if selected_tab == 'tab-1':  # Only execute if in the Data Visualization tab
+        if stored_df2 is None:  # Check if stored_df2 is None or empty
+            return []
+        # Convert the stored data back to a DataFrame
+        df2 = pd.DataFrame(stored_df2)
+        # Create a copy of the DataFrame to avoid modifying the original stored data
+        filtered_data_table = df2.copy()
+        print("Update table")
+        filtered_data_table = od.apply_filter(filtered_data_table, selected_values)
+    
+        return filtered_data_table.to_dict('records')
+    return []  # Return empty if not in the right tab
 
 # =============================================================================
 # =============================================================================
@@ -423,6 +405,58 @@ def update_graph(*args):
 # =============================================================================
 # =============================================================================
 
+# =============================================================================
+# =============================================================================
+# =============================================================================
+# Tab-2
+# =============================================================================
+# =============================================================================
+# =============================================================================
+
+
+# def tab2_content():
+
+#     nconst_value = 'nm0005690'
+    
+#     # Display the found nconst value (for debugging purposes)
+#     print(f"Matched nconst: {nconst_value}")
+                    
+#     List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
+    
+#     List_filter = [None, None, None, None, None, None, None, None, nconst_value, None, None, None, True]
+    
+#     df3 = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+#     exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
+#     df3 = df3.drop(columns=exclude_col)
+
+#     # Step 1: Split the strings into individual elements and flatten the list
+#     all_elements = df3['category'].str.split(',').explode().str.strip()
+#     primaryProfession = all_elements.value_counts()
+#     primaryProfession = primaryProfession[primaryProfession > 1].index.tolist()
+
+
+#     exclude_col = ["title", "characters"]
+#     df3_filter = df3.drop(columns=exclude_col)            
+#     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df3_filter, 'graph-df3', dark_dropdown_style, uniform_style, Large_file_memory)
+                
+#     dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df3_filter, 'graph-df3', dark_dropdown_style, uniform_style)
+    
+#     print(dropdowns_with_labels_for_fig_filter_tab2)
+    
+#     return html.Div([
+
+#         html.Div([
+            
+#             fds.figure_position_dash('graph-df3', dropdowns_with_labels_for_fig_tab2, dropdowns_with_labels_for_fig_filter_tab2)
+            
+#         ], style={'padding': '20px'})
+                        
+#     ], style={'padding': '20px'}), df3.to_dict('records')
+        
+    
+
+
+
 
 
 
@@ -433,4 +467,4 @@ if __name__ == '__main__':
     url = "http://127.0.0.1:8052/"
     
     # Open the URL in the default web browser
-    webbrowser.open(url)
+    # webbrowser.open(url)

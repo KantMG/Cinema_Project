@@ -887,3 +887,152 @@ Callback error updating table-df2.data
 ---------------------------------------------------------------------------
 TypeError                                 Traceback (most recent call last)
 TypeError: filter_df2() missing 1 required keyword-only argument: 'stored_df2'
+
+
+
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+Here is my code.
+
+
+
+app, dark_dropdown_style, uniform_style = web_interface_style()
+
+def web_interface_style():
+
+    # Initialize the Dash app with the dark theme
+    app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.DARKLY])  # Use the DARKLY theme from Bootstrap
+
+    # Define dark theme styles
+    dark_dropdown_style = {
+        'backgroundColor': '#1e1e1e',  # Dark background for dropdown
+        'color': '#f8f9fa',  # White text color
+        'border': '1px solid #555',  # Border for dropdown
+        'borderRadius': '5px',
+        'width': '160px',
+    }
+
+
+    # Define a consistent style for both input and dropdown elements
+    uniform_style = {
+        'width': '160px',  # Set a consistent width
+        'height': '40px',  # Set a consistent width
+        'borderRadius': '5px',  # Optional: Add rounded corners
+    }
+
+    # CSS to style the dropdown's options menu (this will apply globally)
+    app.index_string = '''
+    <!DOCTYPE html>
+    <html>
+        <head>
+            <title>Dash Dark Theme</title>
+            <style>
+                body {
+                    background-color: #343a40; /* Ensure dark background */
+                    color: white; /* Ensure white text */
+                }
+                
+                /* Dark theme for dropdown options */
+                .Select-menu-outer {
+                    background-color: #333 !important;  /* Dark background for the options menu */
+                    color: white !important;  /* White text for the options */
+                }
+                
+                .Select-option {
+                    background-color: #333 !important;  /* Dark background for individual options */
+                    color: white !important;  /* White text */
+                }
+                
+                .Select-option.is-focused {
+                    background-color: #444 !important;  /* Highlight option on hover */
+                    color: white !important;  /* Ensure the text stays white */
+                }
+                
+                .Select-control {
+                    background-color: #1e1e1e !important;  /* Dark background for the dropdown control */
+                    color: white !important;  /* White text */
+                    border: 1px solid #555 !important;  /* Dark border */
+                }
+                
+                /* Ensuring selected text in the dropdown remains white */
+                .Select-value-label {
+                    color: white !important;
+                }
+            </style>
+        </head>
+        <body>
+            <div id="react-entry-point">
+                {%app_entry%}
+            </div>
+            <footer>
+                {%config%}
+                {%scripts%}
+                {%renderer%}
+            </footer>
+        </body>
+    </html>
+    '''
+    
+    return app, dark_dropdown_style, uniform_style
+
+
+app.layout = html.Div([
+    # Tabs Component
+    dcc.Tabs(id='tabs-example', value='tab-1', children=[
+        dcc.Tab(label='🏠 Home', value='tab-1', className='tab-3d', selected_className='tab-3d-selected'),
+        dcc.Tab(label='📈 Analytics', value='tab-2', className='tab-3d', selected_className='tab-3d-selected'),
+        dcc.Tab(label='Tab 3', value='tab-3', className='tab-3d', selected_className='tab-3d-selected'),
+    ]),
+
+    # Hidden store to hold df2 data
+    dcc.Store(id='stored-df2', data=None),
+    
+    # Content Div for Tabs
+    html.Div(id='tabs-content')
+])
+
+and my style.css file is
+/* General style for the tabs container */
+.tab-3d {
+    background-color: #1e1e1e; /* Dark background for the tabs */
+    color: white; /* Text color */
+    border: none; /* Remove default border */
+}
+
+/* Style for the selected tab */
+.tab-3d-selected {
+    background-color: #333; /* Slightly lighter background for selected tab */
+    color: white; /* Text color */
+    border-bottom: 3px solid white; /* White line effect */
+}
+
+/* Style for the tab content */
+#tabs-content {
+    background-color: #2a2a2a; /* Darker background for the content area */
+    color: white; /* White text for content */
+    padding: 20px; /* Padding for content */
+    border-radius: 5px; /* Rounded corners for the content area */
+}
+
+/* Optional: Add hover effect for tabs */
+.tab-3d:hover {
+    background-color: #444; /* Slightly lighter on hover */
+}
+
+/* Optional: Style for tab text */
+.tab-3d {
+    font-weight: bold; /* Make tab text bold */
+}
+
+/* Additional styles for the footer if needed */
+footer {
+    background-color: #1e1e1e; /* Match the dark theme */
+    color: white; /* White text */
+}
+
+but the tabs are not in dark black as you can see on the picture
+
