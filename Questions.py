@@ -1036,3 +1036,252 @@ footer {
 
 but the tabs are not in dark black as you can see on the picture
 
+
+####################################################################################################
+####################################################################################################
+####################################################################################################
+####################################################################################################
+
+Here is my code.
+
+
+
+app.layout = html.Div([
+    # Tabs Component
+    dcc.Tabs(id='tabs', value='tab-1', children=[
+        dcc.Tab(id='tabs-1', label='🏠 Home', value='tab-1', 
+                 style={
+                     'backgroundColor': '#000000',  # Dark black background
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                     'position': 'relative'  # Relative position for pseudo-element
+                 },
+                 selected_style={
+                     'backgroundColor': '#222222',  # Slightly lighter for selected tab
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                 }),
+        dcc.Tab(id='tabs-2', label='📈 Analytics', value='tab-2', 
+                 style={
+                     'backgroundColor': '#000000',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                     'position': 'relative'
+                 },
+                 selected_style={
+                     'backgroundColor': '#222222',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                 }),
+        dcc.Tab(id='tabs-3', label='🎥 Movies & Artists', value='tab-3', 
+                 style={
+                     'backgroundColor': '#000000',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                     'position': 'relative'
+                 },
+                 selected_style={
+                     'backgroundColor': '#222222',
+                     'color': 'white',
+                     'border': 'none',
+                     'borderBottom': '2px solid white',
+                     'borderRight': '2px solid white',
+                 }),
+    ]),
+    
+    # Hidden store to hold df1 data
+    dcc.Store(id='stored-df1', data=None),
+    
+    # Hidden store to hold df2 data
+    dcc.Store(id='stored-df2', data=None),
+        
+    # Content Div for Tabs
+    html.Div(id='tabs-content')
+])
+
+# Callback to manage tab content
+@app.callback(
+    Output('tabs-content', 'children'),
+    Input('tabs', 'value'),
+    State('stored-df1', 'data')
+)
+def render_content(tab, stored_df1):
+    if tab == 'tab-1':
+        # Placeholder for Tab 3 content
+        return html.Div([
+            html.H1("IMDB database analysis.", style={"color": "#FFD700"}, className="text-light"),
+            tab1_content()
+        ])
+    elif tab == 'tab-2':
+        # Placeholder for Tab 2 content
+        return html.Div([
+            html.H1("Graphic interface dedicated to the dataframe related to the overall IMDB database.", style={"color": "#FFD700"}, className="text-light"),
+            tab2_content(stored_df1)
+        ])
+    elif tab == 'tab-3':
+        # This is the content for Tab 1 - the existing layout we created
+        return html.Div([
+            html.Div([
+                html.H1("Research on an artist or a movie.", style={"color": "#FFD700"}, className="text-light"),
+            ]),
+            dcc.Input(id='input-value', type='text', placeholder='Enter a value...', style={**dark_dropdown_style, **uniform_style}),
+            html.Div(id='dynamic-content')
+        ])
+
+
+
+# =============================================================================
+# =============================================================================
+# =============================================================================
+# Tab-1
+# =============================================================================
+# =============================================================================
+# =============================================================================
+
+def tab1_content():
+    
+    Text = f"The IMDB is large ...."
+    
+    
+    return html.Div([
+        html.Div([
+            html.P(Text),
+        ])
+        ], style={'padding': '20px'})
+
+
+# =============================================================================
+# =============================================================================
+# =============================================================================
+# Tab-2
+# =============================================================================
+# =============================================================================
+# =============================================================================
+
+
+def tab2_content(stored_df1):
+    # If df1 has already been processed, use it
+    if stored_df1:
+        df1 = pd.read_json(stored_df1, orient='split')
+    else:
+        # Load data and process when tab 2 is active
+
+        List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
+        
+        List_filter = [None, None, None, None, None, None, None, None, None, None, None, None, True]
+        
+        df1 = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+        exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
+        df1 = df1.drop(columns=exclude_col)
+    
+        # Step 1: Split the strings into individual elements and flatten the list
+        all_elements = df1['category'].str.split(',').explode().str.strip()
+        primaryProfession = all_elements.value_counts()
+        primaryProfession = primaryProfession[primaryProfession > 1].index.tolist()
+    
+        exclude_col = ["title", "characters"]
+        df1_filter = df1.drop(columns=exclude_col)            
+        dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df1_filter, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
+        dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df1_filter, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
+        
+        return html.Div([
+    
+            html.Div([
+                
+                fds.figure_position_dash('graph-output-tab-2', dropdowns_with_labels_for_fig_tab2, dropdowns_with_labels_for_fig_filter_tab2)
+                
+            ], style={'padding': '20px'})
+                            
+        ], style={'padding': '20px'})
+
+
+
+# =============================================================================
+# Callback for df1 in tab-2
+# =============================================================================
+
+# Callback to store df1 in dcc.Store
+@app.callback(
+    Output('stored-df1', 'data'),
+    Input('tabs', 'value'),
+    prevent_initial_call=True
+)
+def update_stored_df1(tab):
+    if tab == 'tab-2':
+        # Reload df1 when the second tab is selected
+        
+        List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
+        List_filter = [None, None, None, None, None, None, None, None, None, None, None, None, True]
+        
+        df1 = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+        exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
+        df1 = df1.drop(columns=exclude_col)
+        
+        return df1.to_dict('records')
+
+
+# =============================================================================
+# Callback for graph in tab-2
+# =============================================================================
+
+tab = 'tab-2'
+# Create a list of Input objects for each dropdown
+List_col_fig = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
+dropdown_inputs_fig = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in List_col_fig]
+
+@app.callback(
+    Output('y-dropdown-tab-2', 'options'),
+    Input('x-dropdown-tab-2', 'value'),
+    Input('tabs', 'value'),  # Include tab value to conditionally trigger callback
+    State('stored-df1', 'data')  # Use the correct state data for each tab
+)
+def update_y_dropdown_tab1(selected_x, selected_tab, stored_df1):
+    if selected_tab == 'tab-2':  # Only execute if in the correct tab
+        exclude_cols = ["title", "characters"]
+        return update_y_dropdown_utility(selected_x, stored_df1, exclude_cols)
+    return []  # Return empty if not in the right tab
+
+@app.callback(
+    Output('Func-dropdown-tab-2', 'options'),
+    Input('y-dropdown-tab-2', 'value'),
+    Input('tabs', 'value'),  # Include tab value to conditionally trigger callback
+    State('stored-df1', 'data')
+)
+def update_func_dropdown_tab1(selected_y, selected_tab, stored_df1):
+    df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
+    if selected_tab == 'tab-2':
+        return update_func_dropdown_utility(selected_y, df_col_numeric)
+    return []
+
+@app.callback(
+    Output('graph-output-tab-2', 'figure'),
+    [Input('x-dropdown-tab-2', 'value'),
+     Input('y-dropdown-tab-2', 'value'),
+     Input('Func-dropdown-tab-2', 'value'),
+     Input('Graph-dropdown-tab-2', 'value'),
+     Input('tabs', 'value')] + dropdown_inputs_fig,  # Include tab value to conditionally trigger callback
+    State('stored-df1', 'data')
+)
+def update_graph_tab1(*args):
+    x_column, y_column, func_column, graph_type, selected_tab = args[0], args[1], args[2], args[3], args[4]
+    selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig)}
+    stored_df1 = args[-1]
+    
+    if selected_tab == 'tab-2':  # Only execute if in the correct tab
+        return update_graph_utility(x_column, y_column, func_column, graph_type, selected_values, stored_df1, Large_file_memory)
+    return go.Figure()  # Return a blank figure if not in the right tab
+
+
+In tab2_content and update_stored_df1 I open all the dataframe with the function open_dataframe
+in order to do the graph, but I only want to open the col which are selected in the input and dropdown
+which mean that when I go to tab-2, I do not open anything, and when I select an input or dropdown on the graph i open put the selected input dropdown in the List_col

@@ -25,51 +25,54 @@ def get_max_width(col_data, col_name):
     
 
 
-def dropdown_table(df, id_table, dark_dropdown_style, uniform_style):
+def dropdown_table(df, id_table, dark_dropdown_style, uniform_style, need_dropdown):
     columns = df.columns
     
 
     # Calculate widths, ensuring 'title' is handled specifically
     column_widths = {col: get_max_width(df[col], col) for col in columns}
     
-    # Create dropdowns using calculated widths
-    dropdowns_with_labels = []
-    for col in columns:
-        dtype = df[col].dtype
-        dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
-
-        if dtype == "float64":
-            dropdown_with_label = html.Div([
-                dcc.Input(
-                    id=f'{col}-dropdown',
-                    type='text',
-                    debounce=True,
-                    style=dropdown_style
-                )
-            ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
-        else:
-            # Collect all unique values, splitting them by commas and ensuring uniqueness
-            all_roles = set()
-            for value in df[col].dropna().unique():
-                # Split the value by comma and strip any extra spaces
-                roles = [role.strip() for role in str(value).split(',')]
-                all_roles.update(roles)
-            
-            # Convert to a sorted list
-            unique_values = sorted(all_roles)
-            # unique_values = sorted(df[col].unique())
-            dropdown_with_label = html.Div([
-                dcc.Dropdown(
-                    id=f'{col}-dropdown',
-                    options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
-                    # value='All',
-                    style=dropdown_style,
-                    className='dash-dropdown',
-                    multi=True
-                )
-            ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+    if need_dropdown == True:
+        # Create dropdowns using calculated widths
+        dropdowns_with_labels = []
+        for col in columns:
+            dtype = df[col].dtype
+            dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
     
-        dropdowns_with_labels.append(dropdown_with_label)
+            if dtype == "float64":
+                dropdown_with_label = html.Div([
+                    dcc.Input(
+                        id=f'{col}-dropdown',
+                        type='text',
+                        debounce=True,
+                        style=dropdown_style
+                    )
+                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+            else:
+                # Collect all unique values, splitting them by commas and ensuring uniqueness
+                all_roles = set()
+                for value in df[col].dropna().unique():
+                    # Split the value by comma and strip any extra spaces
+                    roles = [role.strip() for role in str(value).split(',')]
+                    all_roles.update(roles)
+                
+                # Convert to a sorted list
+                unique_values = sorted(all_roles)
+                # unique_values = sorted(df[col].unique())
+                dropdown_with_label = html.Div([
+                    dcc.Dropdown(
+                        id=f'{col}-dropdown',
+                        options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
+                        # value='All',
+                        style=dropdown_style,
+                        className='dash-dropdown',
+                        multi=True
+                    )
+                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+        
+            dropdowns_with_labels.append(dropdown_with_label)
+    else:
+        dropdowns_with_labels = None
     
     # Ensure the DataTable columns use the same calculated widths
     data_table = dash_table.DataTable(
@@ -116,3 +119,4 @@ def dropdown_table(df, id_table, dark_dropdown_style, uniform_style):
     )
     
     return dropdowns_with_labels, data_table
+

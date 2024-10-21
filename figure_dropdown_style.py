@@ -278,6 +278,10 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
 
 
 def get_max_width(col_data, col_name):
+
+    if col_data.empty:
+        return 0  # Return 0 or a default width if there are no values
+    
     max_length = max(col_data.apply(lambda x: len(str(x))))
     print(max_length,col_name)
     # Set a higher max width for 'title' column
@@ -291,7 +295,7 @@ def get_max_width(col_data, col_name):
    #============================================================================="""
 
 
-def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file_memory):
+def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large_file_memory):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -332,7 +336,7 @@ def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file
             dropdown_with_label = html.Div([
                 html.Label(f'Select a {axi} type'),  # Label for the dropdown
                 dcc.Dropdown(
-                    id=f'{axi}-dropdown',
+                    id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in graph_type],
                     value='Histogram',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
@@ -344,7 +348,7 @@ def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file
             dropdown_with_label = html.Div([
                 html.Label(f'Select {axi} on y'),  # Label for the dropdown
                 dcc.Dropdown(
-                    id=f'{axi}-dropdown',
+                    id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in function_on_y],
                     value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
@@ -355,7 +359,7 @@ def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file
             dropdown_with_label = html.Div([
                 html.Label(f'Select {axi}'),  # Label for the dropdown
                 dcc.Dropdown(
-                    id=f'{axi}-dropdown',
+                    id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
                     # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
@@ -366,7 +370,7 @@ def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file
             dropdown_with_label = html.Div([
                 html.Label(f'Select {axi}'),  # Label for the dropdown
                 dcc.Dropdown(
-                    id=f'{axi}-dropdown',
+                    id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],
                     # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
@@ -384,7 +388,7 @@ def dropdown_figure(df, id_graph, dark_dropdown_style, uniform_style, Large_file
    #=============================================================================
    #============================================================================="""
 
-def dropdown_figure_filter(df, id_graph, dark_dropdown_style, uniform_style):
+def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style):
 
     columns = df.columns
     
@@ -402,7 +406,7 @@ def dropdown_figure_filter(df, id_graph, dark_dropdown_style, uniform_style):
             dropdown_with_label = html.Div([
                 html.Label(f'{col}'),
                 dcc.Input(
-                    id=f'{col}-fig-dropdown',
+                    id=f'{col}-fig-dropdown-'+tab,
                     type='text',
                     debounce=True,
                     style=dropdown_style
@@ -423,7 +427,7 @@ def dropdown_figure_filter(df, id_graph, dark_dropdown_style, uniform_style):
             dropdown_with_label = html.Div([
                 html.Label(f'{col}'),
                 dcc.Dropdown(
-                    id=f'{col}-fig-dropdown',
+                    id=f'{col}-fig-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
                     # value='All',
                     style=dropdown_style,
