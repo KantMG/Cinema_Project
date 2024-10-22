@@ -135,7 +135,7 @@ def render_content(tab, stored_df1):
     if tab == 'tab-1':
         # Placeholder for Tab 3 content
         return html.Div([
-            html.H1("IMDB database analysis.", style={"color": "#FFD700"}, className="text-light"),
+            html.H1("THE SEVENTH ART, A STORY OF INFLUENCE", style={"color": "#FFD700"}, className="text-light"),
             tab1_content()
         ])
     elif tab == 'tab-2':
@@ -164,15 +164,41 @@ def render_content(tab, stored_df1):
 # =============================================================================
 # =============================================================================
 
+"""
+THIS PROJECT ENLIGHT THE EVOLUTION OVER THE YEARS OF THE MOVIE AND SERIE MAKING.
+THE ADAPTATION OF THE WAY OF PRODUCTION AS WELL AS OUR WAY OF CONSOMATION ARE ANALYSED.
+HOW MUCH THE COUNTRIES ARE INVESTING IN THE FILMS PRODUCTION AND WHICH IS THE LEVEL OF INFLUENCE
+OF A COUNTRY OVER THE OTHERS.
+"""
+
+
 def tab1_content():
+
+    # Source for data set : 
+    source_data = 'https://developer.imdb.com/non-commercial-datasets/'
     
-    Text = f"The IMDB is large ...."
+    # Save the project on github with: !bash ./save_project_on_git.sh
+    GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
     
+    Text1 = f"THIS PROJECT ENLIGHT THE EVOLUTION OVER THE YEARS OF THE MOVIE AND SERIE MAKING."
+    Text2 = f"HE ADAPTATION OF THE WAY OF PRODUCTION AS WELL AS OUR WAY OF CONSOMATION ARE ANALYSED."
+    Text3 = f"HOW MUCH THE COUNTRIES ARE INVESTING IN THE FILMS PRODUCTION AND WHICH IS THE LEVEL OF INFLUENCE OF A COUNTRY OVER THE OTHERS."
+    
+    Text4 = f"The IMDb Non-Commercial Datasets has been used to perform this study, the open source can be find here: "+source_data
+    Text5 = f"It corresponds to a multiple variety of tab-separated-values (TSV) formatted files in the UTF-8 character set. "
+    Text6 = f"The "
     
     return html.Div([
         html.Div([
-            html.P(Text),
-        ])
+            html.P(Text1),
+            html.P(Text2),
+            html.P(Text3),
+        ]),
+        html.Div([
+            html.P(Text4),
+            html.P(Text5),
+            html.P(Text6),
+        ]),        
         ], style={'padding': '20px'})
 
 
@@ -184,17 +210,29 @@ def tab1_content():
 # =============================================================================
 # =============================================================================
 
-List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
-List_filter = [None, None, None, None, None, None, None, None, None, None, None, None, True]
+tab = 'tab-2'
+List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes"]
+List_filter_tab2 = [None, None, None, None, None, None, None, None]
+List_dtype_tab2 = [float, float, str, float, str, str, float, float]
 
 
 def tab2_content(stored_df1):
+    
+    print()
+    print("Tab2_content")
 
+    def df_empty(columns, dtypes, index=None):
+        assert len(columns)==len(dtypes)
+        df = pd.DataFrame(index=index)
+        for c,d in zip(columns, dtypes):
+            df[c] = pd.Series(dtype=d)
+        return df
+        
     # Display dropdowns without loading data initially
-    df1_placeholder = pd.DataFrame(columns=List_col)           
+    df1_placeholder = df_empty(List_col_tab2, dtypes=List_dtype_tab2)    
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
     dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
-    
+        
     return html.Div([
 
         html.Div([
@@ -206,10 +244,9 @@ def tab2_content(stored_df1):
     ], style={'padding': '20px'})
 
 
-tab = 'tab-2'
 # Create a list of Input objects for each dropdown
-List_col_fig = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
-dropdown_inputs_fig = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in List_col_fig]
+List_col_fig_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes"]
+dropdown_inputs_fig_tab2 = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in List_col_fig_tab2]
 
 # =============================================================================
 # Callback for df1 in tab-2
@@ -218,7 +255,7 @@ dropdown_inputs_fig = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in Lis
 # Callback to store df1 in dcc.Store
 @app.callback(
     Output('stored-df1', 'data'),
-    [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_fig],
+    [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_fig_tab2],
     Input('tabs', 'value'),
     prevent_initial_call=True
 )
@@ -226,19 +263,22 @@ def update_stored_df1(*args):
     
     selected_values = args[:-1]  # Values selected in dropdowns
     tab = args[-1]
-    
+    print()
+    print("Update_stored_df1")    
     if tab == 'tab-2':
         # Identify columns to be loaded based on the user's selection
-        selected_columns = [List_col_fig[i] for i, val in enumerate(selected_values) if val]
+        selected_columns = [List_col_fig_tab2[i] for i, val in enumerate(selected_values) if val]
         # Ensure we are not passing an empty list of columns
         if not selected_columns:
-            selected_columns = List_col  # Fallback to all columns if none selected
+            selected_columns = List_col_tab2  # Fallback to all columns if none selected
 
         List_filter = [None] * len(selected_columns)
-
-        df1 = od.open_dataframe(selected_columns, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-        exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
-        df1 = df1.drop(columns=[col for col in exclude_col if col in df1.columns])
+        print(selected_columns)
+        print("List_filter=",List_filter)
+        print("List_filter_tab2=",List_filter_tab2)
+        df1 = od.open_dataframe(selected_columns, List_filter_tab2, Project_path, Large_file_memory, Get_file_sys_mem)
+        # exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
+        # df1 = df1.drop(columns=[col for col in exclude_col if col in df1.columns])
         
         return df1.to_dict('records')
     return dash.no_update
@@ -256,7 +296,7 @@ def update_stored_df1(*args):
 )
 def update_y_dropdown_tab1(selected_x, selected_tab, stored_df1):
     if selected_tab == 'tab-2':  # Only execute if in the correct tab
-        exclude_cols = ["title", "characters"]
+        exclude_cols = []
         return update_y_dropdown_utility(selected_x, stored_df1, exclude_cols)
     return []  # Return empty if not in the right tab
 
@@ -278,14 +318,15 @@ def update_func_dropdown_tab1(selected_y, selected_tab, stored_df1):
      Input('y-dropdown-tab-2', 'value'),
      Input('Func-dropdown-tab-2', 'value'),
      Input('Graph-dropdown-tab-2', 'value'),
-     Input('tabs', 'value')] + dropdown_inputs_fig,  # Include tab value to conditionally trigger callback
+     Input('tabs', 'value')] + dropdown_inputs_fig_tab2,  # Include tab value to conditionally trigger callback
     State('stored-df1', 'data')
 )
-def update_graph_tab1(*args):
+def update_graph_tab2(*args):
     x_column, y_column, func_column, graph_type, selected_tab = args[0], args[1], args[2], args[3], args[4]
-    selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig)}
+    selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig_tab2)}
     stored_df1 = args[-1]
-    
+    print()
+    print("Update_graph_tab2")
     if selected_tab == 'tab-2' and stored_df1:  # Only execute if in the correct tab
         return update_graph_utility(x_column, y_column, func_column, graph_type, selected_values, stored_df1, Large_file_memory)
     return go.Figure()  # Return a blank figure if not in the right tab
@@ -381,12 +422,12 @@ def update_ui(input_value):
 # =============================================================================
 
 # Create a list of Input objects for each dropdown
-List_col_tab = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "characters", "title"]
-dropdown_inputs_tab = [Input(f'{col}-dropdown', 'value') for col in List_col_tab]
+List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "characters", "title"]
+dropdown_inputs_tab3 = [Input(f'{col}-dropdown', 'value') for col in List_col_tab3]
 
 @app.callback(
     Output('table-df2', 'data'),
-    dropdown_inputs_tab,
+    dropdown_inputs_tab3,
     Input('tabs', 'value'),  # Include tab value to conditionally trigger callback
     State('stored-df2', 'data')  # Ensure this is included as State
 )
@@ -394,7 +435,7 @@ def filter_df2(*args):
     
     selected_tab = args[-2]
     stored_df2 = args[-1]         # The last argument is stored_df2
-    selected_values = {col: args[i] for i, col in enumerate(List_col_tab)}
+    selected_values = {col: args[i] for i, col in enumerate(List_col_tab3)}
 
     if selected_tab == 'tab-3':  # Only execute if in the Data Visualization tab
         if stored_df2 is None:  # Check if stored_df2 is None or empty
@@ -416,8 +457,8 @@ def filter_df2(*args):
 
 tab = 'tab-3'
 # Create a list of Input objects for each dropdown
-List_col_fig = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
-dropdown_inputs_fig = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in List_col_fig]
+List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
+dropdown_inputs_fig_tab3 = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in List_col_fig_tab3]
 
 
 @app.callback(
@@ -450,12 +491,14 @@ def update_func_dropdown_tab1(selected_y, selected_tab, stored_df2):
      Input('y-dropdown-tab-3', 'value'),
      Input('Func-dropdown-tab-3', 'value'),
      Input('Graph-dropdown-tab-3', 'value'),
-     Input('tabs', 'value')] + dropdown_inputs_fig,  # Include tab value to conditionally trigger callback
+     Input('tabs', 'value')] + dropdown_inputs_fig_tab3,  # Include tab value to conditionally trigger callback
     State('stored-df2', 'data')
 )
-def update_graph_tab1(*args):
+def update_graph_tab3(*args):
+    pint()
+    print("Update_graph_tab3")
     x_column, y_column, func_column, graph_type, selected_tab = args[0], args[1], args[2], args[3], args[4]
-    selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig)}
+    selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig_tab3)}
     stored_df2 = args[-1]
     
     if selected_tab == 'tab-3':  # Only execute if in the correct tab

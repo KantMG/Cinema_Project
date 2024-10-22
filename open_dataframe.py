@@ -218,6 +218,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
         print("  Filters:", info["filters"])
         print("  Types:", info["types"])
 
+    
 
     # Create DataFrames based on the files, columns, and filters
     dataframes = []
@@ -231,7 +232,6 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
 
         # Create a dictionary to define the dtypes for the DataFrame
         dtype_mapping = {col: info["types"][col] for col in usecols if col in info["types"]}       
-        print(dtype_mapping)
         
         # Read the file into a DataFrame
         filepath = f"{Project_path}/{file}"
@@ -285,7 +285,6 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
         print()
         print("Time taken to compute dataframe "+str(i)+": {:.2f} seconds".format(time.time() - start_time))
         print()
-        print(merged_df.head(50))
         for df in dataframes[1:]:
             i+=1
             df = df.compute()
