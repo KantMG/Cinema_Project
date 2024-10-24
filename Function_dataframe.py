@@ -48,6 +48,50 @@ def explode_dataframe(df, Para):
     - Can create very large array if many cells contain many elements.
     """
     
+def df_empty(columns, dtypes, index=None):
+    """
+    Goal: 
+    - Create an empty dataframe.
+
+    Parameters:
+    - columns: List of column to create in the dataframe.
+    - dtypes: List of type which corresponding to the columns list.
+
+    Returns:
+    - Dataframe which has been created.
+    """
+    assert len(columns)==len(dtypes)
+    
+    df = pd.DataFrame(index=index)
+    
+    for c,d in zip(columns, dtypes):
+        df[c] = pd.Series(dtype=d)
+        
+    return df
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def explode_dataframe(df, Para):
+    """
+    Goal: 
+    - Count individual elements when multiple elements are stored in a single cell
+    - Explode the Dataframe where cells with muliple elements are counted multiple time.
+
+    Parameters:
+    - df: Dataframe
+    - Para: List of column in the df for which the table should explode the cells with multiple elements.
+
+    Returns:
+    - Dataframe which have been explode and the new counts of each elements.
+    
+    Warning:
+    - Can create very large array if many cells contain many elements.
+    """
+    
     df_temp = df.copy()
     
     # Step 1: Split the elements into lists of elements

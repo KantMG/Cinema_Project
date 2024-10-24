@@ -157,6 +157,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     - df: DataFrame
     """
     
+    print("      ----- open_dataframe -----")
     start_time = time.time()  
         
     # Define the mapping of files to their columns and their types
@@ -232,7 +233,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
 
         # Create a dictionary to define the dtypes for the DataFrame
         dtype_mapping = {col: info["types"][col] for col in usecols if col in info["types"]}       
-        
+                
         # Read the file into a DataFrame
         filepath = f"{Project_path}/{file}"
         # Log the time taken for each file reading
@@ -244,7 +245,6 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
             rename_map=info.get("rename"),
             large_file=Large_file_memory
         )
-
        # Convert columns to the specified types
         for col, expected_type in info["types"].items():
             if expected_type == float:
@@ -259,8 +259,8 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
 
         
-        desired_number_of_partitions = 4
-        df=df.repartition(npartitions=desired_number_of_partitions)
+        # desired_number_of_partitions = 4
+        # df=df.repartition(npartitions=desired_number_of_partitions)
         
         # Get the infos on the DataFrame
         dis.infos_on_data(df) if Get_file_sys_mem==True else None
@@ -308,10 +308,12 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     # Print the final merged DataFrame (head only, to avoid loading too much data)
     print("\nFinal Merged DataFrame:")
     print(merged_df.head(100))
+    print(merged_df)
     print()
     print("Time taken to merge all dataframe: {:.2f} seconds".format(time.time() - start_time))
     print()
-    
+    print("      --- end open_dataframe ---")
+    print()
     log_performance("Complete open_data", start_time)
     
     return merged_df
@@ -384,42 +386,44 @@ def apply_filter(df, filters):
     """    
     
     print("Apply filter.")
-    
-    for col, filter_value in filters.items():
-        print(col, filter_value)
-        if filter_value is not None and filter_value != 'All':  
-            if isinstance(filter_value, bool):
-                # Handle boolean filters directly
-                df = df[df[col] == filter_value]
-            elif ">=" in str(filter_value):
-                # Handle greater than or equal filters (e.g., ">=7.0")
-                threshold = float(filter_value.split(">=")[1])
-                df = df[df[col] >= threshold]
-            elif "<=" in str(filter_value):
-                # Handle less than or equal filters (e.g., "<=5.0")
-                threshold = float(filter_value.split("<=")[1])
-                df = df[df[col] <= threshold]
-            elif "=" in str(filter_value):
-                # Handle equality filters (e.g., "=nm0005690")
-                value = filter_value.split("=")[1]
-                df = df[df[col] == value]
-            elif isinstance(filter_value, str) and filter_value.endswith('*'):
-                # Remove the asterisk and apply an exact match filter
-                exact_value = filter_value[:-1]
-                df = df[df[col] == exact_value]
-            else:
-                if 'All' in filter_value:
-                    return df
+    if not filters:
+        return df
+    else:
+        for col, filter_value in filters.items():
+            print(col, filter_value)
+            if filter_value is not None and filter_value != 'All':  
+                if isinstance(filter_value, bool):
+                    # Handle boolean filters directly
+                    df = df[df[col] == filter_value]
+                elif ">=" in str(filter_value):
+                    # Handle greater than or equal filters (e.g., ">=7.0")
+                    threshold = float(filter_value.split(">=")[1])
+                    df = df[df[col] >= threshold]
+                elif "<=" in str(filter_value):
+                    # Handle less than or equal filters (e.g., "<=5.0")
+                    threshold = float(filter_value.split("<=")[1])
+                    df = df[df[col] <= threshold]
+                elif "=" in str(filter_value):
+                    # Handle equality filters (e.g., "=nm0005690")
+                    value = filter_value.split("=")[1]
+                    df = df[df[col] == value]
+                elif isinstance(filter_value, str) and filter_value.endswith('*'):
+                    # Remove the asterisk and apply an exact match filter
+                    exact_value = filter_value[:-1]
+                    df = df[df[col] == exact_value]
                 else:
-                    # Check if 'value' is a list and apply the filter accordingly
-                    if isinstance(filter_value, list):
-                        # Use regex pattern to match any of the values in the list
-                        pattern = '|'.join(map(re.escape, filter_value))  # Escape special characters to avoid regex issues
-                        df = df[df[col].str.contains(pattern, na=False)]
+                    if 'All' in filter_value:
+                        return df
                     else:
-                        # Single value case, handle as before
-                        df = df[df[col].str.contains(str(filter_value), na=False)]
-            print(df[col])
+                        # Check if 'value' is a list and apply the filter accordingly
+                        if isinstance(filter_value, list):
+                            # Use regex pattern to match any of the values in the list
+                            pattern = '|'.join(map(re.escape, filter_value))  # Escape special characters to avoid regex issues
+                            df = df[df[col].str.contains(pattern, na=False)]
+                        else:
+                            # Single value case, handle as before
+                            df = df[df[col].str.contains(str(filter_value), na=False)]
+                print(df[col])
     print()
     return df
     

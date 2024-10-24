@@ -404,7 +404,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
 
         if dtype == "float64":
             dropdown_with_label = html.Div([
-                html.Label(f'{col}'),
+                # html.Label(f'{col}'),
                 dcc.Input(
                     id=f'{col}-fig-dropdown-'+tab,
                     type='text',
@@ -425,7 +425,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
             
             # unique_values = sorted(df[col].unique())
             dropdown_with_label = html.Div([
-                html.Label(f'{col}'),
+                # html.Label(f'{col}'),
                 dcc.Dropdown(
                     id=f'{col}-fig-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
@@ -445,6 +445,74 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
+
+
+def figure_position_checkboxes_dash(idgraph, List_col_tab, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
+    # Generate the checkbox options
+    checkbox_options = [{'label': col, 'value': col} for col in List_col_tab]
+    
+    # Zip the checkbox options and their corresponding dropdowns
+    filter_with_checkboxes = zip(checkbox_options, dropdowns_with_labels_for_fig_filter)
+
+    checkboxes = html.Div(
+        style={'display': 'flex', 'flex-direction': 'column', 'gap': '10px'},  # Stack vertically
+        children=[
+            html.Div(
+                style={'display': 'flex', 'align-items': 'center', 'gap': '10px'},
+                children=[
+                    dcc.Checklist(
+                        id=f'checkbox-{option["value"]}',  # Unique ID for each checkbox
+                        options=[option],  # Use individual options
+                        value=[],  # Default to no checked values (or adjust as needed)
+                        inline=True,
+                    ),
+                    dropdown  # Make sure dropdown corresponds to the correct item
+                ]
+            )
+            for option, dropdown in filter_with_checkboxes
+        ]
+    )
+
+    return html.Div(
+        style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},
+        children=[
+            # Dropdowns for the main graph filters
+            html.Div(
+                dropdowns_with_labels_for_fig,
+                style={
+                    'display': 'flex',
+                    'margin-left': '300px',
+                    'justify-content': 'flex-start',
+                    'gap': '5px',
+                    'margin-bottom': '20px'
+                }
+            ),
+            # Graph on the left and checkboxes on the right
+            html.Div(
+                style={'display': 'flex'}, 
+                children=[
+                    # Graph on the left
+                    html.Div(
+                        [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'})], 
+                        style={'margin-left': '20px', 'width': '70%'}
+                    ),
+                    # Checkboxes and dropdowns for filtering on the right
+                    html.Div(
+                        style={'margin-left': '20px', 'width': '30%'}, 
+                        children=[
+                            html.H1('Select filters on the dataframe.', style={'margin-bottom': '10px'}),
+                            checkboxes  # Insert the dynamically created checkboxes here
+                        ]
+                    )
+                ]
+            )
+        ]
+    )
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
 
 
 def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
@@ -498,8 +566,6 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
             )
         ]
     )
-
-
 
 
 

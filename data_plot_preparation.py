@@ -82,6 +82,10 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
     
     #Case where y_column is None
     if str(y_column)=='None':
+
+        if Large_file_memory==True:
+            #Convert the Dask DataFrame to a Pandas DataFrame
+            df_temp = df_temp.compute()
         
         df_temp = df_temp[[Para[0]]]
                 
