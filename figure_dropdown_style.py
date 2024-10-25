@@ -203,6 +203,7 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
     
     legend = "None"
     
+    
     if str(y_column)=='None':
                 
         # Convert the DataFrame index to a list
@@ -447,67 +448,126 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
    #============================================================================="""
 
 
-def figure_position_checkboxes_dash(idgraph, List_col_tab, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
-    # Generate the checkbox options
-    checkbox_options = [{'label': col, 'value': col} for col in List_col_tab]
+def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style):
     
-    # Zip the checkbox options and their corresponding dropdowns
-    filter_with_checkboxes = zip(checkbox_options, dropdowns_with_labels_for_fig_filter)
-
-    checkboxes = html.Div(
-        style={'display': 'flex', 'flex-direction': 'column', 'gap': '10px'},  # Stack vertically
-        children=[
-            html.Div(
-                style={'display': 'flex', 'align-items': 'center', 'gap': '10px'},
-                children=[
-                    dcc.Checklist(
-                        id=f'checkbox-{option["value"]}',  # Unique ID for each checkbox
-                        options=[option],  # Use individual options
-                        value=[],  # Default to no checked values (or adjust as needed)
-                        inline=True,
-                    ),
-                    dropdown  # Make sure dropdown corresponds to the correct item
-                ]
+    columns = df.columns
+    
+    # Calculate widths, ensuring 'title' is handled specifically
+    column_widths = {col: get_max_width(df[col], col) for col in columns}
+    
+    # Create dropdowns with checkboxes using calculated widths
+    dropdowns_with_labels_and_checkboxes = []
+    for col in columns:
+        dtype = df[col].dtype
+        dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
+        dropdown_style = {**dark_dropdown_style, **uniform_style}
+        # Define whether to use dropdown or input based on the data type
+        if dtype == "float64":
+            input_component = dcc.Input(
+                id=f'{col}-fig-dropdown-'+tab,
+                type='text',
+                debounce=True,
+                style=dropdown_style
             )
-            for option, dropdown in filter_with_checkboxes
-        ]
-    )
-
-    return html.Div(
-        style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},
-        children=[
-            # Dropdowns for the main graph filters
-            html.Div(
-                dropdowns_with_labels_for_fig,
-                style={
-                    'display': 'flex',
-                    'margin-left': '300px',
-                    'justify-content': 'flex-start',
-                    'gap': '5px',
-                    'margin-bottom': '20px'
-                }
+        else:
+            # Collect all unique values, ensuring uniqueness
+            all_roles = set()
+            for value in df[col].dropna().unique():
+                roles = [role.strip() for role in str(value).split(',')]
+                all_roles.update(roles)
+            unique_values = sorted(all_roles)
+            
+            input_component = dcc.Dropdown(
+                id=f'{col}-fig-dropdown-'+tab,
+                options=[{'label': val, 'value': val} for val in unique_values],
+                style=dropdown_style,
+                className='dash-dropdown',
+                multi=True
+            )
+        
+        # Add a div that includes the checkbox and the input component
+        dropdown_with_checkbox = html.Div([
+            html.Label(f'{col}'),
+            dcc.Checklist(
+                id=f'checkbox-{col}-'+tab,
+                options=[{'label': '', 'value': col}],
+                value=[],  # Empty by default
+                style={'display': 'inline-block', 'verticalAlign': 'middle'}
             ),
-            # Graph on the left and checkboxes on the right
-            html.Div(
-                style={'display': 'flex'}, 
-                children=[
-                    # Graph on the left
-                    html.Div(
-                        [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'})], 
-                        style={'margin-left': '20px', 'width': '70%'}
-                    ),
-                    # Checkboxes and dropdowns for filtering on the right
-                    html.Div(
-                        style={'margin-left': '20px', 'width': '30%'}, 
-                        children=[
-                            html.H1('Select filters on the dataframe.', style={'margin-bottom': '10px'}),
-                            checkboxes  # Insert the dynamically created checkboxes here
-                        ]
-                    )
-                ]
-            )
-        ]
-    )
+            input_component
+        ], style={'display': 'inline-block', 'width': f'{column_widths[col] + 60}px', 'padding': '0 5px'}) # Adjusted width for checkbox
+        
+        dropdowns_with_labels_and_checkboxes.append(dropdown_with_checkbox)
+
+    return dropdowns_with_labels_and_checkboxes
+
+
+# """#=============================================================================
+#    #=============================================================================
+#    #============================================================================="""
+
+
+# def figure_position_checkboxes_dash(idgraph, List_col_tab, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
+#     # Generate the checkbox options
+#     checkbox_options = [{'label': col, 'value': col} for col in List_col_tab]
+    
+#     # Zip the checkbox options and their corresponding dropdowns
+#     filter_with_checkboxes = zip(checkbox_options, dropdowns_with_labels_for_fig_filter)
+
+#     checkboxes = html.Div(
+#         style={'display': 'flex', 'flex-direction': 'column', 'gap': '10px'},  # Stack vertically
+#         children=[
+#             html.Div(
+#                 style={'display': 'flex', 'align-items': 'center', 'gap': '10px'},
+#                 children=[
+#                     dcc.Checklist(
+#                         id=f'checkbox-{option["value"]}',  # Unique ID for each checkbox
+#                         options=[option],  # Use individual options
+#                         value=[],  # Default to no checked values (or adjust as needed)
+#                         inline=True,
+#                     ),
+#                     dropdown  # Make sure dropdown corresponds to the correct item
+#                 ]
+#             )
+#             for option, dropdown in filter_with_checkboxes
+#         ]
+#     )
+
+#     return html.Div(
+#         style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},
+#         children=[
+#             # Dropdowns for the main graph filters
+#             html.Div(
+#                 dropdowns_with_labels_for_fig,
+#                 style={
+#                     'display': 'flex',
+#                     'margin-left': '300px',
+#                     'justify-content': 'flex-start',
+#                     'gap': '5px',
+#                     'margin-bottom': '20px'
+#                 }
+#             ),
+#             # Graph on the left and checkboxes on the right
+#             html.Div(
+#                 style={'display': 'flex'}, 
+#                 children=[
+#                     # Graph on the left
+#                     html.Div(
+#                         [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'})], 
+#                         style={'margin-left': '20px', 'width': '70%'}
+#                     ),
+#                     # Checkboxes and dropdowns for filtering on the right
+#                     html.Div(
+#                         style={'margin-left': '20px', 'width': '30%'}, 
+#                         children=[
+#                             html.H1('Select filters on the dataframe.', style={'margin-bottom': '10px'}),
+#                             checkboxes  # Insert the dynamically created checkboxes here
+#                         ]
+#                     )
+#                 ]
+#             )
+#         ]
+#     )
 
 """#=============================================================================
    #=============================================================================

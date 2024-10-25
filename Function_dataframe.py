@@ -215,9 +215,10 @@ def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted
     - Table y: New table which contains the highest sum columns 
     and a column named 'Other' which is the sum of all the other columns
     """    
-    
-    # remove from the dataframe the index which cannot be eval
-    y = Pivot_table[Pivot_table.index.to_series().apply(lambda x: isinstance(fe.myeval(x), int))] 
+        
+    # # remove from the dataframe the index which cannot be eval
+    # y = Pivot_table[Pivot_table.index.to_series().apply(lambda x: isinstance(fe.myeval(x), int))] 
+    y = Pivot_table
     
     # sort the data in function of column Para_sorted
     y = y.sort_values(by=[Para_sorted], ascending=True)     
@@ -235,7 +236,7 @@ def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted
         
     # Divide all the dataframe by the first column
     y_divided = y.div(y.iloc[:, 0], axis=0)*100
-    
+       
     # Remove the column Total and nan if needed from y and y_divided
     y_divided = y_divided.drop('Total', axis=1)
     y  = y.drop('Total', axis=1)
@@ -243,7 +244,6 @@ def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted
     print("Table created with only the first "+str(first_n_top_amount_col)+" columns+1 of the initial table.")
     print()
     return y
-
 
 """#=============================================================================
    #=============================================================================
