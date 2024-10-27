@@ -275,7 +275,8 @@ def tab2_content():
     Output('stored-df1', 'data'),
     [Input(f'checkbox-{col}-tab-2', 'value') for col in List_col_tab2] +  # Each checkbox's value
     [Input('x-dropdown-tab-2', 'value'),  # x-axis dropdown
-     Input('y-dropdown-tab-2', 'value')] +  # y-axis dropdown
+     Input('y-dropdown-tab-2', 'value'),  # y-axis dropdown
+     Input('z-dropdown-tab-2', 'value')] +  # z-axis dropdown
     [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_fig_tab2],  # Rest of dropdowns
     Input('tabs', 'value')
 )
@@ -298,9 +299,10 @@ def update_stored_df1(*args):
     # Get x and y dropdown values
     x_dropdown_value = args[len(List_col_tab2)]  # x-dropdown value
     y_dropdown_value = args[len(List_col_tab2) + 1]  # y-dropdown value
-
+    z_dropdown_value = args[len(List_col_tab2) + 2]  # z-dropdown value
+    
     # Collect values from the filter  input
-    filter_values = list(args[len(List_col_tab2)+2:-1])  # Get the values for checkboxes   
+    filter_values = list(args[len(List_col_tab2)+3:-1])  # Get the values for checkboxes   
             
     # Get the current active tab
     tab = args[-1]  # Get the current active tab
@@ -349,6 +351,13 @@ def update_stored_df1(*args):
         # Call your open_dataframe function to get the data
         df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
         print(df1)
+        # Check if the folder exists
+        if os.path.exists(folder_path):
+            # Remove the folder and all its contents
+            shutil.rmtree(folder_path)
+            print(f"Successfully removed the folder: {folder_path}")
+        else:
+            print(f"The folder does not exist: {folder_path}")
         df1.to_parquet('temp_df1.parquet')  # Store the DataFrame
         return "Data loaded and saved."
 
@@ -424,8 +433,10 @@ def update_filter_dropdown_tab2(*args):
     Output('graph-output-tab-2', 'figure'),
     [Input('x-dropdown-tab-2', 'value'),
      Input('y-dropdown-tab-2', 'value'),
+     Input('z-dropdown-tab-2', 'value'),
      Input('Func-dropdown-tab-2', 'value'),
      Input('Graph-dropdown-tab-2', 'value'),
+     Input('Dim-dropdown-tab-2', 'value'),
      Input('tabs', 'value')] + 
     [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_fig_tab2],  # Rest of dropdowns
     Input('stored-df1', 'data')
@@ -434,7 +445,7 @@ def update_graph_tab2(*args):
     print()
     print("------------ callback update_graph_tab2 ------------")
     # Extract the necessary inputs from the arguments
-    x_column, y_column, func_column, graph_type, selected_tab = args[:5]
+    x_column, y_column, z_column, func_column, graph_type, dim_type, selected_tab = args[:7]
     stored_df1 = args[-1]
     # Load the Dask DataFrame from Parquet
     
@@ -450,7 +461,7 @@ def update_graph_tab2(*args):
     # Check if we're in the correct tab and there is data available
     if selected_tab == 'tab-2' and stored_df1 is not None:
         print(x_column, y_column, func_column, graph_type)
-        return update_graph_utility(x_column, y_column, func_column, graph_type, selected_values, stored_df1, Large_file_memory)
+        return update_graph_utility(x_column, y_column, func_column, graph_type, dim_type, selected_values, stored_df1, Large_file_memory)
     
     return go.Figure()  # Return a blank figure if not in the right tab
 
@@ -699,7 +710,7 @@ def update_filter_dropdown_utility(selected_boxes, df):
 
 
 
-def update_graph_utility(x_column, y_column, func_column, graph_type, selected_values, stored_df, large_file_memory):
+def update_graph_utility(x_column, y_column, func_column, graph_type, dim_type, selected_values, stored_df, large_file_memory):
     """
     Utility function to generate a graph based on the provided parameters.
     """
@@ -717,7 +728,7 @@ def update_graph_utility(x_column, y_column, func_column, graph_type, selected_v
         # Apply filters on the dataframe
         # filtered_data_graph = od.apply_filter(filtered_data_graph, selected_values)
         # Create the figure based on filtered data
-        fig = fds.create_figure(filtered_data_graph, x_column, y_column, func_column, graph_type, large_file_memory)
+        fig = fds.create_figure(filtered_data_graph, x_column, y_column, func_column, graph_type, dim_type, large_file_memory)
         return fig
 
 # =============================================================================

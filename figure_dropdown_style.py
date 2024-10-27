@@ -45,7 +45,7 @@ import data_plot_preparation as dpp
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory):
+def create_figure(df, x_column, y_column, z_column, g_column, h_column, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -56,6 +56,7 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
     - y_column: Column in the dataframe (can be None)
     - z_column: Function to operate on df_temp[x_column,y_column]
     - g_column: Type of Graphyque for the figure.
+    - h_column: Graphyque dimension for the figure.
     - Large_file_memory: Estimate if the file is too large to be open with panda
 
     Returns:
@@ -77,7 +78,7 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
     
     if x_column is not None: 
         # Add the core of the figure
-        fig, ax, fig_x_value, x_values, legend = figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y)  
+        fig, ax, fig_x_value, x_values, legend = figure_core(fig, ax, x_column, y_column, z_column, g_column, h_column, Para, y)  
     
     plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True, prune='both', nbins=10))
 
@@ -174,7 +175,7 @@ def label_fig(ax, x_column, y_column, z_column):
    #============================================================================="""
 
 
-def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
+def figure_core(fig, ax, x_column, y_column, z_column, g_column, h_column, Para, y):
 
     """
     Goal: Create the plot inside the figure regarding the inputs.
@@ -200,70 +201,80 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
     
     legend = "None"
-    
-    print(df_col_string)
-    if str(y_column)=='None':
-        print('yes',x_column)
-        # Convert the DataFrame index to a list
-        if x_column not in df_col_string:
-            x_values = list(map(int, y[Para[0]]))
-        else:
-            print()
-            print(y[Para[0]])
-            x_values = list(y[Para[0]])
-        
-        
-        if g_column=="Histogram":
-            ax.bar(np.arange(len(x_values)), y["Count"])
-        if g_column=="Curve":
-            ax.plot(np.arange(len(x_values)), y["Count"], linewidth=4.)
 
+
+    if h_column=="1D": 
+        if str(y_column)=='None':
+            print('yes',x_column)
+            # Convert the DataFrame index to a list
+            if x_column not in df_col_string:
+                x_values = list(map(int, y[Para[0]]))
+            else:
+                print()
+                print(y[Para[0]])
+                x_values = list(y[Para[0]])
             
-    else:
-        
-        # Convert the DataFrame index to a list
-        if x_column not in df_col_string:
-            x_values = list(map(int, y.index))
-        else:
-            x_values = y.index
-        
-        if str(z_column)=='None':
             
-            bottom = np.zeros(len(y.index))
-
-            # Plot the stacked bar chart
-            bars_list = []  # List to hold bar objects for the legend
-            for i, (element_col, y_val) in enumerate(y.items()):
-                if g_column=="Histogram":
-                    bars = ax.bar(np.arange(len(x_values)), y_val, label=element_col, bottom=bottom, color=colors[i % len(colors)])  # Color assignment
-                if g_column=="Curve":
-                    bars = ax.plot(np.arange(len(x_values)), y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
-                bars_list.append(bars)  # Store the bars
-                bottom += y_val              
-                
-
-            # Create a custom legend using the bars created
-            legend_handles = [plt.Line2D([0], [0], color=color, lw=4) for color in colors[:len(y)]]
-            legend_labels = y.columns.tolist()  # Get the labels from DataFrame columns
-            # Customize the legend to ensure it reflects the colors of the bars
-            legend = ax.legend(legend_handles, legend_labels, ncol=2, handletextpad=0.001)
-        
-            # legend = ax.legend(ncol=2)
-            for text in legend.get_texts():
-                text.set_color('white')  # Set the color of the legend text
-                text.set_fontsize(15)  # Set the font size of the legend text
-    
-        elif str(z_column) == "Avg":
-                        
             if g_column=="Histogram":
-                ax.bar(np.arange(len(x_values)), y)
+                ax.bar(np.arange(len(x_values)), y["Count"])
             if g_column=="Curve":
-                ax.plot(np.arange(len(x_values)), y, linewidth=4.)
-     
-    fig_x_value = np.arange(len(x_values))
-    print(fig_x_value)
-    print(x_values)
+                ax.plot(np.arange(len(x_values)), y["Count"], linewidth=4.)
+            if g_column=="Scatter":
+                ax.scatter(np.arange(len(x_values)), y["Count"], linewidth=4.)
+                
+        else:
+            
+            # Convert the DataFrame index to a list
+            if x_column not in df_col_string:
+                x_values = list(map(int, y.index))
+            else:
+                x_values = y.index
+            
+            if str(z_column)=='None':
+                
+                bottom = np.zeros(len(y.index))
     
+                # Plot the stacked bar chart
+                bars_list = []  # List to hold bar objects for the legend
+                for i, (element_col, y_val) in enumerate(y.items()):
+                    if g_column=="Histogram":
+                        bars = ax.bar(np.arange(len(x_values)), y_val, label=element_col, bottom=bottom, color=colors[i % len(colors)])  # Color assignment
+                    if g_column=="Curve":
+                        bars = ax.plot(np.arange(len(x_values)), y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
+                    if g_column=="Scatter":
+                        bars = ax.scatter(np.arange(len(x_values)), y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
+                                    
+                    bars_list.append(bars)  # Store the bars
+                    bottom += y_val              
+                    
+    
+                # Create a custom legend using the bars created
+                legend_handles = [plt.Line2D([0], [0], color=color, lw=4) for color in colors[:len(y)]]
+                legend_labels = y.columns.tolist()  # Get the labels from DataFrame columns
+                # Customize the legend to ensure it reflects the colors of the bars
+                legend = ax.legend(legend_handles, legend_labels, ncol=2, handletextpad=0.001)
+            
+                # legend = ax.legend(ncol=2)
+                for text in legend.get_texts():
+                    text.set_color('white')  # Set the color of the legend text
+                    text.set_fontsize(15)  # Set the font size of the legend text
+        
+            elif str(z_column) == "Avg":
+                            
+                if g_column=="Histogram":
+                    ax.bar(np.arange(len(x_values)), y)
+                if g_column=="Curve":
+                    ax.plot(np.arange(len(x_values)), y, linewidth=4.)
+                if g_column=="Scatter":
+                    ax.scatter(np.arange(len(x_values)), y, linewidth=4.)
+                    
+        fig_x_value = np.arange(len(x_values))
+        print(fig_x_value)
+        print(x_values)
+    
+    if h_column=="2D": 
+        print(h_column)
+        
 
     # Check if all elements are either int or float
     is_numeric = all(isinstance(x, (int, float)) for x in x_values)
@@ -335,10 +346,14 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     function_on_y = ["Avg"]
     
     # Get the type of graph
-    graph_type = ["Histogram", "Curve"]
+    graph_type = ["Histogram", "Curve", "Scatter"]
+
+    # Get the graph dimension
+    dim_type = ["1D", "2D", "3D"]
     
     # Get the list of axis and graph function
-    axis = ["x", "y", "Func", "Graph"]
+    axis = ["x", "y", "z", "Func", "Graph", "Dim"]
+
 
     # Define a consistent style for both input and dropdown elements
     uniform_style = {
@@ -350,7 +365,19 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     # Create the dropdowns for each column
     dropdowns_with_labels = []
     for axi in axis:
-        if axi == 'Graph':
+        if axi == 'Dim':
+            # Get unique values and sort them
+            dropdown_with_label = html.Div([
+                html.Label(f'Select graph {axi}'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown-'+tab,
+                    options=[{'label': val, 'value': val} for val in dim_type],
+                    value='1D',  # Set default to "All", meaning no filtering
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        elif axi == 'Graph':
             # Get unique values and sort them
             dropdown_with_label = html.Div([
                 html.Label(f'Select a {axi} type'),  # Label for the dropdown
@@ -371,6 +398,16 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     options=[{'label': val, 'value': val} for val in function_on_y],
                     # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        elif axi== 'z':
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {axi}'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown-'+tab,
+                    options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
+                   style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
