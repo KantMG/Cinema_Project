@@ -16,6 +16,8 @@ import dask.dataframe as dd
 import plotly.graph_objects as go
 
 import webbrowser
+import shutil
+import os
 
 import Function_dataframe as fd
 import Function_errors as fe
@@ -25,6 +27,18 @@ import table_dropdown_style as tds
 import figure_dropdown_style as fds
 import data_plot_preparation as dpp
 import open_dataframe as od
+
+
+# Define the path to the folder you want to remove
+folder_path = '/home/quentin/Documents/Work/Data_analytics/Programs/Python/Cinema_Project/temp_df1.parquet'
+
+# Check if the folder exists
+if os.path.exists(folder_path):
+    # Remove the folder and all its contents
+    shutil.rmtree(folder_path)
+    print(f"Successfully removed the folder: {folder_path}")
+else:
+    print(f"The folder does not exist: {folder_path}")
 
 
 Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
