@@ -25,6 +25,7 @@ from collections import OrderedDict
 import plotly.express as px
 import webbrowser
 
+import numpy as np
 import matplotlib
 # matplotlib.use('Agg')  # Use the Agg backend (no GUI)
 import numpy as np
@@ -63,14 +64,11 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
     
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
-        Para, y = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, Large_file_memory)
+        Para, y, x_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, Large_file_memory)
     
     # =============================================================================
     print("Start figure creation")
-    # =============================================================================
-
-    # Create the Matplotlib figure
-    
+    # =============================================================================   
     fig, ax = plt.subplots(figsize=(11.5, 7))
     
     # Create the label of the figure
@@ -79,7 +77,7 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
     
     if x_column is not None: 
         # Add the core of the figure
-        fig, ax, x_values, legend = figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y)  
+        fig, ax, fig_x_value, x_values, legend = figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y)  
     
     plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True, prune='both', nbins=10))
 
@@ -98,7 +96,7 @@ def create_figure(df, x_column, y_column, z_column, g_column, Large_file_memory)
         title_font=dict(size=20, color='white'),  # Title styling
         # X-axis and Y-axis styling
         xaxis=dict(
-            tickvals=np.arange(len(x_values)),  # Set the tick positions
+            tickvals=fig_x_value,  # Set the tick positions
             ticktext=x_values,  # Set the tick labels to the genre names
             title=dict(text=xlabel, font=dict(size=20, color='white')),  # X-axis label styling
             tickfont=dict(color='white', size=18),  # X-axis tick color
@@ -196,20 +194,22 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
     """
     
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres", "directors", "writers", "category"]
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
     
     # Define a list of colors for the bars
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
     
     legend = "None"
     
-    
+    print(df_col_string)
     if str(y_column)=='None':
-                
+        print('yes',x_column)
         # Convert the DataFrame index to a list
         if x_column not in df_col_string:
             x_values = list(map(int, y[Para[0]]))
         else:
+            print()
+            print(y[Para[0]])
             x_values = list(y[Para[0]])
         
         
@@ -259,18 +259,36 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, Para, y):
                 ax.bar(np.arange(len(x_values)), y)
             if g_column=="Curve":
                 ax.plot(np.arange(len(x_values)), y, linewidth=4.)
-            
-    print(np.arange(len(x_values)))
+     
+    fig_x_value = np.arange(len(x_values))
+    print(fig_x_value)
     print(x_values)
     
-    # Set x-ticks to the actual index values
-    ax.set_xticks(np.arange(len(x_values)))  # Set the x-ticks to the index of y
-    ax.set_xticklabels(x_values, rotation=45, ha='right')  # Set labels and rotate them for better visibility
-            
+
+    # Check if all elements are either int or float
+    is_numeric = all(isinstance(x, (int, float)) for x in x_values)
+    
+    if is_numeric:
+        # Determine the interval
+        num_ticks = 5
+        if len(x_values) > num_ticks:
+            interval = max(1, len(x_values) // num_ticks)  # Calculate the interval for x-ticks
+            # Set x-ticks to every 'interval'-th x value's index
+            ax.set_xticks(np.arange(0, len(x_values), interval))
+            # Set labels for those ticks, you can also truncate if needed
+            ax.set_xticklabels(x_values[0:len(x_values):interval], rotation=45, ha='right')
+        else:
+            # If there are 10 or fewer x_values, just set the ticks normally
+            ax.set_xticks(np.arange(len(x_values)))
+            ax.set_xticklabels(x_values, rotation=45, ha='right')
+    
+        fig_x_value = np.arange(0, len(x_values), interval)
+        x_values = x_values[0:len(x_values):interval]
+    
     ax.tick_params(axis='both', labelsize=10)
     ax.grid(True, color='grey', linestyle='--', linewidth=2, alpha=0.5)  
             
-    return fig, ax, x_values, legend
+    return fig, ax, fig_x_value, x_values, legend
 
 
 """#=============================================================================
@@ -351,7 +369,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in function_on_y],
-                    value='All',  # Set default to "All", meaning no filtering
+                    # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -362,8 +380,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                    # value='All',  # Set default to "All", meaning no filtering
-                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
+                   style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
@@ -373,7 +390,6 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],
-                    # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -405,7 +421,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
 
         if dtype == "float64":
             dropdown_with_label = html.Div([
-                # html.Label(f'{col}'),
+                html.Label(f'{col}'),
                 dcc.Input(
                     id=f'{col}-fig-dropdown-'+tab,
                     type='text',
@@ -426,7 +442,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
             
             # unique_values = sorted(df[col].unique())
             dropdown_with_label = html.Div([
-                # html.Label(f'{col}'),
+                html.Label(f'{col}'),
                 dcc.Dropdown(
                     id=f'{col}-fig-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
@@ -446,7 +462,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
-
+   
 
 def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style):
     
@@ -459,7 +475,6 @@ def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, un
     dropdowns_with_labels_and_checkboxes = []
     for col in columns:
         dtype = df[col].dtype
-        dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
         dropdown_style = {**dark_dropdown_style, **uniform_style}
         # Define whether to use dropdown or input based on the data type
         if dtype == "float64":
@@ -485,89 +500,89 @@ def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, un
                 multi=True
             )
         
-        # Add a div that includes the checkbox and the input component
+        # Add a div that includes the checkbox and the label to the right
         dropdown_with_checkbox = html.Div([
-            html.Label(f'{col}'),
             dcc.Checklist(
                 id=f'checkbox-{col}-'+tab,
                 options=[{'label': '', 'value': col}],
                 value=[],  # Empty by default
                 style={'display': 'inline-block', 'verticalAlign': 'middle'}
             ),
+            html.Label(f'{col}', style={'marginLeft': '5px', 'marginRight': '10px'}),  # Label on the right of the checkbox
             input_component
-        ], style={'display': 'inline-block', 'width': f'{column_widths[col] + 60}px', 'padding': '0 5px'}) # Adjusted width for checkbox
+        ], style={'display': 'flex', 'alignItems': 'center', 'width': f'{column_widths[col] + 60}px', 'padding': '0 5px'}) # Adjusted width for checkbox
         
         dropdowns_with_labels_and_checkboxes.append(dropdown_with_checkbox)
 
     return dropdowns_with_labels_and_checkboxes
 
 
-# """#=============================================================================
-#    #=============================================================================
-#    #============================================================================="""
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
 
-# def figure_position_checkboxes_dash(idgraph, List_col_tab, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
-#     # Generate the checkbox options
-#     checkbox_options = [{'label': col, 'value': col} for col in List_col_tab]
+def figure_position_checkboxes_dash(idgraph, List_col_tab, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
+    # Generate the checkbox options
+    checkbox_options = [{'label': col, 'value': col} for col in List_col_tab]
     
-#     # Zip the checkbox options and their corresponding dropdowns
-#     filter_with_checkboxes = zip(checkbox_options, dropdowns_with_labels_for_fig_filter)
+    # Zip the checkbox options and their corresponding dropdowns
+    filter_with_checkboxes = zip(checkbox_options, dropdowns_with_labels_for_fig_filter)
 
-#     checkboxes = html.Div(
-#         style={'display': 'flex', 'flex-direction': 'column', 'gap': '10px'},  # Stack vertically
-#         children=[
-#             html.Div(
-#                 style={'display': 'flex', 'align-items': 'center', 'gap': '10px'},
-#                 children=[
-#                     dcc.Checklist(
-#                         id=f'checkbox-{option["value"]}',  # Unique ID for each checkbox
-#                         options=[option],  # Use individual options
-#                         value=[],  # Default to no checked values (or adjust as needed)
-#                         inline=True,
-#                     ),
-#                     dropdown  # Make sure dropdown corresponds to the correct item
-#                 ]
-#             )
-#             for option, dropdown in filter_with_checkboxes
-#         ]
-#     )
+    checkboxes = html.Div(
+        style={'display': 'flex', 'flex-direction': 'column', 'gap': '10px'},  # Stack vertically
+        children=[
+            html.Div(
+                style={'display': 'flex', 'align-items': 'center', 'gap': '10px'},
+                children=[
+                    dcc.Checklist(
+                        id=f'checkbox-{option["value"]}',  # Unique ID for each checkbox
+                        options=[option],  # Use individual options
+                        value=[],  # Default to no checked values (or adjust as needed)
+                        inline=True,
+                    ),
+                    dropdown  # Make sure dropdown corresponds to the correct item
+                ]
+            )
+            for option, dropdown in filter_with_checkboxes
+        ]
+    )
 
-#     return html.Div(
-#         style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},
-#         children=[
-#             # Dropdowns for the main graph filters
-#             html.Div(
-#                 dropdowns_with_labels_for_fig,
-#                 style={
-#                     'display': 'flex',
-#                     'margin-left': '300px',
-#                     'justify-content': 'flex-start',
-#                     'gap': '5px',
-#                     'margin-bottom': '20px'
-#                 }
-#             ),
-#             # Graph on the left and checkboxes on the right
-#             html.Div(
-#                 style={'display': 'flex'}, 
-#                 children=[
-#                     # Graph on the left
-#                     html.Div(
-#                         [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'})], 
-#                         style={'margin-left': '20px', 'width': '70%'}
-#                     ),
-#                     # Checkboxes and dropdowns for filtering on the right
-#                     html.Div(
-#                         style={'margin-left': '20px', 'width': '30%'}, 
-#                         children=[
-#                             html.H1('Select filters on the dataframe.', style={'margin-bottom': '10px'}),
-#                             checkboxes  # Insert the dynamically created checkboxes here
-#                         ]
-#                     )
-#                 ]
-#             )
-#         ]
-#     )
+    return html.Div(
+        style={'display': 'flex', 'flex-direction': 'column', 'margin-top': '10px'},
+        children=[
+            # Dropdowns for the main graph filters
+            html.Div(
+                dropdowns_with_labels_for_fig,
+                style={
+                    'display': 'flex',
+                    'margin-left': '300px',
+                    'justify-content': 'flex-start',
+                    'gap': '5px',
+                    'margin-bottom': '20px'
+                }
+            ),
+            # Graph on the left and checkboxes on the right
+            html.Div(
+                style={'display': 'flex'}, 
+                children=[
+                    # Graph on the left
+                    html.Div(
+                        [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'})], 
+                        style={'margin-left': '20px', 'width': '70%'}
+                    ),
+                    # Checkboxes and dropdowns for filtering on the right
+                    html.Div(
+                        style={'margin-left': '20px', 'width': '30%'}, 
+                        children=[
+                            html.H1('Select filters on the dataframe.', style={'margin-bottom': '10px'}),
+                            checkboxes  # Insert the dynamically created checkboxes here
+                        ]
+                    )
+                ]
+            )
+        ]
+    )
 
 """#=============================================================================
    #=============================================================================

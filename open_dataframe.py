@@ -158,6 +158,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     """
     
     print("      ----- open_dataframe -----")
+    print(Project_path)
     start_time = time.time()  
         
     # Define the mapping of files to their columns and their types
@@ -300,6 +301,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
             print()
             print("Time taken to merge dataframe "+str(i)+": {:.2f} seconds".format(time.time() - start_time))
             print()
+        merged_df = dd.from_pandas(merged_df, npartitions=2)
             # print(df.head(50))
     else:
         merged_df = dataframes[0]

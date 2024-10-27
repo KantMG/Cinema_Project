@@ -31,22 +31,6 @@ import Function_errors as fe
    #============================================================================="""
 
 
-def explode_dataframe(df, Para):
-    """
-    Goal: 
-    - Count individual elements when multiple elements are stored in a single cell
-    - Explode the Dataframe where cells with muliple elements are counted multiple time.
-
-    Parameters:
-    - df: Dataframe
-    - Para: List of column in the df for which the table should explode the cells with multiple elements.
-
-    Returns:
-    - Dataframe which have been explode and the new counts of each elements.
-    
-    Warning:
-    - Can create very large array if many cells contain many elements.
-    """
     
 def df_empty(columns, dtypes, index=None):
     """
@@ -100,6 +84,9 @@ def explode_dataframe(df, Para):
     # Step 2: Explode the list of elements into individual rows
     df_temp = df_temp.explode(Para+'_split')
         
+    # Step 3: Replace empty cells with 'Unknown' 
+    df_temp[Para+'_split'] = df_temp[Para+'_split'].replace('', 'Unknown')
+    
     # Step 3: Count the occurrences of each element
     element_counts = df_temp[Para+'_split'].str.strip().value_counts()
     
@@ -168,11 +155,7 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     """
     
     df = csvFile[Para]
-    
-    if Large_file_memory==True:
-        #Convert the Dask DataFrame to a Pandas DataFrame
-        df = df.compute()
-    
+        
     # Get the Count table of the dataframe  
     y=df.value_counts(dropna=False).reset_index(name='Count') #dropna=False to count nan value    
     

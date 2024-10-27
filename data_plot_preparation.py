@@ -67,38 +67,26 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
     df_col_string = ["genres", "directors", "writers", "category"]
     
     # print("Delete the rows with unknown value and split the column with multiple value per cell.")
-    # Para, df_temp = delete_rows_unknow_and_split(df_temp, x_column, y_column)
+    Para, df_temp, x_column, y_column = delete_rows_unknow_and_split(df_temp, x_column, y_column, Large_file_memory)
 
-    #Case where y_column is None
-    if str(y_column)=='None':    
-        df_temp = df_temp[[x_column]]
-        Para=[x_column]   
-    else:
-        df_temp = df_temp[[x_column, y_column]]
-        Para=[x_column, y_column]
-    
-    print(Para)
-    print(df_temp)
-    
+
     #Case where y_column is None
     if str(y_column)=='None':
 
-        if Large_file_memory==True:
-            #Convert the Dask DataFrame to a Pandas DataFrame
-            df_temp = df_temp.compute()
-        
         df_temp = df_temp[[Para[0]]]
-                
+
         # Get the Count table of the dataframe  
         y=df_temp.value_counts(dropna=False).reset_index(name='Count') #dropna=False to count nan value
         
         # sort the data in function of column Para_sorted
         y = y.sort_values(by=Para[0], ascending=True)
+
+        # Remove rows where any column contains -1.0
+        y = y[y[Para[0]] != -1.0]
         
 
     #Case where y_column is not None
     else:
-
 
         Pivot_table=fd.Pivot_table(df_temp,Para,False, True)
 
@@ -143,7 +131,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
                 y.sort_values(ascending=True)
                 
     print(y)
-    return Para, y
+    return Para, y, x_column
 
 
 """#=============================================================================
@@ -214,7 +202,7 @@ def replace_rows_unknow(df_temp):
    #============================================================================="""
 
 
-def delete_rows_unknow_and_split(df_temp, x_column, y_column):
+def delete_rows_unknow_and_split(df_temp, x_column, y_column, Large_file_memory):
 
     """
     Goal: Delete the rows in a dataframe which correspond to '\\N'.
@@ -244,39 +232,28 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column):
         df_temp[x_column] = df_temp[x_column].replace('', 'Unknown').astype(str)
     if str(y_column) in df_col_string:
         df_temp[y_column] = df_temp[y_column].replace('', 'Unknown').astype(str)
-
-    
-    #Case where y_column is None
-    if str(y_column)=='None':    
-
-        df_temp = df_temp[[x_column]]
-        Para=[x_column]
-                
-        # # Filter out rows where 'Value' is '\\N'
-        # df_temp.replace('\\N', np.nan, inplace=True)
-        # df_temp.dropna(inplace=True)
-    
-    else:
-
-        df_temp = df_temp[[x_column, y_column]]
-        Para=[x_column, y_column]
         
-        # Filter out rows where 'Value' is '\\N'
-        df_temp.replace('\\N', np.nan, inplace=True)
-        df_temp.dropna(inplace=True)
         
-    
+    if Large_file_memory==True:
+        #Convert the Dask DataFrame to a Pandas DataFrame
+        df_temp = df_temp.compute()
     
     if x_column in df_col_string:
         #To count individual elements when multiple elements are stored in a single cell 
         df_temp, element_counts = fd.explode_dataframe(df_temp, x_column)
-        Para=[x_column+"_split",y_column]
+        x_column = x_column+'_split'
 
-    
     if y_column in df_col_string:
         #To count individual elements when multiple elements are stored in a single cell 
         df_temp, element_counts = fd.explode_dataframe(df_temp, y_column)
-        Para=[x_column,y_column+"_split"]    
+        y_column = y_column+'_split'
 
-    
-    return Para, df_temp
+    #Case where y_column is None
+    if str(y_column)=='None':    
+        df_temp = df_temp[[x_column]]
+        Para=[x_column]
+    else:
+        df_temp = df_temp[[x_column, y_column]]
+        Para=[x_column, y_column]
+
+    return Para, df_temp, x_column, y_column
