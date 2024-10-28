@@ -39,7 +39,6 @@ def web_interface_style():
         'width': '160px',
     }
 
-
     # Define a consistent style for both input and dropdown elements
     uniform_style = {
         'width': '160px',  # Set a consistent width

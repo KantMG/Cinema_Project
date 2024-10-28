@@ -1,8 +1,8 @@
+My code is :
+
 
 # Initialize the Dash app with suppress_callback_exceptions set to True
 app, dark_dropdown_style, uniform_style = wis.web_interface_style()
-
-
 
 app.layout = html.Div([
     # Tabs Component
@@ -62,7 +62,10 @@ app.layout = html.Div([
     
     # Hidden store to hold df2 data
     dcc.Store(id='stored-df2', data=None),
-        
+
+    # Hidden store for input values
+    dcc.Store(id='input-storage', data={}),  # New store to handle input states
+            
     # Content Div for Tabs
     html.Div(id='tabs-content')
 ])
@@ -70,6 +73,7 @@ app.layout = html.Div([
 # Callback to manage tab content
 @app.callback(
     Output('tabs-content', 'children'),
+    Output('input-storage', 'data'),
     Input('tabs', 'value'),
     State('stored-df1', 'data')
 )
@@ -79,13 +83,22 @@ def render_content(tab, stored_df1):
         return html.Div([
             html.H1("THE SEVENTH ART, A STORY OF INFLUENCE", style={"color": "#FFD700"}, className="text-light"),
             tab1_content()
-        ])
+        ]), {}
     elif tab == 'tab-2':
         # Placeholder for Tab 2 content
         return html.Div([
             html.H1("Graphic interface dedicated to the dataframe related to the overall IMDB database.", style={"color": "#FFD700"}, className="text-light"),
             tab2_content()
-        ])
+        ]), {}
+    elif tab == 'tab-3':
+        return html.Div([
+            html.Div([
+                html.H1("Research on an artist or a movie.", style={"color": "#FFD700"}, className="text-light"),
+            ]),
+            dcc.Input(id='input-value', type='text', placeholder='Enter a value...', style={**dark_dropdown_style, **uniform_style}),
+            html.Div(id='dynamic-content')
+        ]), {}
+
 
 
 # =============================================================================
@@ -135,19 +148,13 @@ def tab1_content():
 # =============================================================================
 # =============================================================================
 
-tab = 'tab-2'
-List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes"]
-List_filter_tab2 = [None, None, None, None, None, None, None, None]
-List_dtype_tab2 = [float, float, str, float, str, str, float, float]
-
-
 def tab2_content():
     print()
     print("=====================  Tab2_content  =========================")
     # Display dropdowns without loading data initially
     df1_placeholder = fd.df_empty(List_col_tab2, dtypes=List_dtype_tab2)    
-    dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
-    dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_checkboxes_figure_filter(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
+    dropdowns_with_labels_for_fig_tab2 = dropdown_figure(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
+    dropdowns_with_labels_for_fig_filter_tab2 = dropdown_checkboxes_figure_filter(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
     for c in dropdowns_with_labels_for_fig_tab2:
         print(c)  # This prints the entire component dictionary to check its structure
         print()
@@ -167,22 +174,16 @@ def tab2_content():
                         
     ], style={'padding': '20px'})
 
-
-# Create a list of Input objects for each dropdown
-List_col_fig_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes"]
-dropdown_inputs_fig_tab2 = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in List_col_fig_tab2]
-df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
-df_col_string = ["genres", "directors", "writers"]
-
 # =============================================================================
 # Callback for df1 in tab-2
 # =============================================================================
 
 @app.callback(
     Output('stored-df1', 'data'),
-    [Input(f'checkbox-{col}-tab-2', 'value') for col in List_col_tab2] +  # Each checkbox's value
     [Input('x-dropdown-tab-2', 'value'),  # x-axis dropdown
-     Input('y-dropdown-tab-2', 'value')] +  # y-axis dropdown
+     Input('y-dropdown-tab-2', 'value'),  # y-axis dropdown
+     Input('z-dropdown-tab-2', 'value')] +  # z-axis dropdown
+    [Input(f'checkbox-{col}-tab-2', 'value') for col in List_col_tab2] +  # Each checkbox's value
     [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_fig_tab2],  # Rest of dropdowns
     Input('tabs', 'value')
 )
@@ -198,25 +199,27 @@ def update_stored_df1(*args):
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     print("Triggered component:", triggered_id)
     print()
-    
-    # Collect values from checkboxes
-    checkbox_values = list(args[:len(List_col_tab2)])  # Get the values for checkboxes
-        
-    # Get x and y dropdown values
-    x_dropdown_value = args[len(List_col_tab2)]  # x-dropdown value
-    y_dropdown_value = args[len(List_col_tab2) + 1]  # y-dropdown value
 
+    # Get x and y dropdown values
+    x_dropdown_value = args[0]  # x-dropdown value
+    y_dropdown_value = args[1]  # y-dropdown value
+    z_dropdown_value = args[2]  # z-dropdown value
+
+    # Collect values from checkboxes
+    checkbox_values = list(args[3:3+len(List_col_tab2)])  # Get the values for checkboxes
+    
     # Collect values from the filter  input
-    filter_values = list(args[len(List_col_tab2)+2:-1])  # Get the values for checkboxes   
+    filter_values = list(args[len(List_col_tab2)+3:-1])  # Get the values for checkboxes   
             
     # Get the current active tab
     tab = args[-1]  # Get the current active tab
     
     # Print debug information
     print("Active Tab:", tab)
-    print("Checkbox Values:", checkbox_values)
     print("X Dropdown Value:", x_dropdown_value)
     print("Y Dropdown Value:", y_dropdown_value)
+    print("Z Dropdown Value:", z_dropdown_value)
+    print("Checkbox Values:", checkbox_values)
     print("Filter Value:", filter_values)
 
     if tab == 'tab-2':
@@ -256,15 +259,19 @@ def update_stored_df1(*args):
         # Call your open_dataframe function to get the data
         df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
         print(df1)
-        df1.to_parquet('temp_store.parquet')  # Store the DataFrame
+        # Check if the folder exists
+        if os.path.exists(folder_path):
+            # Remove the folder and all its contents
+            shutil.rmtree(folder_path)
+            print(f"Successfully removed the folder: {folder_path}")
+        else:
+            print(f"The folder does not exist: {folder_path}")
+        df1.to_parquet('temp_df1.parquet')  # Store the DataFrame
         return "Data loaded and saved."
 
     return dash.no_update
 
 
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
 
 def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large_file_memory):
 
@@ -287,10 +294,14 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     function_on_y = ["Avg"]
     
     # Get the type of graph
-    graph_type = ["Histogram", "Curve"]
+    graph_type = ["Histogram", "Curve", "Scatter"]
+
+    # Get the graph dimension
+    dim_type = ["1D", "2D", "3D"]
     
     # Get the list of axis and graph function
-    axis = ["x", "y", "Func", "Graph"]
+    axis = ["x", "y", "z", "Func", "Graph", "Dim"]
+
 
     # Define a consistent style for both input and dropdown elements
     uniform_style = {
@@ -302,14 +313,26 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     # Create the dropdowns for each column
     dropdowns_with_labels = []
     for axi in axis:
-        if axi == 'Graph':
+        if axi == 'Dim':
+            # Get unique values and sort them
+            dropdown_with_label = html.Div([
+                html.Label(f'Select graph {axi}'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown-'+tab,
+                    options=[{'label': val, 'value': val} for val in dim_type],
+                    value='1D',  # Set default to "All", meaning no filtering
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        elif axi == 'Graph':
             # Get unique values and sort them
             dropdown_with_label = html.Div([
                 html.Label(f'Select a {axi} type'),  # Label for the dropdown
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in graph_type],
-                    # value='Histogram',  # Set default to "All", meaning no filtering
+                    value='Histogram',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -323,6 +346,16 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     options=[{'label': val, 'value': val} for val in function_on_y],
                     # value='All',  # Set default to "All", meaning no filtering
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
+                    className='dash-dropdown'  # Add custom class to target with CSS
+                )
+            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+        elif axi== 'z':
+            dropdown_with_label = html.Div([
+                html.Label(f'Select {axi}'),  # Label for the dropdown
+                dcc.Dropdown(
+                    id=f'{axi}-dropdown-'+tab,
+                    options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
+                   style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
@@ -342,6 +375,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],
+                    value=None,
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -353,131 +387,9 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     return dropdowns_with_labels
 
 
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
+The output when I run, it send me to tab-1:
+It give me back only in dash interface the error:
+A nonexistent object was used in an `Input` of a Dash callback. The id of this object is `x-dropdown-tab-2` and the property is `value`. The string ids in the current layout are: [tabs, tabs-1, tabs-2, tabs-3, stored-df1, stored-df2, input-storage, tabs-content]
 
-
-def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style):
-    
-    columns = df.columns
-    
-    # Calculate widths, ensuring 'title' is handled specifically
-    column_widths = {col: get_max_width(df[col], col) for col in columns}
-    
-    # Create dropdowns with checkboxes using calculated widths
-    dropdowns_with_labels_and_checkboxes = []
-    for col in columns:
-        dtype = df[col].dtype
-        # dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
-        dropdown_style = {**dark_dropdown_style, **uniform_style}
-        # Define whether to use dropdown or input based on the data type
-        if dtype == "float64":
-            input_component = dcc.Input(
-                id=f'{col}-fig-dropdown-'+tab,
-                type='text',
-                debounce=True,
-                style=dropdown_style
-            )
-        else:
-            # Collect all unique values, ensuring uniqueness
-            all_roles = set()
-            for value in df[col].dropna().unique():
-                roles = [role.strip() for role in str(value).split(',')]
-                all_roles.update(roles)
-            unique_values = sorted(all_roles)
-            
-            input_component = dcc.Dropdown(
-                id=f'{col}-fig-dropdown-'+tab,
-                options=[{'label': val, 'value': val} for val in unique_values],
-                style=dropdown_style,
-                className='dash-dropdown',
-                multi=True
-            )
-        
-        # Add a div that includes the checkbox and the input component
-        dropdown_with_checkbox = html.Div([
-            html.Label(f'{col}'),
-            dcc.Checklist(
-                id=f'checkbox-{col}-'+tab,
-                options=[{'label': '', 'value': col}],
-                value=[],  # Empty by default
-                style={'display': 'inline-block', 'verticalAlign': 'middle'}
-            ),
-            input_component
-        ], style={'display': 'inline-block', 'width': f'{column_widths[col] + 60}px', 'padding': '0 5px'}) # Adjusted width for checkbox
-        
-        dropdowns_with_labels_and_checkboxes.append(dropdown_with_checkbox)
-
-    return dropdowns_with_labels_and_checkboxes
-
-when I go to tab-2 I got the output
-
-=====================  Tab2_content  =========================
-Div(children=[Label('Select x'), Dropdown(options=[{'label': 'startYear', 'value': 'startYear'}, {'label': 'runtimeMinutes', 'value': 'runtimeMinutes'}, {'label': 'genres', 'value': 'genres'}, {'label': 'isAdult', 'value': 'isAdult'}, {'label': 'directors', 'value': 'directors'}, {'label': 'writers', 'value': 'writers'}, {'label': 'averageRating', 'value': 'averageRating'}, {'label': 'numVotes', 'value': 'numVotes'}], style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, className='dash-dropdown', id='x-dropdown-tab-2')], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})
-
-Div(children=[Label('Select y'), Dropdown(options=[{'label': 'startYear', 'value': 'startYear'}, {'label': 'runtimeMinutes', 'value': 'runtimeMinutes'}, {'label': 'genres', 'value': 'genres'}, {'label': 'isAdult', 'value': 'isAdult'}, {'label': 'directors', 'value': 'directors'}, {'label': 'writers', 'value': 'writers'}, {'label': 'averageRating', 'value': 'averageRating'}, {'label': 'numVotes', 'value': 'numVotes'}], style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, className='dash-dropdown', id='y-dropdown-tab-2')], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})
-
-Div(children=[Label('Select Func on y'), Dropdown(options=[{'label': 'Avg', 'value': 'Avg'}], style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, className='dash-dropdown', id='Func-dropdown-tab-2')], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})
-
-Div(children=[Label('Select a Graph type'), Dropdown(options=[{'label': 'Histogram', 'value': 'Histogram'}, {'label': 'Curve', 'value': 'Curve'}], style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, className='dash-dropdown', id='Graph-dropdown-tab-2')], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})
-
-Div(children=[Label('startYear'), Checklist(options=[{'label': '', 'value': 'startYear'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-startYear-tab-2'), Input(type='text', debounce=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, id='startYear-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-Div(children=[Label('runtimeMinutes'), Checklist(options=[{'label': '', 'value': 'runtimeMinutes'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-runtimeMinutes-tab-2'), Input(type='text', debounce=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, id='runtimeMinutes-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-Div(children=[Label('genres'), Checklist(options=[{'label': '', 'value': 'genres'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-genres-tab-2'), Dropdown(options=[], multi=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, className='dash-dropdown', id='genres-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-Div(children=[Label('isAdult'), Checklist(options=[{'label': '', 'value': 'isAdult'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-isAdult-tab-2'), Input(type='text', debounce=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, id='isAdult-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-Div(children=[Label('directors'), Checklist(options=[{'label': '', 'value': 'directors'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-directors-tab-2'), Dropdown(options=[], multi=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, className='dash-dropdown', id='directors-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-Div(children=[Label('writers'), Checklist(options=[{'label': '', 'value': 'writers'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-writers-tab-2'), Dropdown(options=[], multi=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, className='dash-dropdown', id='writers-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-Div(children=[Label('averageRating'), Checklist(options=[{'label': '', 'value': 'averageRating'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-averageRating-tab-2'), Input(type='text', debounce=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, id='averageRating-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-Div(children=[Label('numVotes'), Checklist(options=[{'label': '', 'value': 'numVotes'}], value=[], style={'display': 'inline-block', 'verticalAlign': 'middle'}, id='checkbox-numVotes-tab-2'), Input(type='text', debounce=True, style={'backgroundColor': '#1e1e1e', 'color': '#f8f9fa', 'border': '1px solid #555', 'borderRadius': '5px', 'width': '160px', 'height': '40px'}, id='numVotes-fig-dropdown-tab-2')], style={'display': 'inline-block', 'width': '60px', 'padding': '0 5px'})
-
-==================== End Tab2_content ========================
-Dash Callback Context: <dash._callback_context.CallbackContext object at 0x7f75c9b7dcf0>
------------- callback update_stored_df1 ------------
-Triggered component: x-dropdown-tab-2
-
-Active Tab: tab-2
-Checkbox Values: [[], [], [], [], [], [], [], []]
-X Dropdown Value: None
-Y Dropdown Value: None
-Filter Value: [None, None, None, None, None, None, None, None]
-X Dropdown Value is None, returning no update.
-
--------- callback update_func_dropdown_tab2 --------
-Stored DF1 is not ready yet.
-
----------- callback update_y_dropdown_tab2 ----------
-None tab-2
-Stored DF1 is not ready yet.
-
------------- callback update_graph_tab2 ------------
-Active Tab: tab-2
-Stored DF1 is not ready yet.
-
---------- callback update_filter_dropdown_tab2 ---------
-[[], [], []] tab-2
-No filters selected.
-
-
-it gives me the error when it goes to tab-1
-A nonexistent object was used in an `Input` of a Dash callback. The id of this object is `checkbox-startYear-tab-2` and the property is `value`. The string ids in the current layout are: [tabs, tabs-1, tabs-2, tabs-3, stored-df1, stored-df2, tabs-content]
-It is true for all the callback, which are all created in tab2_content()
-
- @app.callback(
-    Output('stored-df1', 'data'),
-    [Input(f'checkbox-{col}-tab-2', 'value') for col in List_col_tab2] +  # Each checkbox's value
-    [Input('x-dropdown-tab-2', 'value'),  # x-axis dropdown
-     Input('y-dropdown-tab-2', 'value')] +  # y-axis dropdown
-    [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_fig_tab2],  # Rest of dropdowns
-    Input('tabs', 'value')
-)
-
- 
-except 'tabs'
+Since I create the id x-dropdown-tab-2, y-dropdown-tab-2,etc only in tab2_content() with the function dropdown_figure,
+ it seems that on the initial load when tab-1 is active i need to have the id for all these dropdown. Can I just create some fake id and when I go tab-2 it works normally

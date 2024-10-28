@@ -90,6 +90,13 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
 
         Pivot_table=fd.Pivot_table(df_temp,Para,False, True)
 
+        # Remove rows where any column contains -1.0
+        if -1.0 in Pivot_table.index:
+            Pivot_table = Pivot_table[Pivot_table.index != -1.0]
+        # Remove columns where any row contains -1.0
+        if -1.0 in Pivot_table.columns:
+            Pivot_table = Pivot_table.drop(columns=[-1.0])
+
         if str(z_column)=='None':
             print("1")
             if x_column not in df_col_string:
@@ -99,17 +106,9 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, Large_file_
                 print("3")
                 y = Pivot_table.sort_values(by=['Total'], ascending=True)
             print("4")
-
-
+            
             
         elif z_column=='Avg':
-            
-            # Remove rows where any column contains -1.0
-            if -1.0 in Pivot_table.index:
-                Pivot_table = Pivot_table[Pivot_table.index != -1.0]
-            # Remove columns where any row contains -1.0
-            if -1.0 in Pivot_table.columns:
-                Pivot_table = Pivot_table.drop(columns=[-1.0])
             
             # add new column which is th avg value of all the other column times the column name
             y = fd.avg_column_value_index(Pivot_table)

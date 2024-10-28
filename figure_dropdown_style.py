@@ -31,6 +31,7 @@ import matplotlib
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
+from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import plotly.tools as tls  # For converting Matplotlib to Plotly
 import plotly.graph_objects as go
 
@@ -205,15 +206,11 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, h_column, Para,
 
     if h_column=="1D": 
         if str(y_column)=='None':
-            print('yes',x_column)
             # Convert the DataFrame index to a list
             if x_column not in df_col_string:
                 x_values = list(map(int, y[Para[0]]))
             else:
-                print()
-                print(y[Para[0]])
                 x_values = list(y[Para[0]])
-            
             
             if g_column=="Histogram":
                 ax.bar(np.arange(len(x_values)), y["Count"])
@@ -268,13 +265,52 @@ def figure_core(fig, ax, x_column, y_column, z_column, g_column, h_column, Para,
                 if g_column=="Scatter":
                     ax.scatter(np.arange(len(x_values)), y, linewidth=4.)
                     
-        fig_x_value = np.arange(len(x_values))
-        print(fig_x_value)
-        print(x_values)
-    
+
+    plot_orientation='horizontal'
     if h_column=="2D": 
         print(h_column)
         
+        if x_column in df_col_string or y_column in df_col_string:
+            print("Errors")
+        else:
+
+            # Remove rows where any column contains -1.0
+            if "Other" in y.index:
+                y = y[y.index != "Other"]
+            # Remove columns where any row contains -1.0
+            if "Other" in y.columns:
+                y = y.drop(columns=["Other"])
+            
+            # Sort the columns in ascending order based on column labels
+            sorted_columns = sorted(y.columns)
+            # Reindex the DataFrame to reflect the new sorted column order
+            y = y.reindex(columns=sorted_columns)
+            
+            x_values = y.index
+            y_values = y.columns   
+            
+            y = y.T
+            
+
+        if g_column=="Colormesh":
+            CS1=ax.pcolormesh(x_values, y_values, y)
+            CS1.cmap.set_under(color='white') 
+            # ax_divider = make_axes_locatable(ax)
+            if plot_orientation=='horizontal':
+                # cax=ax_divider.append_axes("right", size="4%", pad="2%")
+                # cbar=fig.colorbar(CS1, cax=cax, orientation="vertical")
+                cbar=fig.colorbar(CS1, orientation="vertical")
+            # if plot_orientation=='vertical':
+            #     cax=ax_divider.append_axes("top", size="4%", pad="2%")
+            #     cbar=fig.colorbar(CS1, ax=top_pos, cax=cax, orientation="horizontal")
+            #     cax.xaxis.set_ticks_position("top")
+            #     cax.xaxis.set_label_position("top")
+            cbar.ax.tick_params(labelsize=22)
+            cbar.set_label(label='Number of movies', size=32)
+    
+    print('Ok color')
+    
+    # fig_x_value = np.arange(len(x_values))
 
     # Check if all elements are either int or float
     is_numeric = all(isinstance(x, (int, float)) for x in x_values)
@@ -346,7 +382,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     function_on_y = ["Avg"]
     
     # Get the type of graph
-    graph_type = ["Histogram", "Curve", "Scatter"]
+    graph_type = ["Histogram", "Curve", "Scatter", "Colormesh"]
 
     # Get the graph dimension
     dim_type = ["1D", "2D", "3D"]
@@ -407,7 +443,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                   style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
@@ -417,7 +453,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                   style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
+                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
@@ -427,6 +463,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],
+                    value=None,
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -705,3 +742,42 @@ def get_dropdown_options(filtered_data, y_column):
         unique_values = filtered_data[y_column].dropna().unique().tolist()
         return unique_values
     
+
+
+
+def tab2_initial_id(columns, tab):
+
+    
+    Dropdown_filter=[]
+    for col in columns:
+        dropdown_with_label = html.Div([
+            dcc.Dropdown(id=f'{col}-fig-dropdown-'+tab, style={'display': 'none'})
+        ], style={'display': 'none'})
+        Dropdown_filter.append(dropdown_with_label)        
+    
+    # Placeholder dropdowns for tab-2, initially invisible
+    return html.Div([
+        dcc.Dropdown(id='x-dropdown-tab-2', value=None, style={'display': 'none'}),
+        dcc.Dropdown(id='y-dropdown-tab-2', value=None, style={'display': 'none'}),
+        dcc.Dropdown(id='z-dropdown-tab-2', value=None, style={'display': 'none'}),
+        
+        dcc.Dropdown(id='checkbox-startYear-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='checkbox-runtimeMinutes-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='checkbox-genres-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='checkbox-isAdult-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='checkbox-directors-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='checkbox-writers-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='checkbox-averageRating-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='checkbox-numVotes-tab-2', style={'display': 'none'}),
+
+        dcc.Dropdown(id='startYear-fig-dropdown-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='runtimeMinutes-fig-dropdown-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='genres-fig-dropdown-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='isAdult-fig-dropdown-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='directors-fig-dropdown-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='writers-fig-dropdown-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='averageRating-fig-dropdown-tab-2', style={'display': 'none'}),
+        dcc.Dropdown(id='numVotes-fig-dropdown-tab-2', style={'display': 'none'}),
+        
+        # Add other dropdowns as placeholders here as needed
+    ], style={'display': 'none'})
