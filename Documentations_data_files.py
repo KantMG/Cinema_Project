@@ -7,6 +7,17 @@ Created on Wed Sep 11 14:00:53 2024
 """
 
 
+"""#=============================================================================
+   #=============================================================================
+   #=============================================================================
+
+    Dictionnary of functions to get information on the dataset via the html page.
+
+#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 import requests
 from bs4 import BeautifulSoup
 from termcolor import colored
@@ -14,29 +25,25 @@ from termcolor import colored
 
 """#=============================================================================
    #=============================================================================
-   #=============================================================================
-
-    Acces to the data set documentation by extracting the relevant informations
-    on the html web page.
-
-#=============================================================================
-   #=============================================================================
    #============================================================================="""
 
 
-# url                 :   url of the data
-# files=None          :   optional list of file, to only get info on specific files
-"""             List of the data files  
-'title.akas'     'title.basics'       'title.crew'
-'title.episode'  'title.principals'   'title.ratings'
-'name.basics'   """
-#detail_file=None    :   'Yes' or 'No' to get the detail on each file asked
-
-
 def info_source(url,files=None, detail_file=None):
+
+    """
+    Goal: 
+    - Acces to the data set documentation by extracting the relevant informations on the html web page.
+    
+    Parameters:
+    - url: url web page.
+    - detail_file: Bool to get a reading with more details.
+    
+    Returns:
+    - None
+    """
     
     print()
-    print("""################### Infos on sources ###################""")
+    print(colored("""################### Infos on sources ###################""", "red"))
     
     # URL of the HTML page you want to read
     
@@ -105,7 +112,7 @@ def info_source(url,files=None, detail_file=None):
     else:
         print(f"Failed to retrieve the page. Status code: {response.status_code}")    
     
-    print("""########################################################""")
+    print(colored("""########################################################""", "red"))
     print()
           
 

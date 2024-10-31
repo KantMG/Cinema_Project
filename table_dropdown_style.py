@@ -6,6 +6,17 @@ Created on Sat Oct  5 18:13:48 2024
 @author: quentin
 """
 
+"""#=============================================================================
+   #=============================================================================
+   #=============================================================================
+
+    Dictionnary of functions for table dropdown creation.
+
+#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 import dash
 from dash import dcc, html, Input, Output, dash_table, callback, callback_context
 import dash_bootstrap_components as dbc
@@ -15,7 +26,24 @@ import plotly.express as px
 import webbrowser
 
 
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def get_max_width(col_data, col_name):
+
+    """
+    Goal: Calculate the associated dropdown for each table column.
+
+    Parameters:
+    - col_data: The dataframe column.
+    - col_name: The name of the dataframe column.
+
+    Returns:
+    - The dropdown dimension.
+    """    
+
     max_length = max(col_data.apply(lambda x: len(str(x))))
     print(max_length,col_name)
     # Set a higher max width for 'title' column
@@ -24,11 +52,30 @@ def get_max_width(col_data, col_name):
     return max(80, min(max_length * 8, 300))  # Ensure minimum 80px and maximum 300px width for others
     
 
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
 
 def dropdown_table(df, id_table, dark_dropdown_style, uniform_style, need_dropdown):
+
+    """
+    Goal: Create the table and the associated dropdown.
+
+    Parameters:
+    - df: dataframe.
+    - id_table: id of the table.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+    - need_dropdown: Bool to decide if the table has some dropdowns or not.
+
+    Returns:
+    - dropdowns_with_labels: The table dropdowns. 
+    - data_table: The data tables. 
+    """    
+    
     columns = df.columns
     
-
     # Calculate widths, ensuring 'title' is handled specifically
     column_widths = {col: get_max_width(df[col], col) for col in columns}
     

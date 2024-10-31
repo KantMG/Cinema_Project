@@ -19,8 +19,6 @@ Created on Wed Sep  4 16:22:46 2024
    #============================================================================="""
 
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 import pylab as pl
 import Levenshtein
 
@@ -31,8 +29,8 @@ import Function_errors as fe
    #============================================================================="""
 
 
-    
 def df_empty(columns, dtypes, index=None):
+    
     """
     Goal: 
     - Create an empty dataframe.
@@ -60,6 +58,7 @@ def df_empty(columns, dtypes, index=None):
 
 
 def explode_dataframe(df, Para):
+    
     """
     Goal: 
     - Count individual elements when multiple elements are stored in a single cell
@@ -104,8 +103,8 @@ def explode_dataframe(df, Para):
    #============================================================================="""
 
 
-
 def reverse_explode_dataframe(df_exploded, Para):
+    
     """
     Goal: 
     - Revert the exploded data
@@ -121,8 +120,7 @@ def reverse_explode_dataframe(df_exploded, Para):
     - 
     """
 
-    # Now let's revert back to the original DataFrame
-    # Step 4: Group by the original ID and aggregate back to the original format
+    # Group by the original ID and aggregate back to the original format
     df_reverted = df_exploded.groupby('tconst')[Para + '_split'].agg(lambda x: ', '.join(x.str.strip())).reset_index()
     
     # Rename the aggregated column back to the original name
@@ -139,7 +137,9 @@ def reverse_explode_dataframe(df_exploded, Para):
    #=============================================================================
    #============================================================================="""
 
+
 def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
+    
     """
     Goal: Get the pivot of the Count table of the dataframe.
     From a table of dimension x with n indexes to a table of dimension x+1 with n-1 index
@@ -187,6 +187,7 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
 
 
 def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted):
+    
     """
     Goal: From a table take only the first first_n_top_amount_col largest sum columns.
     : Pivot_table where only the first first_n_top_amount_col have been which have been sorted and .
@@ -233,12 +234,14 @@ def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted
     print()
     return y
 
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
 
 def avg_column_value_index(Pivot_table):
+    
     """
     Goal: Creates in the table a new column which is th avg value of all the other column times the 
     column name.
@@ -272,7 +275,9 @@ def avg_column_value_index(Pivot_table):
    #=============================================================================
    #============================================================================="""
 
+
 def name_check(df,Job,Name):
+    
     """
     Goal: Get the list of names which represent the same person
     to overpass the bad names writing by the user.
@@ -296,10 +301,14 @@ def name_check(df,Job,Name):
                 
     return accepted_name
 
-# =============================================================================
-# =============================================================================
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
 
 def are_names_close_with_inversion(name1, name2, max_distance):
+    
     """
     Goal: Check if two names are close enough, considering potential inversion of first and last names.
 
@@ -337,6 +346,3 @@ def are_names_close_with_inversion(name1, name2, max_distance):
     except AttributeError:
         return 'None'
 
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""

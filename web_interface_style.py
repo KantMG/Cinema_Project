@@ -6,26 +6,43 @@ Created on Sat Oct  5 18:05:42 2024
 @author: quentin
 """
 
+"""#=============================================================================
+   #=============================================================================
+   #=============================================================================
+
+    Dictionnary of functions for Dash app creation.
+
+#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
 
 import dash
 from dash import dcc, html, Input, Output, dash_table, callback, callback_context
 import dash_bootstrap_components as dbc
 import pandas as pd
-from collections import OrderedDict
 import plotly.express as px
 import webbrowser
 
-# # Function to calculate maximum width for each column
-# def calculate_max_width(df):
-#     max_widths = {}
-#     for col in df.columns:
-#         max_length = max(df[col].astype(str).apply(len))  # Longest cell content
-#         header_length = len(col)  # Length of column header
-#         max_widths[col] = f"{max(max_length, header_length) * 4}px"  # Adjust multiplier for desired width
-#     return max_widths
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
 
 def web_interface_style():
+
+    """
+    Goal: Create the Dash app and define the style and theme.
+
+    Parameters:
+    - None
+
+    Returns:
+    - app: The Dash app.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.    
+    """        
 
     # Initialize the Dash app with the dark theme
     app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.DARKLY])  # Use the DARKLY theme from Bootstrap
@@ -45,32 +62,6 @@ def web_interface_style():
         'height': '40px',  # Set a consistent width
         'borderRadius': '5px',  # Optional: Add rounded corners
     }
-
-    # app.index_string = '''
-    # <!DOCTYPE html>
-    # <html>
-    #     <head>
-    #         <title>Dash Dark Theme</title>
-    #         <style>
-    #             body {
-    #                 background-color: #343a40; /* Ensure dark background */
-    #                 color: white; /* Ensure white text */
-    #             }
-    #         </style>
-    #     </head>
-    #     <body>
-    #         <div id="react-entry-point">
-    #             {%app_entry%}
-    #         </div>
-    #         <footer>
-    #             {%config%}
-    #             {%scripts%}
-    #             {%renderer%}
-    #         </footer>
-    #     </body>
-    # </html>
-    # '''
-
 
     # CSS to style the dropdown's options menu (this will apply globally)
     app.index_string = '''
@@ -125,6 +116,74 @@ def web_interface_style():
         </body>
     </html>
     '''
+
+
+    #Creation of the app layout
+    app.layout = html.Div([
+        # Tabs Component
+        dcc.Tabs(id='tabs', value='tab-1', children=[
+            dcc.Tab(id='tabs-1', label='🏠 Home', value='tab-1', 
+                     style={
+                         'backgroundColor': '#000000',  # Dark black background
+                         'color': 'white',
+                         'border': 'none',
+                         'borderBottom': '2px solid white',
+                         'borderRight': '2px solid white',
+                         'position': 'relative'  # Relative position for pseudo-element
+                     },
+                     selected_style={
+                         'backgroundColor': '#222222',  # Slightly lighter for selected tab
+                         'color': 'white',
+                         'border': 'none',
+                         'borderBottom': '2px solid white',
+                         'borderRight': '2px solid white',
+                     }),
+            dcc.Tab(id='tabs-2', label='📈 Analytics', value='tab-2', 
+                     style={
+                         'backgroundColor': '#000000',
+                         'color': 'white',
+                         'border': 'none',
+                         'borderBottom': '2px solid white',
+                         'borderRight': '2px solid white',
+                         'position': 'relative'
+                     },
+                     selected_style={
+                         'backgroundColor': '#222222',
+                         'color': 'white',
+                         'border': 'none',
+                         'borderBottom': '2px solid white',
+                         'borderRight': '2px solid white',
+                     }),
+            dcc.Tab(id='tabs-3', label='🎥 Movies & Artists', value='tab-3', 
+                     style={
+                         'backgroundColor': '#000000',
+                         'color': 'white',
+                         'border': 'none',
+                         'borderBottom': '2px solid white',
+                         'borderRight': '2px solid white',
+                         'position': 'relative'
+                     },
+                     selected_style={
+                         'backgroundColor': '#222222',
+                         'color': 'white',
+                         'border': 'none',
+                         'borderBottom': '2px solid white',
+                         'borderRight': '2px solid white',
+                     }),
+        ]),
+        
+        # Hidden store to hold df1 data
+        dcc.Store(id='stored-df1', data=None),
+        
+        # Hidden store to hold df2 data
+        dcc.Store(id='stored-df2', data=None),
     
+        # Content Div for Tabs
+        html.Div(id='tabs-content'),
+    
+        # fds.tab2_initial_id(List_col_tab2, 'tab-2')
+    
+    ])
+
     return app, dark_dropdown_style, uniform_style
     

@@ -18,12 +18,8 @@ Created on Sat Oct 12 16:06:54 2024
    #============================================================================="""
 
 import time
-
 import pandas as pd
 import dask.dataframe as dd
-import matplotlib.pyplot as plt
-import numpy as np
-import pylab as pl
 import re
 
 # Initialize a list to store execution times
@@ -37,28 +33,32 @@ def log_performance(stage, start_time):
     print(f"{stage} took {duration:.2f} seconds")
 
 
-# After data processing is complete, you can plot the performance logs
-def plot_performance_logs():
-    # Create a DataFrame from performance logs
-    logs_df = pd.DataFrame(performance_logs, columns=["Stage", "Duration"])
+# # After data processing is complete, you can plot the performance logs
+# def plot_performance_logs():
+#     # Create a DataFrame from performance logs
+#     logs_df = pd.DataFrame(performance_logs, columns=["Stage", "Duration"])
 
-    figname="Performance Logs of Data Processing"
-    fig, ax = plt.subplots(figsize=(22,12))
-    ax.set_title(figname)
+#     figname="Performance Logs of Data Processing"
+#     fig, ax = plt.subplots(figsize=(22,12))
+#     ax.set_title(figname)
     
-    ax.set_xlabel("Processing Stages", fontsize=35)
-    ax.set_ylabel("Processing time (seconds)", fontsize=35)
-    ax.set_yscale('log')
-    plt.xticks(rotation=45, ha='right')
+#     ax.set_xlabel("Processing Stages", fontsize=35)
+#     ax.set_ylabel("Processing time (seconds)", fontsize=35)
+#     ax.set_yscale('log')
+#     plt.xticks(rotation=45, ha='right')
     
-    p = ax.bar(logs_df['Stage'], logs_df['Duration'], color = 'olivedrab') # , color=mcolors.CSS4_COLORS[colors[i]]
+#     p = ax.bar(logs_df['Stage'], logs_df['Duration'], color = 'olivedrab') # , color=mcolors.CSS4_COLORS[colors[i]]
         
-    ax.tick_params(axis='both', labelsize=20)
+#     ax.tick_params(axis='both', labelsize=20)
         
-    plt.tight_layout()
+#     plt.tight_layout()
     
-    plt.show()
+#     plt.show()
 
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
 
 def file_columns_dtype():
@@ -135,13 +135,13 @@ def file_columns_dtype():
     return file_columns_mapping
 
 
-
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
 
 def open_dataframe(requested_columns, requested_filters, Project_path, Large_file_memory, Get_file_sys_mem):
+
     """
     Goal: 
     - Read and rename the DataFrame.
@@ -327,6 +327,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
 
 
 def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None, large_file=True):
+    
     """
     Goal: 
     - Read and rename the DataFrame.
@@ -375,6 +376,7 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
 
 
 def apply_filter(df, filters):
+    
     """
     Goal: 
     - Apply the given filters to the DataFrame.
@@ -436,6 +438,7 @@ def apply_filter(df, filters):
 
 
 def open_data_name(requested_columns, requested_filters, Project_path, Large_file_memory, Get_file_sys_mem):
+
     """
     Goal: 
     - Read and rename the DataFrame.

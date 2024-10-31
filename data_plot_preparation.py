@@ -86,7 +86,6 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, g
         avg_col_name = 'avg_' + z_column
         data_for_plot.rename(columns={'avg_z_column': avg_col_name}, inplace=True)
             
-    # print(data_for_plot)
     return Para, data_for_plot, x_column, y_column, z_column
 
 

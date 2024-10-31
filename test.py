@@ -6,14 +6,15 @@ Created on Wed Oct 16 19:12:21 2024
 @author: quentin
 """
 
-# Source for data set : 
-source_data = 'https://developer.imdb.com/non-commercial-datasets/'
+"""#=============================================================================
+   #=============================================================================
+   #=============================================================================
 
-# Save the project on github with: !bash ./save_project_on_git.sh
-GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
+    Main.
 
-# Save the project on the laptop:
-Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
+#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
 
 import dash
@@ -32,19 +33,33 @@ import os
 
 import Function_dataframe as fd
 import Function_errors as fe
-import Function_visualisation as fv
 import web_interface_style as wis
 import table_dropdown_style as tds
+import figure_creation as fc
 import figure_dropdown_style as fds
 import data_plot_preparation as dpp
 import open_dataframe as od
 import Dash_callback_ids as dci
 
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+# Source for data set : 
+source_data = 'https://developer.imdb.com/non-commercial-datasets/'
+
+# Save the project on github with: !bash ./save_project_on_git.sh
+GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
+
+# Save the project on the laptop:
+Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
+
+
 start_time = time.time()
 
 # Define the path to the folder you want to remove
 folder_path = '/home/quentin/Documents/Work/Data_analytics/Programs/Python/Cinema_Project/temp_df1.parquet'
-
 # Check if the folder exists
 if os.path.exists(folder_path):
     # Remove the folder and all its contents
@@ -54,12 +69,10 @@ else:
     print(f"The folder {folder_path} does not exist.")
 
 
-Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
 Large_file_memory = True
 Get_file_sys_mem = False
 desired_number_of_partitions = 10
 Test_data = True
-
 if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
@@ -81,74 +94,6 @@ List_graph_type = ["Histogram", "Curve", "Scatter", "Colormesh", "Pie"]
 
 # Initialize the Dash app with suppress_callback_exceptions set to True
 app, dark_dropdown_style, uniform_style = wis.web_interface_style()
-
-
-app.layout = html.Div([
-    # Tabs Component
-    dcc.Tabs(id='tabs', value='tab-1', children=[
-        dcc.Tab(id='tabs-1', label='🏠 Home', value='tab-1', 
-                 style={
-                     'backgroundColor': '#000000',  # Dark black background
-                     'color': 'white',
-                     'border': 'none',
-                     'borderBottom': '2px solid white',
-                     'borderRight': '2px solid white',
-                     'position': 'relative'  # Relative position for pseudo-element
-                 },
-                 selected_style={
-                     'backgroundColor': '#222222',  # Slightly lighter for selected tab
-                     'color': 'white',
-                     'border': 'none',
-                     'borderBottom': '2px solid white',
-                     'borderRight': '2px solid white',
-                 }),
-        dcc.Tab(id='tabs-2', label='📈 Analytics', value='tab-2', 
-                 style={
-                     'backgroundColor': '#000000',
-                     'color': 'white',
-                     'border': 'none',
-                     'borderBottom': '2px solid white',
-                     'borderRight': '2px solid white',
-                     'position': 'relative'
-                 },
-                 selected_style={
-                     'backgroundColor': '#222222',
-                     'color': 'white',
-                     'border': 'none',
-                     'borderBottom': '2px solid white',
-                     'borderRight': '2px solid white',
-                 }),
-        dcc.Tab(id='tabs-3', label='🎥 Movies & Artists', value='tab-3', 
-                 style={
-                     'backgroundColor': '#000000',
-                     'color': 'white',
-                     'border': 'none',
-                     'borderBottom': '2px solid white',
-                     'borderRight': '2px solid white',
-                     'position': 'relative'
-                 },
-                 selected_style={
-                     'backgroundColor': '#222222',
-                     'color': 'white',
-                     'border': 'none',
-                     'borderBottom': '2px solid white',
-                     'borderRight': '2px solid white',
-                 }),
-    ]),
-    
-    # Hidden store to hold df1 data
-    dcc.Store(id='stored-df1', data=None),
-    
-    # Hidden store to hold df2 data
-    dcc.Store(id='stored-df2', data=None),
-
-    # Content Div for Tabs
-    html.Div(id='tabs-content'),
-
-    # fds.tab2_initial_id(List_col_tab2, 'tab-2')
-
-])
-
 
 # Callback to manage tab content
 @app.callback(
@@ -178,6 +123,8 @@ def render_content(tab, stored_df1):
             html.Div(id='dynamic-content')
         ])
 
+
+"""
 # =============================================================================
 # =============================================================================
 # =============================================================================
@@ -185,7 +132,7 @@ def render_content(tab, stored_df1):
 # =============================================================================
 # =============================================================================
 # =============================================================================
-
+"""
 
 def tab1_content():
     print()
@@ -223,6 +170,7 @@ def tab1_content():
         ], style={'padding': '20px'})
 
 
+"""
 # =============================================================================
 # =============================================================================
 # =============================================================================
@@ -230,6 +178,7 @@ def tab1_content():
 # =============================================================================
 # =============================================================================
 # =============================================================================
+"""
 
 def tab2_content():
     print()
@@ -421,21 +370,21 @@ def update_func_dropdown_tab2(selected_y, selected_tab):
         return update_func_dropdown_utility(selected_y, df_col_numeric_tab2)
     return dash.no_update
 
-# @app.callback(
-#     Output('Dim-dropdown-tab-2', 'options'),
-#     Input('y-dropdown-tab-2', 'value'),
-#     Input('tabs', 'value')  # Include tab value to conditionally trigger callback
-# )
-# def update_dim_dropdown_tab2(selected_y, selected_tab):
-#     print()
-#     print("-------- callback update_dim_dropdown_tab2 --------")
-#     print("Active Tab=", selected_tab)
-#     print("Time computation=", time.time()-start_time)
-#     if selected_tab == 'tab-2':
-#         if selected_y is None:
-#             return [{'label': "1D", 'value': "1D"}]  # Return an empty options list if the DF is not ready
-#         return [{'label': col, 'value': col} for col in List_dim]
-#     return dash.no_update
+@app.callback(
+    Output('Dim-dropdown-tab-2', 'options'),
+    Input('y-dropdown-tab-2', 'value'),
+    Input('tabs', 'value')  # Include tab value to conditionally trigger callback
+)
+def update_dim_dropdown_tab2(selected_y, selected_tab):
+    print()
+    print(colored("-------- callback update_dim_dropdown_tab2 --------", "red"))
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
+    if selected_tab == 'tab-2':
+        if selected_y is None:
+            return [{'label': "1D", 'value': "1D"}, {'label': "2D", 'value': "2D"}]  # Return an empty options list if the DF is not ready
+        return [{'label': col, 'value': col} for col in List_dim]
+    return dash.no_update
 
 @app.callback(
     [Output('Graph-dropdown-tab-2', 'options'),
@@ -443,7 +392,6 @@ def update_func_dropdown_tab2(selected_y, selected_tab):
     Input('Dim-dropdown-tab-2', 'value'),
     Input('tabs', 'value')  # Include tab value to conditionally trigger callback
 )
-
 def update_graph_dropdown_tab2(selected_dim, selected_tab):
     print()
     print(colored("------------ callback update_dim_dropdown_tab2 ------------", "red"))
@@ -521,7 +469,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, stored_df1, Large_file_memory)
   
     
-
+"""
 # =============================================================================
 # =============================================================================
 # =============================================================================
@@ -529,7 +477,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
 # =============================================================================
 # =============================================================================
 # =============================================================================
-
+"""
 
 # Callback to update UI based on input value in Tab 3
 @app.callback(
@@ -547,9 +495,7 @@ def update_ui(input_value):
     List_filter = [None, None, None, None]
 
     df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-    
-    print(input_value)
-    
+        
     # Check if the input value exists in the 'nconst' column of df_name
     if input_value in df_name['primaryName'].values:
 
@@ -578,7 +524,7 @@ def update_ui(input_value):
                 ], style={'padding': '20px'}), df2.to_dict('records')        
         else:
                         
-            # Step 1: Split the strings into individual elements and flatten the list
+            # Split the strings into individual elements and flatten the list
             all_elements = df2['category'].str.split(',').explode().str.strip()
             primaryProfession = all_elements.value_counts()
             primaryProfession = primaryProfession[primaryProfession > 1].index.tolist()
@@ -721,6 +667,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     return go.Figure()  # Return a blank figure if not in the right tab
 
 
+
 # =============================================================================
 # Utility Function for Graphs
 # =============================================================================
@@ -749,8 +696,6 @@ def update_func_dropdown_utility(selected_y, df_col_numeric):
     else:
         return [{'label': col, 'value': col} for col in function_on_y]
 
-
-
 def update_filter_dropdown_utility(selected_boxes, df):
     """
     Utility function to generate dropdown options for the function based on the selected y-axis column.
@@ -778,8 +723,6 @@ def update_filter_dropdown_utility(selected_boxes, df):
         
     return dropdowns 
 
-
-
 def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, stored_df, large_file_memory):
     """
     Utility function to generate a graph based on the provided parameters.
@@ -798,7 +741,7 @@ def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, 
         # Apply filters on the dataframe
         # filtered_data_graph = od.apply_filter(filtered_data_graph, selected_values)
         # Create the figure based on filtered data
-    fig = fds.create_figure(filtered_data_graph, x_column, y_column, z_column, func_column, graph_type, dim_type, large_file_memory)
+    fig = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, func_column, graph_type, dim_type, large_file_memory)
     return fig
 
 # =============================================================================
