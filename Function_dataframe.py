@@ -160,13 +160,15 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     y=df.value_counts(dropna=False).reset_index(name='Count') #dropna=False to count nan value    
     
     # Pivot the Count table 
-    pivot_table = y.pivot(index=Para[0], columns=Para[1], values='Count').fillna(0)
+    pivot_table = y.pivot(index=Para[0], 
+                          columns=Para[1] if len(Para) == 2 else (Para[1], Para[2]), 
+                          values='Count').fillna(0)
     
-    # Remove unknown column name if remove_unknown_colmun==True
-    if remove_unknown_colmun==True and Large_file_memory==False:
-        pivot_table  = pivot_table.drop(['\\N'], axis=1)
-    elif remove_unknown_colmun==True and Large_file_memory==True:
-        pivot_table = pivot_table.dropna()
+    # # Remove unknown column name if remove_unknown_colmun==True
+    # if remove_unknown_colmun==True and Large_file_memory==False:
+    #     pivot_table  = pivot_table.drop(['\\N'], axis=1)
+    # elif remove_unknown_colmun==True and Large_file_memory==True:
+    #     pivot_table = pivot_table.dropna()
     
     #Add last column for the sum of each rows named Total
     s = sum ( [pivot_table[i] for i in  pivot_table.columns])
@@ -210,7 +212,10 @@ def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted
     column_sums = y.sum()
     
     # Sort columns by their sum in descending order
-    top_columns = column_sums.nlargest(first_n_top_amount_col).index
+    if first_n_top_amount_col != None:
+        top_columns = column_sums.nlargest(first_n_top_amount_col).index
+    else:
+        top_columns = column_sums.index
     
     # Create the new DataFrame 
     rest_columns = column_sums.index.difference(top_columns)

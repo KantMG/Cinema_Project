@@ -32,8 +32,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+from matplotlib.colors import LogNorm
+from matplotlib.colors import SymLogNorm
 import plotly.tools as tls  # For converting Matplotlib to Plotly
 import plotly.graph_objects as go
+import plotly.express as px
 
 import Function_dataframe as fd
 import Function_errors as fe
@@ -41,12 +44,36 @@ import Function_visualisation as fv
 import data_plot_preparation as dpp
 
 
+cmaps = [('Perceptually Uniform Sequential', [
+            'viridis', 'plasma', 'inferno', 'magma']),
+         ('Sequential', [
+            'Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
+            'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
+            'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']),
+         ('Sequential (2)', [
+            'binary', 'gist_yarg', 'gist_gray', 'gray', 'bone', 'pink',
+            'spring', 'summer', 'autumn', 'winter', 'cool', 'Wistia',
+            'hot', 'afmhot', 'gist_heat', 'copper']),
+         ('Diverging', [
+            'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu',
+            'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic']),
+         ('Qualitative', [
+            'Pastel1', 'Pastel2', 'Paired', 'Accent',
+            'Dark2', 'Set1', 'Set2', 'Set3',
+            'tab10', 'tab20', 'tab20b', 'tab20c']),
+         ('Miscellaneous', [
+            'flag', 'prism', 'ocean', 'gist_earth', 'terrain', 'gist_stern',
+            'gnuplot', 'gnuplot2', 'CMRmap', 'cubehelix', 'brg', 'hsv',
+            'gist_rainbow', 'rainbow', 'jet', 'nipy_spectral', 'gist_ncar'])]
+
+
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, g_column, h_column, Large_file_memory):
+def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -55,73 +82,43 @@ def create_figure(df, x_column, y_column, z_column, g_column, h_column, Large_fi
     - df: dataframe
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
-    - z_column: Function to operate on df_temp[x_column,y_column]
+    - z_column: Column in the dataframe (can be None)
+    - f_column: Function to operate on df_temp[x_column,y_column]
     - g_column: Type of Graphyque for the figure.
-    - h_column: Graphyque dimension for the figure.
+    - d_column: Graphyque dimension for the figure.
     - Large_file_memory: Estimate if the file is too large to be open with panda
 
     Returns:
     - fig_json_serializable: The finalized plotly figure. 
     """
-    
-    if x_column is not None: 
-        print("Extract from data base the required column and prepare them for the figure.")
-        Para, y, x_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, Large_file_memory)
-    
+
     # =============================================================================
     print("Start figure creation")
     # =============================================================================   
     fig, ax = plt.subplots(figsize=(11.5, 7))
     
     # Create the label of the figure
-    ax, xlabel, ylabel = label_fig(ax, x_column, y_column, z_column)
-    x_values, legend = [], []
-    
+    ax, figname, xlabel, ylabel, zlabel = label_fig(ax, x_column, y_column, z_column, f_column, g_column)
+    x_values, fig_x_value, y_values, fig_y_value, legend = [], [], [], [], []
     if x_column is not None: 
+        
+        print("Extract from data base the required column and prepare them for the figure.")
+        Para, data_for_plot, x_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, f_column, g_column, Large_file_memory)
+        print("The data ready to be ploted is")
+        print(data_for_plot)
+        print()        
         # Add the core of the figure
-        fig, ax, fig_x_value, x_values, legend = figure_core(fig, ax, x_column, y_column, z_column, g_column, h_column, Para, y)  
-    
-    plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True, prune='both', nbins=10))
+        plotly_fig, fig_x_value, x_values, fig_y_value, y_values, legend  = dpp.figure_plotly(fig, ax, x_column, y_column, z_column, f_column, g_column, d_column, Para, data_for_plot)
+    else:
+        # Now, convert Matplotlib figure to Plotly
+        plotly_fig = tls.mpl_to_plotly(fig)  # Convert the Matplotlib figure to Plotly         
 
-    plt.tight_layout()
-    
-    # Now, convert Matplotlib figure to Plotly
-    plotly_fig = tls.mpl_to_plotly(fig)  # Convert the Matplotlib figure to Plotly
-    
     # Create a Dash compatible Plotly graph figure
     fig_json_serializable = go.Figure(plotly_fig)  # This figure can now be used with dcc.Graph in Dash
-
-    fig_json_serializable.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#343a40',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        title_font=dict(size=20, color='white'),  # Title styling
-        # X-axis and Y-axis styling
-        xaxis=dict(
-            tickvals=fig_x_value,  # Set the tick positions
-            ticktext=x_values,  # Set the tick labels to the genre names
-            title=dict(text=xlabel, font=dict(size=20, color='white')),  # X-axis label styling
-            tickfont=dict(color='white', size=18),  # X-axis tick color
-            tickangle=0,  # Rotate the x-axis labels for better readability
-            showgrid=True,  # Grid styling
-            gridcolor='gray',  # Grid color
-            categoryorder='category ascending'  # Ensures categorical x-values are treated correctly
-        ),
-        yaxis=dict(
-            title=dict(text=ylabel, font=dict(size=20, color='white')),  # Y-axis label styling
-            tickfont=dict(color='white', size=18),  # Y-axis tick color
-            showgrid=True,  # Grid styling
-            gridcolor='gray',  # Grid color
-            categoryorder='category ascending'  # Ensures categorical x-values are treated correctly
-        ),
-        # Legend styling
-        legend=dict(
-            font=dict(color='white', size=12),  # Legend text color
-            bgcolor='#343a40',  # Legend background color
-            bordercolor='white',  # Border color of the legend
-            borderwidth=1  # Optional: set the width of the border
-        )
-    )
+    
+    # Update the figure layout
+    dpp.fig_update_layout(fig_json_serializable,figname,xlabel,x_values,fig_x_value,ylabel,y_values,fig_y_value,zlabel,legend,g_column,d_column)       
+    
     plt.close()
     # =============================================================================
     print("=============================================================================")
@@ -133,209 +130,50 @@ def create_figure(df, x_column, y_column, z_column, g_column, h_column, Large_fi
    #============================================================================="""
 
 
-def label_fig(ax, x_column, y_column, z_column):
+def label_fig(ax, x_column, y_column, z_column, f_column, g_column):
 
     """
     Goal: Create the figure labels.
 
     Parameters:
     - ax: axis of fig.
-    - x_column: Column in the dataframe
-    - y_column: Column in the dataframe (can be None)
-    - z_column: Function to operate on df_temp[x_column,y_column]
+    - x_column: Column in the dataframe (can be None).
+    - y_column: Column in the dataframe (can be None).
+    - z_column: Column in the dataframe (can be None).
+    - f_column: Function to operate on df_temp[x_column,y_column].
+    - g_column: Type of Graphyque for the figure.
 
     Returns:
     - ax: The figure axis. 
-    - xlabel: The xlabel of the axis
-    - ylabel: The ylabel of the axis
+    - figname: The name of the Figure.
+    - xlabel: The xlabel of the axis (can be None).
+    - ylabel: The ylabel of the axis (can be None).
+    - zlabel: The zlabel of the axis (can be None).
     """
     
     if x_column is not None: 
         figname = 'Movies over the ' + x_column
-        ax.set_title(figname)
         xlabel = x_column
-        if str(z_column)=='None':
+        if str(f_column)=='None' and g_column != 'Colormesh':
             ylabel = 'Number of movies'
-        elif str(z_column)=='Avg':
+        elif str(f_column)=='Avg' and g_column != 'Colormesh':
             ylabel = 'Average '+y_column+' of the movies'
+        elif g_column == 'Colormesh':
+            ylabel = y_column
         else:
             ylabel = "None"
 
+        if g_column == 'Colormesh':
+            zlabel = 'Number of movies'
+        else:
+            zlabel = "None"
+
     else: 
-        ax.set_title('No data selected')
-        xlabel, ylabel = "None","None"
+        figname = 'No data selected'
+        xlabel, ylabel, zlabel = "None","None","None"
         
-    ax.set_xlabel(xlabel, fontsize=15)
-    ax.set_ylabel(ylabel, fontsize=15)
-    
-    return ax, xlabel, ylabel
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def figure_core(fig, ax, x_column, y_column, z_column, g_column, h_column, Para, y):
-
-    """
-    Goal: Create the plot inside the figure regarding the inputs.
-
-    Parameters:
-    - fig: matplotlib figure.
-    - ax: axis of fig.
-    - x_column: Column in the dataframe
-    - y_column: Column in the dataframe (can be None)
-    - z_column: Function to operate on df_temp[x_column,y_column]
-    - g_column: Type of Graphyque for the figure.
-    - Para: List of column in the dataframe (can be different of [x_column,y_column])
-    - y: Data to plot.
-
-    Returns:
-    - dropdowns_with_labels: The finalized dropdowns figure. 
-    """
-    
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
-    
-    # Define a list of colors for the bars
-    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
-    
-    legend = "None"
-
-
-    if h_column=="1D": 
-        if str(y_column)=='None':
-            # Convert the DataFrame index to a list
-            if x_column not in df_col_string:
-                x_values = list(map(int, y[Para[0]]))
-            else:
-                x_values = list(y[Para[0]])
-            
-            if g_column=="Histogram":
-                ax.bar(np.arange(len(x_values)), y["Count"])
-            if g_column=="Curve":
-                ax.plot(np.arange(len(x_values)), y["Count"], linewidth=4.)
-            if g_column=="Scatter":
-                ax.scatter(np.arange(len(x_values)), y["Count"], linewidth=4.)
-                
-        else:
-            
-            # Convert the DataFrame index to a list
-            if x_column not in df_col_string:
-                x_values = list(map(int, y.index))
-            else:
-                x_values = y.index
-            
-            if str(z_column)=='None':
-                
-                bottom = np.zeros(len(y.index))
-    
-                # Plot the stacked bar chart
-                bars_list = []  # List to hold bar objects for the legend
-                for i, (element_col, y_val) in enumerate(y.items()):
-                    if g_column=="Histogram":
-                        bars = ax.bar(np.arange(len(x_values)), y_val, label=element_col, bottom=bottom, color=colors[i % len(colors)])  # Color assignment
-                    if g_column=="Curve":
-                        bars = ax.plot(np.arange(len(x_values)), y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
-                    if g_column=="Scatter":
-                        bars = ax.scatter(np.arange(len(x_values)), y_val, label=element_col, linewidth=4., color=colors[i % len(colors)])
-                                    
-                    bars_list.append(bars)  # Store the bars
-                    bottom += y_val              
-                    
-    
-                # Create a custom legend using the bars created
-                legend_handles = [plt.Line2D([0], [0], color=color, lw=4) for color in colors[:len(y)]]
-                legend_labels = y.columns.tolist()  # Get the labels from DataFrame columns
-                # Customize the legend to ensure it reflects the colors of the bars
-                legend = ax.legend(legend_handles, legend_labels, ncol=2, handletextpad=0.001)
-            
-                # legend = ax.legend(ncol=2)
-                for text in legend.get_texts():
-                    text.set_color('white')  # Set the color of the legend text
-                    text.set_fontsize(15)  # Set the font size of the legend text
-        
-            elif str(z_column) == "Avg":
-                            
-                if g_column=="Histogram":
-                    ax.bar(np.arange(len(x_values)), y)
-                if g_column=="Curve":
-                    ax.plot(np.arange(len(x_values)), y, linewidth=4.)
-                if g_column=="Scatter":
-                    ax.scatter(np.arange(len(x_values)), y, linewidth=4.)
-                    
-
-    plot_orientation='horizontal'
-    if h_column=="2D": 
-        print(h_column)
-        
-        if x_column in df_col_string or y_column in df_col_string:
-            print("Errors")
-        else:
-
-            # Remove rows where any column contains -1.0
-            if "Other" in y.index:
-                y = y[y.index != "Other"]
-            # Remove columns where any row contains -1.0
-            if "Other" in y.columns:
-                y = y.drop(columns=["Other"])
-            
-            # Sort the columns in ascending order based on column labels
-            sorted_columns = sorted(y.columns)
-            # Reindex the DataFrame to reflect the new sorted column order
-            y = y.reindex(columns=sorted_columns)
-            
-            x_values = y.index
-            y_values = y.columns   
-            
-            y = y.T
-            
-
-        if g_column=="Colormesh":
-            CS1=ax.pcolormesh(x_values, y_values, y)
-            CS1.cmap.set_under(color='white') 
-            # ax_divider = make_axes_locatable(ax)
-            if plot_orientation=='horizontal':
-                # cax=ax_divider.append_axes("right", size="4%", pad="2%")
-                # cbar=fig.colorbar(CS1, cax=cax, orientation="vertical")
-                cbar=fig.colorbar(CS1, orientation="vertical")
-            # if plot_orientation=='vertical':
-            #     cax=ax_divider.append_axes("top", size="4%", pad="2%")
-            #     cbar=fig.colorbar(CS1, ax=top_pos, cax=cax, orientation="horizontal")
-            #     cax.xaxis.set_ticks_position("top")
-            #     cax.xaxis.set_label_position("top")
-            cbar.ax.tick_params(labelsize=22)
-            cbar.set_label(label='Number of movies', size=32)
-    
-    print('Ok color')
-    
-    # fig_x_value = np.arange(len(x_values))
-
-    # Check if all elements are either int or float
-    is_numeric = all(isinstance(x, (int, float)) for x in x_values)
-    
-    if is_numeric:
-        # Determine the interval
-        num_ticks = 5
-        if len(x_values) > num_ticks:
-            interval = max(1, len(x_values) // num_ticks)  # Calculate the interval for x-ticks
-            # Set x-ticks to every 'interval'-th x value's index
-            ax.set_xticks(np.arange(0, len(x_values), interval))
-            # Set labels for those ticks, you can also truncate if needed
-            ax.set_xticklabels(x_values[0:len(x_values):interval], rotation=45, ha='right')
-        else:
-            # If there are 10 or fewer x_values, just set the ticks normally
-            ax.set_xticks(np.arange(len(x_values)))
-            ax.set_xticklabels(x_values, rotation=45, ha='right')
-    
-        fig_x_value = np.arange(0, len(x_values), interval)
-        x_values = x_values[0:len(x_values):interval]
-    
-    ax.tick_params(axis='both', labelsize=10)
-    ax.grid(True, color='grey', linestyle='--', linewidth=2, alpha=0.5)  
-            
-    return fig, ax, fig_x_value, x_values, legend
+    # ax.set_title(figname)
+    return ax, figname, xlabel, ylabel, zlabel
 
 
 """#=============================================================================
@@ -463,7 +301,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],
-                    value=None,
+                    # value=None,
                     style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
                     className='dash-dropdown'  # Add custom class to target with CSS
                 )
@@ -748,13 +586,6 @@ def get_dropdown_options(filtered_data, y_column):
 def tab2_initial_id(columns, tab):
 
     
-    Dropdown_filter=[]
-    for col in columns:
-        dropdown_with_label = html.Div([
-            dcc.Dropdown(id=f'{col}-fig-dropdown-'+tab, style={'display': 'none'})
-        ], style={'display': 'none'})
-        Dropdown_filter.append(dropdown_with_label)        
-    
     # Placeholder dropdowns for tab-2, initially invisible
     return html.Div([
         dcc.Dropdown(id='x-dropdown-tab-2', value=None, style={'display': 'none'}),
@@ -765,8 +596,8 @@ def tab2_initial_id(columns, tab):
         dcc.Dropdown(id='checkbox-runtimeMinutes-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='checkbox-genres-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='checkbox-isAdult-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='checkbox-directors-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='checkbox-writers-tab-2', style={'display': 'none'}),
+        # dcc.Dropdown(id='checkbox-directors-tab-2', style={'display': 'none'}),
+        # dcc.Dropdown(id='checkbox-writers-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='checkbox-averageRating-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='checkbox-numVotes-tab-2', style={'display': 'none'}),
 
@@ -774,8 +605,8 @@ def tab2_initial_id(columns, tab):
         dcc.Dropdown(id='runtimeMinutes-fig-dropdown-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='genres-fig-dropdown-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='isAdult-fig-dropdown-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='directors-fig-dropdown-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='writers-fig-dropdown-tab-2', style={'display': 'none'}),
+        # dcc.Dropdown(id='directors-fig-dropdown-tab-2', style={'display': 'none'}),
+        # dcc.Dropdown(id='writers-fig-dropdown-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='averageRating-fig-dropdown-tab-2', style={'display': 'none'}),
         dcc.Dropdown(id='numVotes-fig-dropdown-tab-2', style={'display': 'none'}),
         
