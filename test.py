@@ -6,6 +6,14 @@ Created on Wed Oct 16 19:12:21 2024
 @author: quentin
 """
 
+# Source for data set : 
+source_data = 'https://developer.imdb.com/non-commercial-datasets/'
+
+# Save the project on github with: !bash ./save_project_on_git.sh
+GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
+
+# Save the project on the laptop:
+Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
 
 
 import dash
@@ -62,6 +70,7 @@ df_col_string = ["genres", "directors", "writers", "nconst", "category", "charac
 
 List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"]
 List_dtype_tab2 = [float, float, str, float, float, float]
+List_filter_tab2 = [None for i in List_col_tab2]
 df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
 df_col_string_tab2 = ["genres"]
 
@@ -303,7 +312,6 @@ def update_stored_df1(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
             # Append None for the filter associated with y_dropdown_value
             selected_filter.append(None)
 
-        
         # Add z_dropdown_value if it's not already in checkbox_values and not already added
         if z_dropdown_value not in checkbox_values and z_dropdown_value not in selected_columns:
             selected_columns.append(z_dropdown_value)
@@ -482,46 +490,35 @@ def update_filter_dropdown_tab2(*args):
 
 @app.callback(
     Output('graph-output-tab-2', 'figure'),
-    [Input('x-dropdown-tab-2', 'value'),
+    [Input('tabs', 'value'),
+     Input('x-dropdown-tab-2', 'value'),
      Input('y-dropdown-tab-2', 'value'),
      Input('z-dropdown-tab-2', 'value'),
      Input('Func-dropdown-tab-2', 'value'),
      Input('Graph-dropdown-tab-2', 'value'),
-     Input('Dim-dropdown-tab-2', 'value'),
-     Input('tabs', 'value')] + 
-    [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_tab2],  # Rest of dropdowns
+     Input('Dim-dropdown-tab-2', 'value')],  # Rest of dropdowns
     Input('stored-df1', 'data')
 )
-def update_graph_tab2(*args):
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, stored_df1):
     print()
     print(colored("------------ callback update_graph_tab2 ------------", "red"))
-    # Extract the necessary inputs from the arguments
-    x_column, y_column, z_column, func_column, graph_type, dim_type, selected_tab = args[:7]
-    stored_df1 = args[-1]
     # Load the Dask DataFrame from Parquet
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
-    # Collecting selected values from checkboxes
-    selected_values = [item for sublist in [args[i + 7] for i, value in enumerate(List_col_tab2) if args[i + 7]] for item in sublist]
+
     # Check if we're in the correct tab and there is data available
     if selected_tab == 'tab-2':
-        print(graph_type)
-        if graph_type is None:
+        print(graph_dropdown_value)
+        if graph_dropdown_value is None:
             return dash.no_update
         if stored_df1 is None:
             print("Stored DF1 is not ready yet.")
         else:
             stored_df1 = dd.read_parquet('temp_df1.parquet')
-    # # Check if we're in the correct tab and there is data available
-    # if selected_tab == 'tab-2' and stored_df1 is not None:
-    #     print(x_column, y_column, func_column, graph_type)
-    #     return update_graph_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, selected_values, stored_df1, Large_file_memory)
-    
-    # return go.Figure()  # Return a blank figure if not in the right tab
-    print("x_column, y_column, z_column, func_column, graph_type, dim_type=",x_column, y_column, z_column, func_column, graph_type, dim_type)
-    print("selected_values=", selected_values)
+
+    print("x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value=",x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value)
     print("stored_df1=", stored_df1)
-    return update_graph_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, selected_values, stored_df1, Large_file_memory)
+    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, stored_df1, Large_file_memory)
   
     
 
@@ -542,12 +539,16 @@ def update_graph_tab2(*args):
 def update_ui(input_value):
     if not input_value:  # Return nothing if input is empty or None
         return '', None
+    print()
+    print(colored("------------ callback update_ui ------------", "red"))
 
     List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
 
     List_filter = [None, None, None, None]
 
     df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+    
+    print(input_value)
     
     # Check if the input value exists in the 'nconst' column of df_name
     if input_value in df_name['primaryName'].values:
@@ -566,9 +567,10 @@ def update_ui(input_value):
         df2 = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
         exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
         df2 = df2.drop(columns=exclude_col)
-
         
-        if df2.empty: 
+        df2 = df2.compute()
+        
+        if len(df2.index) == 0: 
             return html.Div([
                 html.Div([
                     html.P(f'The artist '+input_value+' doesnt have referenced movies.'),
@@ -633,7 +635,7 @@ dropdown_inputs_tab3 = [Input(f'{col}-dropdown', 'value') for col in List_col_ta
 )
 def update_stored_df2(*args):
     print()
-    print("------------ callback update_stored_df2 ------------")    
+    print(colored("------------ callback update_stored_df2 ------------", "red")) 
     selected_tab = args[-2]
     stored_df2 = args[-1]         # The last argument is stored_df2
     selected_values = {col: args[i] for i, col in enumerate(List_col_tab3)}
@@ -669,6 +671,8 @@ dropdown_inputs_fig_tab3 = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col i
     Input('tabs', 'value')  # Include tab value to conditionally trigger callback
 )
 def update_y_dropdown_tab3(selected_x, selected_tab):
+    print()
+    print(colored("------------ callback update_y_dropdown_tab3 ------------", "red")) 
     if selected_tab == 'tab-3':  # Only execute if in the correct tab
         exclude_cols = ["title", "characters"]
         return update_y_dropdown_utility(selected_x, List_col_fig_tab3, exclude_cols)
@@ -680,26 +684,28 @@ def update_y_dropdown_tab3(selected_x, selected_tab):
     Input('tabs', 'value')  # Include tab value to conditionally trigger callback
 )
 def update_func_dropdown_tab3(selected_y, selected_tab):
+    print()
+    print(colored("------------ callback update_func_dropdown_tab3 ------------", "red")) 
     if selected_tab == 'tab-3':
         return update_func_dropdown_utility(selected_y, df_col_numeric)
     return []
 
 @app.callback(
     Output('graph-output-tab-3', 'figure'),
-    [Input('x-dropdown-tab-3', 'value'),
+    [Input('tabs', 'value'),
+     Input('x-dropdown-tab-3', 'value'),
      Input('y-dropdown-tab-3', 'value'),
      Input('z-dropdown-tab-3', 'value'),
      Input('Func-dropdown-tab-3', 'value'),
      Input('Graph-dropdown-tab-3', 'value'),
-     Input('tabs', 'value')] + 
-    dropdown_inputs_fig_tab3,  # Include tab value to conditionally trigger callback
+     Input('Dim-dropdown-tab-3', 'value')] +  # Rest of dropdowns
+    dropdown_inputs_fig_tab3,
     State('stored-df2', 'data')
 )
-def update_graph_tab3(*args):
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, *args):
     print()
-    print("------------ callback update_graph_tab3 ------------")
-    x_column, y_column, z_column, func_column, graph_type, selected_tab = args[0], args[1], args[2], args[3], args[4], args[5]
-    selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig_tab3)}
+    print(colored("------------ callback update_graph_tab3 ------------", "red")) 
+    # selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig_tab3)}
     stored_df2 = args[-1]
     
     # Convert the stored data back to a DataFrame
@@ -710,8 +716,8 @@ def update_graph_tab3(*args):
     print("Active Tab:", selected_tab)
     print(filtered_data_table)
     if selected_tab == 'tab-3' and stored_df2 is not None:  # Only execute if in the correct tab
-            print(x_column, y_column, func_column, graph_type)
-            return update_graph_utility(x_column, y_column, z_column, func_column, graph_type, selected_values, filtered_data_table, False)
+            print(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value)
+            return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, filtered_data_table, False)
     return go.Figure()  # Return a blank figure if not in the right tab
 
 
@@ -774,7 +780,7 @@ def update_filter_dropdown_utility(selected_boxes, df):
 
 
 
-def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, selected_values, stored_df, large_file_memory):
+def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, stored_df, large_file_memory):
     """
     Utility function to generate a graph based on the provided parameters.
     """

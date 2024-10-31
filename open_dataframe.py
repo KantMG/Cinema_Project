@@ -269,11 +269,11 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
         # Log the time taken to apply filters
         df = apply_filter(df, info["filters"])
         log_performance(f"Read {file}", file_start_time)
-                
+        print()
+        
         # Add the DataFrame to the list
         dataframes.append(df)
             
-    print()
     print("Time taken to load all dataframe: {:.2f} seconds".format(time.time() - start_time))        
     print()
 
@@ -298,11 +298,11 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
                 })
             
             merged_df = dd.merge(merged_df, df, on='tconst', how='inner')
-            print()
+            
             print("Time taken to merge dataframe "+str(i)+": {:.2f} seconds".format(time.time() - start_time))
             print()
-        merged_df = dd.from_pandas(merged_df, npartitions=2)
-            # print(df.head(50))
+        # merged_df = dd.from_pandas(merged_df, npartitions=2)
+        
     else:
         merged_df = dataframes[0]
     log_performance("Merging DataFrames", merge_start_time)
