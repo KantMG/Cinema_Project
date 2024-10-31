@@ -15,6 +15,7 @@ import pandas as pd
 import dask.dataframe as dd
 import plotly.graph_objects as go
 import numpy as np
+from termcolor import colored
 
 import time
 import webbrowser
@@ -259,7 +260,7 @@ def tab2_content():
 )
 def update_stored_df1(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, *args):
     print()
-    print("------------ callback update_stored_df1 ------------")
+    print(colored("------------ callback update_stored_df1 ------------", "red"))
     
     ctx = dash.callback_context
     # Print out which component triggered the callback for debugging
@@ -351,7 +352,7 @@ def update_stored_df1(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
 )
 def update_y_dropdown_tab2(selected_x, selected_tab):
     print()
-    print("---------- callback update_y_dropdown_tab2 ----------")
+    print(colored("------------ callback update_y_dropdown_tab2 ------------", "red"))
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
     ctx = dash.callback_context
@@ -376,7 +377,7 @@ def update_y_dropdown_tab2(selected_x, selected_tab):
 )
 def update_z_dropdown_tab2(selected_x, selected_y, selected_tab):
     print()
-    print("---------- callback update_z_dropdown_tab2 ----------")
+    print(colored("------------ callback update_z_dropdown_tab2 ------------", "red"))
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
     ctx = dash.callback_context
@@ -400,7 +401,7 @@ def update_z_dropdown_tab2(selected_x, selected_y, selected_tab):
 )
 def update_func_dropdown_tab2(selected_y, selected_tab):
     print()
-    print("-------- callback update_func_dropdown_tab2 --------")
+    print(colored("------------ callback update_func_dropdown_tab2 ------------", "red"))
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
     if selected_tab == 'tab-2':
@@ -437,7 +438,7 @@ def update_func_dropdown_tab2(selected_y, selected_tab):
 
 def update_graph_dropdown_tab2(selected_dim, selected_tab):
     print()
-    print("-------- callback update_dim_dropdown_tab2 --------")
+    print(colored("------------ callback update_dim_dropdown_tab2 ------------", "red"))
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
     if selected_tab == 'tab-2':
@@ -458,7 +459,7 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
 )
 def update_filter_dropdown_tab2(*args):
     print()
-    print("--------- callback update_filter_dropdown_tab2 ---------")
+    print(colored("------------ callback update_filter_dropdown_tab2 ------------", "red"))
     selected_boxes = list(args[:-2])
     selected_tab = args[-2]
     stored_df1 = args[-1]
@@ -493,7 +494,7 @@ def update_filter_dropdown_tab2(*args):
 )
 def update_graph_tab2(*args):
     print()
-    print("------------ callback update_graph_tab2 ------------")
+    print(colored("------------ callback update_graph_tab2 ------------", "red"))
     # Extract the necessary inputs from the arguments
     x_column, y_column, z_column, func_column, graph_type, dim_type, selected_tab = args[:7]
     stored_df1 = args[-1]
