@@ -55,6 +55,8 @@ GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
 # Save the project on the laptop:
 Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
 
+# Get the current working directory or script path as needed
+current_file_path = os.getcwd()+'/test.py'
 
 start_time = time.time()
 
@@ -151,10 +153,14 @@ def tab1_content():
     Text4 = f"The IMDb Non-Commercial Datasets has been used to perform this study, the open source can be find here: "+source_data
     Text5 = f"It corresponds to a multiple variety of tab-separated-values (TSV) formatted files in the UTF-8 character set. "
     Text6 = f"The "
+    
 
+    
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
+    idgraph='graph-code'
+    graph_of_the_code = dci.create_detailed_flowchart(current_file_path, component_ids)
     print("==================== End Tab1_content ========================")    
     return html.Div([
         html.Div([
@@ -167,6 +173,9 @@ def tab1_content():
             html.P(Text5),
             html.P(Text6),
         ]),        
+        html.Div(
+            [dcc.Graph(id=idgraph, figure=graph_of_the_code, style={'width': '100%', 'height': '1000px'})], 
+            style={'margin-left': '150px', 'width': '80%'}), 
         ], style={'padding': '20px'})
 
 

@@ -1,141 +1,17 @@
 
-import re
-import plotly.graph_objects as go
-import plotly.io as pio
 
-def create_flowchart_from_dash_app(file_path):
-    # Set the default renderer
-    pio.renderers.default = 'browser'
+print(target_ids)
+print(callback_dependencies)
+target_callbacks = {cb_name for cb_name, deps in callback_dependencies.items()
+                    if any(output_id in target_ids for output_id in deps['outputs'])}
 
-    # Read the Python file
-    with open(file_path, 'r') as file:
-        code = file.read()
+print(target_callbacks)
 
-    # Regular expression to find callbacks
-    callback_pattern = r'@app\.callback\s*\([\s\S]*?\)\s*def\s*(\w+)\s*\('
-    callbacks = re.findall(callback_pattern, code)
-    
-    if not callbacks:
-        print("No callbacks found.")
-        return
-
-    # Create nodes
-    nodes = [{'name': 'Start', 'x': 0.5, 'y': 1.0}]
-    edges = []
-    for i, callback in enumerate(callbacks):
-        nodes.append({'name': callback, 'x': 0.5, 'y': 1.0 - (i + 1) * 0.15})  # Space out the nodes
-        edges.append((0, i + 1))  # Connect each callback to the Start node
-    
-    # Create the figure
-    fig = go.Figure()
-
-    # Add nodes to the figure
-    for node in nodes:
-        fig.add_trace(go.Scatter(
-            x=[node['x']],
-            y=[node['y']],
-            text=[node['name']],
-            mode='text+markers',
-            marker=dict(size=20, color='LightSkyBlue'),
-            textfont=dict(size=14),
-            showlegend=False
-        ))
-
-    # Add edges
-    for start, end in edges:
-        fig.add_trace(go.Scatter(
-            x=[nodes[start]['x'], nodes[end]['x']],
-            y=[nodes[start]['y'], nodes[end]['y']],
-            mode='lines',
-            line=dict(color='DarkSlateBlue', width=2),
-            showlegend=False
-        ))
-
-    # Set layout properties
-    fig.update_layout(
-        showlegend=False,
-        title='Flowchart of Dash Application Callbacks',
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        height=600,
-    )
-
-    # Show the figure
-    fig.show()
-
-Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
-# Example usage
-create_flowchart_from_dash_app(Project_path+'test.py')
+shows
 
 
+['tabs', 'tabs-1', 'tabs-2', 'tabs-3', 'stored-df1', 'stored-df2', 'tabs-content']
+{'render_content': {'outputs': ["'tabs-content', 'children'"], 'inputs': ["'tabs', 'value'"]}, 'update_stored_df1': {'outputs': ["'stored-df1', 'data'"], 'inputs': ["'tabs', 'value'", "'x-dropdown-tab-2', 'value'", "'y-dropdown-tab-2', 'value'", "'z-dropdown-tab-2', 'value'", "f'checkbox-{col}-tab-2', 'value'", "f'{col}-fig-dropdown-tab-2', 'value'"]}, 'update_z_dropdown_tab2': {'outputs': ["'z-dropdown-tab-2', 'options'"], 'inputs': ["'x-dropdown-tab-2', 'value'", "'y-dropdown-tab-2', 'value'", "'tabs', 'value'"]}, 'update_dim_dropdown_tab2': {'outputs': ["'Dim-dropdown-tab-2', 'options'"], 'inputs': ["'y-dropdown-tab-2', 'value'", "'tabs', 'value'"]}, 'update_filter_dropdown_tab2': {'outputs': ["f'{col}-fig-dropdown-tab-2', 'options'"], 'inputs': ["f'checkbox-{col}-tab-2', 'value'", "'tabs', 'value'", "'stored-df1', 'data'"]}, 'update_ui': {'outputs': ["'dynamic-content', 'children'", "'stored-df2', 'data'"], 'inputs': ["'input-value', 'value'"]}, 'update_y_dropdown_tab3': {'outputs': ["'y-dropdown-tab-3', 'options'"], 'inputs': ["'x-dropdown-tab-3', 'value'", "'tabs', 'value'"]}, 'update_graph_tab2': {'outputs': ["'graph-output-tab-3', 'figure'"], 'inputs': ["'tabs', 'value'", "'x-dropdown-tab-3', 'value'", "'y-dropdown-tab-3', 'value'", "'z-dropdown-tab-3', 'value'", "'Func-dropdown-tab-3', 'value'", "'Graph-dropdown-tab-3', 'value'", "'Dim-dropdown-tab-3', 'value'"]}}
+set()
 
-# import plotly.graph_objects as go
-# import plotly.io as pio
-
-# # Set the default renderer to open the figure in the browser
-# pio.renderers.default = 'browser'
-
-# # Define the flowchart nodes
-# nodes = [
-#     {'name': 'Start', 'x': 0.5, 'y': 1},
-#     {'name': 'User Inputs Text', 'x': 0.5, 'y': 0.8},
-#     {'name': 'Submit Button Clicked?', 'x': 0.5, 'y': 0.6},
-#     {'name': 'Update output_div', 'x': 0.5, 'y': 0.4},
-#     {'name': 'Prompt: "Enter something and press submit!"', 'x': 0.3, 'y': 0.6},
-#     {'name': 'Display Text: "You entered: {value}"', 'x': 0.5, 'y': 0.25},
-#     {'name': 'Dropdown Selection', 'x': 0.5, 'y': 0.5},
-#     {'name': 'Update dropdown-output', 'x': 0.5, 'y': 0.35},
-#     {'name': 'Display Selected Option: "Selected option: {value}"', 'x': 0.5, 'y': 0.1},
-#     {'name': 'End', 'x': 0.5, 'y': 0}
-# ]
-
-# # Create the figure
-# fig = go.Figure()
-
-# # Add nodes to the figure
-# for node in nodes:
-#     fig.add_trace(go.Scatter(
-#         x=[node['x']],
-#         y=[node['y']],
-#         text=[node['name']],
-#         mode='text+markers',
-#         marker=dict(size=20, color='LightSkyBlue'),
-#         textfont=dict(size=14),
-#         showlegend=False
-#     ))
-
-# # Define the lines (edges) connecting the nodes
-# edges = [
-#     (0, 1),  # Start to User Inputs Text
-#     (1, 2),  # User Inputs Text to Submit Button Clicked?
-#     (2, 3),  # Submit Button Clicked? to Update output_div
-#     (2, 4),  # Submit Button Clicked? to Prompt
-#     (3, 5),  # Update output_div to Display Text
-#     (1, 6),  # User Inputs Text to Dropdown Selection
-#     (6, 7),  # Dropdown Selection to Update dropdown-output
-#     (7, 8),  # Update dropdown-output to Display Selected Option
-# ]
-
-# # Add lines to represent edges
-# for start, end in edges:
-#     fig.add_trace(go.Scatter(
-#         x=[nodes[start]['x'], nodes[end]['x']],
-#         y=[nodes[start]['y'], nodes[end]['y']],
-#         mode='lines+text',
-#         line=dict(color='DarkSlateBlue', width=2),
-#         text=["", ""],
-#         textposition='middle right',
-#         showlegend=False
-#     ))
-
-# # Set layout properties
-# fig.update_layout(
-#     showlegend=False,
-#     title='Flowchart of Dash Application',
-#     xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-#     yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-#     height=600,
-# )
-
-# # Show the figure
-# fig.show()
+why target_callbacks is empty
