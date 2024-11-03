@@ -1,17 +1,155 @@
+if __name__ == '__main__':
+    app.run_server(debug=True, port=8054)
+
+    # Specify the URL you want to open
+    url = "http://127.0.0.1:8054/"
+    
+    # Open the URL in the default web browser
+    webbrowser.open(url)
+    
+I would like to do webbrowser.open(url) if the url is not already open
 
 
-print(target_ids)
-print(callback_dependencies)
-target_callbacks = {cb_name for cb_name, deps in callback_dependencies.items()
-                    if any(output_id in target_ids for output_id in deps['outputs'])}
-
-print(target_callbacks)
-
-shows
 
 
-['tabs', 'tabs-1', 'tabs-2', 'tabs-3', 'stored-df1', 'stored-df2', 'tabs-content']
-{'render_content': {'outputs': ["'tabs-content', 'children'"], 'inputs': ["'tabs', 'value'"]}, 'update_stored_df1': {'outputs': ["'stored-df1', 'data'"], 'inputs': ["'tabs', 'value'", "'x-dropdown-tab-2', 'value'", "'y-dropdown-tab-2', 'value'", "'z-dropdown-tab-2', 'value'", "f'checkbox-{col}-tab-2', 'value'", "f'{col}-fig-dropdown-tab-2', 'value'"]}, 'update_z_dropdown_tab2': {'outputs': ["'z-dropdown-tab-2', 'options'"], 'inputs': ["'x-dropdown-tab-2', 'value'", "'y-dropdown-tab-2', 'value'", "'tabs', 'value'"]}, 'update_dim_dropdown_tab2': {'outputs': ["'Dim-dropdown-tab-2', 'options'"], 'inputs': ["'y-dropdown-tab-2', 'value'", "'tabs', 'value'"]}, 'update_filter_dropdown_tab2': {'outputs': ["f'{col}-fig-dropdown-tab-2', 'options'"], 'inputs': ["f'checkbox-{col}-tab-2', 'value'", "'tabs', 'value'", "'stored-df1', 'data'"]}, 'update_ui': {'outputs': ["'dynamic-content', 'children'", "'stored-df2', 'data'"], 'inputs': ["'input-value', 'value'"]}, 'update_y_dropdown_tab3': {'outputs': ["'y-dropdown-tab-3', 'options'"], 'inputs': ["'x-dropdown-tab-3', 'value'", "'tabs', 'value'"]}, 'update_graph_tab2': {'outputs': ["'graph-output-tab-3', 'figure'"], 'inputs': ["'tabs', 'value'", "'x-dropdown-tab-3', 'value'", "'y-dropdown-tab-3', 'value'", "'z-dropdown-tab-3', 'value'", "'Func-dropdown-tab-3', 'value'", "'Graph-dropdown-tab-3', 'value'", "'Dim-dropdown-tab-3', 'value'"]}}
-set()
 
-why target_callbacks is empty
+Great the result appear below
+
+tabs-1
+tabs-2
+├── tabs-2 (value)
+│   ├── stored-df1 (data)
+│   │   ├── fig-dropdown-genres-tab-2 (options)
+│   │   └── graph-output-tab-2 (figure)
+│   ├── y-dropdown-tab-2 (options)
+│   ├── z-dropdown-tab-2 (options)
+│   ├── Func-dropdown-tab-2 (options)
+│   ├── Dim-dropdown-tab-2 (options)
+│   ├── Graph-dropdown-tab-2 (options)
+│   ├── Graph-dropdown-tab-2 (value)
+│   │   └── graph-output-tab-2 (figure)
+│   ├── fig-dropdown-genres-tab-2 (options)
+│   └── graph-output-tab-2 (figure)
+├── x-dropdown-tab-2 (value)
+│   ├── stored-df1 (data)
+│   │   ├── fig-dropdown-genres-tab-2 (options)
+│   │   └── graph-output-tab-2 (figure)
+│   ├── y-dropdown-tab-2 (options)
+│   ├── z-dropdown-tab-2 (options)
+│   └── graph-output-tab-2 (figure)
+├── y-dropdown-tab-2 (value)
+│   ├── stored-df1 (data)
+│   │   ├── fig-dropdown-genres-tab-2 (options)
+│   │   └── graph-output-tab-2 (figure)
+│   ├── z-dropdown-tab-2 (options)
+│   ├── Func-dropdown-tab-2 (options)
+│   ├── Dim-dropdown-tab-2 (options)
+│   └── graph-output-tab-2 (figure)
+├── z-dropdown-tab-2 (value)
+│   ├── stored-df1 (data)
+│   │   ├── fig-dropdown-genres-tab-2 (options)
+│   │   └── graph-output-tab-2 (figure)
+│   └── graph-output-tab-2 (figure)
+├── checkbox-startYear-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── checkbox-runtimeMinutes-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── checkbox-genres-tab-2 (value)
+│   ├── stored-df1 (data)
+│   │   ├── fig-dropdown-genres-tab-2 (options)
+│   │   └── graph-output-tab-2 (figure)
+│   └── fig-dropdown-genres-tab-2 (options)
+├── checkbox-isAdult-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── checkbox-averageRating-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── checkbox-numVotes-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-startYear-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-runtimeMinutes-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-genres-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-isAdult-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-averageRating-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-numVotes-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── Dim-dropdown-tab-2 (value)
+│   ├── Graph-dropdown-tab-2 (options)
+│   ├── Graph-dropdown-tab-2 (value)
+│   │   └── graph-output-tab-2 (figure)
+│   └── graph-output-tab-2 (figure)
+├── stored-df1 (data)
+│   ├── fig-dropdown-genres-tab-2 (options)
+│   └── graph-output-tab-2 (figure)
+├── Func-dropdown-tab-2 (value)
+│   └── graph-output-tab-2 (figure)
+├── Graph-dropdown-tab-2 (value)
+│   └── graph-output-tab-2 (figure)
+tabs-3
+
+
+Now I want you to look for the dropdonw which look the same and are doing exavtly the same chain.
+For instance all the fig-dropdown-"something"-tab-2 (value) are doing 
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+
+so I want you insteated of doing 
+
+├── fig-dropdown-startYear-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-runtimeMinutes-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-genres-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-isAdult-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-averageRating-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+├── fig-dropdown-numVotes-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)
+
+to print it like 
+
+├── List of fig-dropdown-*-tab-2 (value)
+│   └── stored-df1 (data)
+│       ├── fig-dropdown-genres-tab-2 (options)
+│       └── graph-output-tab-2 (figure)

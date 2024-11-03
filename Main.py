@@ -23,24 +23,29 @@ from dash.dependencies import Input, Output, State
 import pandas as pd
 import dask.dataframe as dd
 import plotly.graph_objects as go
-import numpy as np
 from termcolor import colored
 
+import os
 import time
 import webbrowser
+import socket
+import psutil
+import threading
+import requests
 import shutil
-import os
 
-import Function_dataframe as fd
-import Function_errors as fe
+
 import web_interface_style as wis
-import table_dropdown_style as tds
-import figure_creation as fc
-import figure_dropdown_style as fds
-import data_plot_preparation as dpp
-import open_dataframe as od
 import Dash_callback_ids as dci
 
+import table_dropdown_style as tds
+import figure_creation as fc
+import data_plot_preparation as dpp
+import figure_dropdown_style as fds
+
+import open_dataframe as od
+import Function_dataframe as fd
+import Function_errors as fe
 
 """#=============================================================================
    #=============================================================================
@@ -56,7 +61,7 @@ GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
 Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
 
 # Get the current working directory or script path as needed
-current_file_path = os.getcwd()+'/test.py'
+current_file_path = os.getcwd()+'/Main.py'
 
 start_time = time.time()
 
@@ -159,8 +164,21 @@ def tab1_content():
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
+    
     idgraph='graph-code'
-    graph_of_the_code = dci.create_detailed_flowchart(current_file_path, component_ids)
+    
+    flowchart_info, function_names = dci.create_detailed_flowchart(current_file_path, component_ids)
+        
+    # # Build and print the hierarchy
+    hierarchy = dci.build_hierarchy(flowchart_info)
+    # hierarchy = dci.simplify_hierarchy(hierarchy)
+    
+    # print(hierarchy, output_to_callbacks)
+    dci.print_hierarchy(hierarchy)
+    
+    # dci.create_detailed_flowchart(current_file_path, component_ids)
+    print("==============================================================")
+    # graph_of_the_code = dci.create_hierarchy_figure(hierarchy)
     print("==================== End Tab1_content ========================")    
     return html.Div([
         html.Div([
@@ -173,9 +191,9 @@ def tab1_content():
             html.P(Text5),
             html.P(Text6),
         ]),        
-        html.Div(
-            [dcc.Graph(id=idgraph, figure=graph_of_the_code, style={'width': '100%', 'height': '1000px'})], 
-            style={'margin-left': '150px', 'width': '80%'}), 
+        # html.Div(
+        #     [dcc.Graph(id=idgraph, figure=graph_of_the_code, style={'width': '100%', 'height': '1000px'})], 
+        #     style={'margin-left': '150px', 'width': '80%'}), 
         ], style={'padding': '20px'})
 
 
@@ -223,7 +241,7 @@ def tab2_content():
      Input('y-dropdown-tab-2', 'value'),  # y-axis dropdown
      Input('z-dropdown-tab-2', 'value')] +  # z-axis dropdown
     [Input(f'checkbox-{col}-tab-2', 'value') for col in List_col_tab2] +  # Each checkbox's value
-    [Input(f'{col}-fig-dropdown-tab-2', 'value') for col in List_col_tab2]  # Rest of dropdowns
+    [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2]  # Rest of dropdowns
 )
 def update_stored_df1(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, *args):
     print()
@@ -313,8 +331,8 @@ def update_stored_df1(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
 
 @app.callback(
     Output('y-dropdown-tab-2', 'options'),
-    [Input('x-dropdown-tab-2', 'value'),
-    Input('tabs', 'value')]
+    [Input('x-dropdown-tab-2', 'value')]+
+    [Input('tabs', 'value')]
 )
 def update_y_dropdown_tab2(selected_x, selected_tab):
     print()
@@ -417,9 +435,9 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
 
 
 @app.callback(
-    [Output(f'{col}-fig-dropdown-tab-2', 'options') for col in df_col_string_tab2],  # Rest of dropdowns
-    [Input(f'checkbox-{col}-tab-2', 'value') for col in df_col_string_tab2] +
-    [Input('tabs', 'value')],
+    [Output(f'fig-dropdown-{col}-tab-2', 'options') for col in df_col_string_tab2],  # Rest of dropdowns
+    [Input(f'checkbox-{col}-tab-2', 'value') for col in df_col_string_tab2],
+    Input('tabs', 'value'),
     Input('stored-df1', 'data')
 )
 def update_filter_dropdown_tab2(*args):
@@ -617,7 +635,7 @@ def update_stored_df2(*args):
 tab = 'tab-3'
 # Create a list of Input objects for each dropdown
 List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
-dropdown_inputs_fig_tab3 = [Input(f'{col}-fig-dropdown-'+tab, 'value') for col in List_col_fig_tab3]
+dropdown_inputs_fig_tab3 = [Input(f'fig-dropdown-{col}-'+tab, 'value') for col in List_col_fig_tab3]
 
 
 @app.callback(
@@ -758,12 +776,32 @@ def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, 
 # =============================================================================
 
 
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def should_open_browser(flag_file):
+    if not os.path.exists(flag_file):
+        # If the flag file doesn't exist, we should open the browser
+        return True
+    return False
 
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8054)
+    # Define the port and URL
+    port = 8054
+    url = f"http://127.0.0.1:{port}/"
+    flag_file = "browser_opened.flag"
 
-    # Specify the URL you want to open
-    url = "http://127.0.0.1:8054/"
+    # Start the Dash server
+    app.run_server(debug=True, port=port)
     
-    # Open the URL in the default web browser
-    # webbrowser.open(url)
+    # Give the server a moment to start
+    time.sleep(2)
+
+    # Check if we should open the browser
+    if should_open_browser(flag_file):
+        webbrowser.open(url)
+        # Create the flag file to indicate that we've opened the browser
+        with open(flag_file, 'w') as f:
+            f.write("Browser opened")

@@ -211,7 +211,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
             dropdown_with_label = html.Div([
                 html.Label(f'{col}'),
                 dcc.Input(
-                    id=f'{col}-fig-dropdown-'+tab,
+                    id=f'fig-dropdown-{col}-'+tab,
                     type='text',
                     debounce=True,
                     style=dropdown_style
@@ -232,7 +232,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
             dropdown_with_label = html.Div([
                 html.Label(f'{col}'),
                 dcc.Dropdown(
-                    id=f'{col}-fig-dropdown-'+tab,
+                    id=f'fig-dropdown-{col}-'+tab,
                     options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
                     # value='All',
                     style=dropdown_style,
@@ -283,7 +283,7 @@ def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, un
         # Define whether to use dropdown or input based on the data type
         if dtype == "float64":
             input_component = dcc.Input(
-                id=f'{col}-fig-dropdown-'+tab,
+                id=f'fig-dropdown-{col}-'+tab,
                 type='text',
                 debounce=True,
                 style=dropdown_style
@@ -297,7 +297,7 @@ def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, un
             unique_values = sorted(all_roles)
             
             input_component = dcc.Dropdown(
-                id=f'{col}-fig-dropdown-'+tab,
+                id=f'fig-dropdown-{col}-'+tab,
                 options=[{'label': val, 'value': val} for val in unique_values],
                 style=dropdown_style,
                 className='dash-dropdown',

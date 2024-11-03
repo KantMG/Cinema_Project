@@ -19,8 +19,11 @@ Created on Wed Oct 30 15:58:40 2024
 
 
 import re
+import ast
+
 import plotly.graph_objects as go
 import plotly.io as pio
+from collections import defaultdict
 
 
 """#=============================================================================
@@ -178,7 +181,7 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
                             
     print("to_visit=",to_visit)
     print("communication_edges=",communication_edges)
-    
+    print()
     # Create the figure
     fig = go.Figure()
 
@@ -306,192 +309,289 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
    #=============================================================================
    #============================================================================="""
 
-
-def create_detailed_flowchart(file_path, target_ids=None):
-    # Read the Python file
-    with open(file_path, 'r') as file:
-        code = file.read()
+def create_flowchart_from_dash_app(file_path, target_ids=None):
     
-    # Regular expression to find imports with aliases
-    import_pattern = r'import\s+(\w+)\s+as\s+(\w+)'
-    imports = dict(re.findall(import_pattern, code))
+    target_ids = ["tabs-1", "tabs-2", "tabs-3"]
+    
+    with open(file_path, 'r') as file:
+        tree = ast.parse(file.read())
 
-    # Regular expression to find callbacks and their bodies
-    callback_pattern = r'@app\.callback\s*\(([\s\S]*?)\)\s*def\s*(\w+)\s*\(.*?\):([\s\S]*?)(?=\n\s*def|\Z)'
-    callback_matches = re.findall(callback_pattern, code)
+    # Extract variable values, particularly lists like List_col_tab2
+    variable_values = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+            var_name = node.targets[0].id
+            if isinstance(node.value, ast.List):  # Only handle lists
+                variable_values[var_name] = [elt.s for elt in node.value.elts if isinstance(elt, ast.Str)]
 
-    if not callback_matches:
-        print("No callbacks found.")
-        return
+    callbacks = []
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            callback_decorator = next((dec for dec in node.decorator_list 
+                                       if isinstance(dec, ast.Call) and getattr(dec.func, 'attr', None) == 'callback'), None)
+            if callback_decorator:
+                function_name = node.name
+                output_ids = []
+                input_ids = []
 
-    # Store callback dependencies (outputs and inputs) for connection
-    callback_dependencies = {}
+                for arg in callback_decorator.args:
+                    if isinstance(arg, ast.Call) and arg.func.id == 'Output':
+                        output_ids.extend(extract_io_ids(arg, variable_values))
+                    elif isinstance(arg, (ast.List, ast.Call, ast.ListComp, ast.BinOp)):
+                        input_ids.extend(extract_io_ids(arg, variable_values))
 
-    # Create nodes
-    nodes = [{'name': 'Start', 'x': 0.5, 'y': 1.0}]
-    edges = []
-    branch_edges = []
-    space_between_nodes = 0.15  # Base space between nodes
-    current_y = 1.0
-
-    # Parse each callback for dependencies and setup nodes
-    for i, (callback_decorators, callback_name, callback_body) in enumerate(callback_matches):
-        function_calls = []
-        outputs = []
-        inputs = []
-
-        # Capture outputs and inputs from callback decorators
-        output_pattern = r'Output\(([^)]+)\)'
-        input_pattern = r'Input\(([^)]+)\)'
-        outputs.extend(re.findall(output_pattern, callback_decorators))
-        inputs.extend(re.findall(input_pattern, callback_decorators))
-
-        # Map callback dependencies
-        callback_dependencies[callback_name] = {'outputs': outputs, 'inputs': inputs}
-
-        # Detect function calls in the callback body
-        for alias in imports.values():
-            function_pattern = rf'{alias}\.(\w+)\('
-            called_functions = re.findall(function_pattern, callback_body)
-            function_calls.extend([f'{alias}.{func}' for func in called_functions])
-
-        # Adjust space based on the node existence
-        node_gap = space_between_nodes
-        current_y -= node_gap
-
-        # Add the node with just the callback name
-        nodes.append({
-            'name': callback_name,
-            'x': 0.5,
-            'y': current_y,
-            'hoverinfo': "Functions:<br>" + "<br>".join(function_calls) if function_calls else "Functions: None"
-        })
-        edges.append((0, i + 1))  # Connect each callback to the Start node
-
-    # Identify branches starting from the "render_content" callback
-    for callback_name, deps in callback_dependencies.items():
-        if "render_content" in callback_name:
-            render_content_index = next(i for i, node in enumerate(nodes) if node['name'] == callback_name)
-            tab_branches = ['tabs-1', 'tabs-2', 'tabs-3']
-
-            for tab_index, tab in enumerate(tab_branches):
-                branch_y_offset = current_y - (tab_index + 1) * space_between_nodes * 2
-                tab_node_name = f"Branch {tab}"
-                
-                # Add branch node for each tab
-                nodes.append({
-                    'name': tab_node_name,
-                    'x': 0.5 + (tab_index - 1) * 0.3,  # Space out each branch horizontally
-                    'y': branch_y_offset,
-                    'hoverinfo': f"Branch for {tab}"
+                callbacks.append({
+                    'function_name': function_name,
+                    'outputs': [(comp_id, prop) for comp_type, comp_id, prop in output_ids if comp_type == 'Output'],
+                    'inputs': [(comp_id, prop) for comp_type, comp_id, prop in input_ids if comp_type == 'Input'],
                 })
-                branch_edges.append((render_content_index, len(nodes) - 1))  # Connect render_content to each branch
+        
+    # Map each component ID to callbacks that use it as an input
+    input_to_callback = defaultdict(list)    
+    for cb in callbacks:
+        for comp_id, prop in cb['inputs']:
+            input_to_callback[comp_id].append(cb)
+            
+            
+    # Build flowchart structure by target IDs
+    def build_branch(comp_id):
+        if comp_id not in input_to_callback:
+            return {'id': comp_id, 'branches': []}
+        
+        print(f"Processing component ID: {comp_id}")
+        branches = []
+        
+        for cb in input_to_callback[comp_id]:
+            print(f"Callback for {comp_id}: {cb}")
+            
+            # Include outputs as branches
+            for output_id, _ in cb['outputs']:
+                print(f"Found output: {output_id}")
+                branches.append(build_branch(output_id))
+            
+        # If there are no branches but this component has inputs, include it
+        if not branches:
+            branches.append({'id': comp_id, 'branches': []})
+            print(f"No branches found for {comp_id}. Adding as input.")
+        
+        return {'id': comp_id, 'branches': branches}
 
-                # Identify and connect sub-branches (inputs) associated with this tab
-                for sub_callback_name, sub_deps in callback_dependencies.items():
-                    print("sub_callback_name=",sub_callback_name)
-                    print("sub_deps=",sub_deps)
-                    for sub_input in sub_deps['inputs']:
-                        sub_input_id = re.search(r"'([^']+)'", sub_input)
-                        print(sub_input_id , tab , sub_input_id.group(1))
-                        if sub_input_id and tab in sub_input_id.group(1):
-                            sub_node_y = branch_y_offset - space_between_nodes
-                            sub_node_name = f"{sub_input_id.group(1)} for {tab}"
-                            nodes.append({
-                                'name': sub_node_name,
-                                'x': 0.5 + (tab_index - 1) * 0.3,  # Keep sub-branches under each main branch
-                                'y': sub_node_y,
-                                'hoverinfo': f"Input: {sub_input_id.group(1)} for {tab}"
-                            })
-                            branch_edges.append((len(nodes) - 2, len(nodes) - 1))  # Link to sub-branch
-                            print(branch_edges)
+    
+    # Create branches for each target_id if provided
+    flowchart_structure = []
+    if target_ids:
+        for target_id in target_ids:
+            flowchart_structure.append(build_branch(target_id))
+    else:
+        for comp_id in input_to_callback:
+            flowchart_structure.append(build_branch(comp_id))
 
-                            # Further connect to the callback affected by this input
-                            sub_callback_node_y = sub_node_y - space_between_nodes
-                            nodes.append({
-                                'name': sub_callback_name,
-                                'x': 0.5 + (tab_index - 1) * 0.3,
-                                'y': sub_callback_node_y,
-                                'hoverinfo': f"Callback: {sub_callback_name}"
-                            })
-                            branch_edges.append((len(nodes) - 2, len(nodes) - 1))  # Link input to callback
+    # Display the flowchart structure
+    def print_flowchart(branch, level=0):
+        print("    " * level + f"- {branch['id']}")
+        for sub_branch in branch['branches']:
+            print_flowchart(sub_branch, level + 1)
 
-                            # Update branch offset for next node
-                            branch_y_offset = sub_callback_node_y
+    print("Flowchart Structure:")
+    for branch in flowchart_structure:
+        print_flowchart(branch)
+        print()
 
-    # Create the figure
-    fig = go.Figure()
 
-    # Add nodes to the figure
-    for node in nodes:
-        fig.add_trace(go.Scatter(
-            x=[node['x']],
-            y=[node['y']],
-            text=[node['name']],
-            mode='text+markers',
-            marker=dict(size=40, color='darkolivegreen'),
-            textfont=dict(size=14),
-            showlegend=False,
-            hoverinfo='text',
-            hovertext=node.get('hoverinfo', 'No functions associated')
-        ))
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
-    # Add default edges with arrows at the end
-    for start, end in edges:
-        x_coords = [nodes[start]['x'], nodes[end]['x']]
-        y_coords = [nodes[start]['y'], nodes[end]['y']]
+def build_hierarchy(flowchart_info):
+    
+    
+    # Initialize the hierarchy dictionary
+    hierarchy = {
+        'tabs-1': {'inputs': {}, 'outputs': {}},
+        'tabs-2': {'inputs': {}, 'outputs': {}},
+        'tabs-3': {'inputs': {}, 'outputs': {}},
+    }
 
-        fig.add_trace(go.Scatter(
-            x=x_coords,
-            y=y_coords,
-            mode='lines',
-            line=dict(color='DarkSlateBlue', width=2),
-            showlegend=False,
-            hoverinfo='none'
-        ))
+    # Mapping from function name to its outputs
+    function_outputs = {}
 
-        fig.add_annotation(
-            x=x_coords[1],
-            y=y_coords[1],
-            ax=x_coords[0],
-            ay=y_coords[0],
-            showarrow=True,
-            arrowsize=1,
-            arrowhead=3,
-            arrowcolor='DarkSlateBlue',
-            bgcolor='rgba(0,0,0,0)',
-            bordercolor='rgba(0,0,0,0)',
+    # First pass: Build input to functions and function to outputs mappings
+    for item in flowchart_info:
+        function_name = item['function_name']
+        outputs = item['outputs']
+        inputs = item['inputs']
+        
+        # Determine which tab the function should belong to based on inputs
+        current_tab = None
+        for input_id in inputs:
+            component_id = input_id[0]
+            if component_id in ['tabs-1', 'tabs-2', 'tabs-3']:
+                current_tab = component_id
+            elif 'tab-2' in component_id and component_id != 'tabs-2':
+                current_tab = 'tabs-2'
+            elif 'tab-3' in component_id and component_id != 'tabs-3':
+                current_tab = 'tabs-3'
+            if current_tab:
+                break
+
+        if current_tab:
+            # Record inputs with corresponding functions
+            for input_id in inputs:
+                if input_id not in hierarchy[current_tab]['inputs']:
+                    hierarchy[current_tab]['inputs'][input_id] = []
+                if function_name not in hierarchy[current_tab]['inputs'][input_id]:
+                    hierarchy[current_tab]['inputs'][input_id].append(function_name)
+
+            # Record function outputs
+            function_outputs[function_name] = outputs
+            
+            # Record outputs for the current tab
+            for output_id in outputs:
+                if output_id not in hierarchy[current_tab]['outputs']:
+                    hierarchy[current_tab]['outputs'][output_id] = []
+                if function_name not in hierarchy[current_tab]['outputs'][output_id]:
+                    hierarchy[current_tab]['outputs'][output_id].append(function_name)
+
+    # Build nested hierarchy for each input
+    def build_nested_hierarchy(tab, input_id):
+        # Create a nested structure for the given input_id
+        nested_structure = {}
+        functions = hierarchy[tab]['inputs'].get(input_id, [])
+        
+        for function in functions:
+            # Get outputs for this function
+            outputs = function_outputs.get(function, [])
+            # Initialize the function's output in the nested structure
+            nested_structure[function] = {}
+            for output_id in outputs:
+                # Add output to the structure
+                nested_structure[function][output_id] = build_nested_hierarchy(tab, output_id)
+
+        return nested_structure
+    
+    # print()
+    # Final output hierarchy with nested structures for inputs
+    final_hierarchy = {}
+    for tab in hierarchy.keys():
+        final_hierarchy[tab] = {}
+        for input_id in hierarchy[tab]['inputs']:
+            final_hierarchy[tab][input_id] = build_nested_hierarchy(tab, input_id)
+            # print(input_id)
+            # print(final_hierarchy[tab][input_id])
+            # print()
+
+    return final_hierarchy
+
+
+def simplify_hierarchy(hierarchy):
+    """
+    Simplifies the hierarchy by consolidating identical dropdown chains into a single notation.
+
+    Parameters:
+    - hierarchy (dict): The original nested dictionary structure.
+
+    Returns:
+    - dict: A simplified version of the hierarchy with repeated structures consolidated.
+    """
+    simplified_hierarchy = {}
+
+    for key, value in hierarchy.items():
+        # Check if the key matches the fig-dropdown-* pattern and follows the same structure
+        if isinstance(key, tuple) and key[0].startswith("fig-dropdown-") and "-tab-2" in key[0]:
+            standardized_key = "List of fig-dropdown-*-tab-2 (value)"
+            if standardized_key not in simplified_hierarchy:
+                simplified_hierarchy[standardized_key] = value
+        else:
+            # For non-repetitive nodes, add them as is
+            if isinstance(value, dict):
+                simplified_hierarchy[key] = simplify_hierarchy(value)
+            else:
+                simplified_hierarchy[key] = value
+
+    return simplified_hierarchy
+
+
+
+def print_hierarchy(hierarchy):
+    for tab_name in hierarchy.keys():
+        print(f"{tab_name}")
+        for input_id, functions in hierarchy[tab_name].items():
+            # Print each input and its corresponding functions/outputs
+            input_label = f"{input_id[0]} ({input_id[1]})"
+            print(f"├── {input_label}")
+            print_functions(functions, "│   ")
+
+def print_functions(functions, indent):
+    printed_outputs = set()
+    function_count = len(functions)
+    for i, (function, outputs) in enumerate(functions.items()):
+        # Use "└──" for the last function at this level to end correctly
+        func_prefix = "└──" if i == function_count - 1 else "├──"
+        
+        for output_id, sub_outputs in outputs.items():
+            output_label = f"{output_id[0]} ({output_id[1]})"
+            # Ensure each output only appears once per level
+            if output_label not in printed_outputs:
+                print(f"{indent}{func_prefix} {output_label}")
+                printed_outputs.add(output_label)
+                # If sub_outputs exist, recursively print them
+                if sub_outputs:
+                    new_indent = indent + ("    " if func_prefix == "└──" else "│   ")
+                    print_functions(sub_outputs, new_indent)
+
+
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def create_hierarchy_figure(hierarchy):
+    """
+    Create a Sunburst visualization of the hierarchical structure from a dictionary hierarchy.
+    
+    Parameters:
+    - hierarchy (dict): The nested dictionary representing the hierarchy structure.
+    
+    Returns:
+    - fig (go.Figure): A Plotly figure representing the hierarchy as a Sunburst chart.
+    """
+    labels = []
+    parents = []
+    
+    def traverse_hierarchy(hierarchy, parent_label=""):
+        """
+        Recursive function to traverse the hierarchy and populate labels and parents for the Sunburst chart.
+        
+        Parameters:
+        - hierarchy (dict): The current level of the hierarchy to process.
+        - parent_label (str): The label of the parent node at the current level.
+        """
+        for node, children in hierarchy.items():
+            # Add the current node and its parent
+            labels.append(node)
+            parents.append(parent_label)
+            
+            # Recurse to process children if they exist
+            if isinstance(children, dict) and children:
+                traverse_hierarchy(children, node)
+
+    # Start traversal from the top level of the hierarchy
+    traverse_hierarchy(hierarchy)
+
+    # Create the Sunburst figure using the collected labels and parents
+    fig = go.Figure(go.Sunburst(
+        labels=labels,
+        parents=parents,
+        branchvalues="total",
+        marker=dict(
+            colorscale="Viridis"  # Optional: Color scheme to visually distinguish levels
         )
-
-    # Add branch edges with arrows at the end
-    for start, end in branch_edges:
-        x_coords = [nodes[start]['x'], nodes[end]['x']]
-        y_coords = [nodes[start]['y'], nodes[end]['y']]
-
-        fig.add_trace(go.Scatter(
-            x=x_coords,
-            y=y_coords,
-            mode='lines',
-            line=dict(color='red', width=2),
-            showlegend=False,
-            hoverinfo='none'
-        ))
-
-        fig.add_annotation(
-            x=x_coords[1],
-            y=y_coords[1],
-            ax=x_coords[0],
-            ay=y_coords[0],
-            showarrow=True,
-            arrowsize=1,
-            arrowhead=3,
-            arrowcolor='red',
-            bgcolor='rgba(0,0,0,0)',
-            bordercolor='rgba(0,0,0,0)',
-        )
+    ))
 
     # Update layout for dark mode and titles
-    figname = 'Detailed Flowchart of Dash Application Callback Chains with Branches and Inputs'
+    figname = 'Hierarchical Visualization of Callback Dependencies'
     fig.update_layout(
         plot_bgcolor='#343a40',
         paper_bgcolor='#343a40',
@@ -504,5 +604,123 @@ def create_detailed_flowchart(file_path, target_ids=None):
         height=1000,
     )
 
+
+    
     return fig
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def create_detailed_flowchart(file_path, target_ids=None):
+
+    with open(file_path, 'r') as file:
+        tree = ast.parse(file.read())
+
+    # Extract variable values, particularly lists like List_col_tab2
+    variable_values = {}
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and isinstance(node.targets[0], ast.Name):
+            var_name = node.targets[0].id
+            if isinstance(node.value, ast.List):  # Only handle lists
+                variable_values[var_name] = [elt.s for elt in node.value.elts if isinstance(elt, ast.Str)]
+
+    flowchart_info = []
+    function_names = []
+    node_pos = {}
+    
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            callback_decorator = next((dec for dec in node.decorator_list 
+                                       if isinstance(dec, ast.Call) and getattr(dec.func, 'attr', None) == 'callback'), None)
+            if callback_decorator:
+                function_name = node.name
+                output_ids = []
+                input_ids = []
+
+                # Process outputs first to handle lists
+                for arg in callback_decorator.args:
+                    if isinstance(arg, ast.List):
+                        output_ids.extend(extract_io_ids(arg, variable_values))
+                    elif isinstance(arg, ast.Call) and arg.func.id == 'Output':
+                        output_ids.append((arg.func.id, arg.args[0].s, arg.args[1].s))
+                    elif isinstance(arg, (ast.ListComp, ast.BinOp)):
+                        output_ids.extend(extract_io_ids(arg, variable_values))
+
+                # Process inputs
+                for arg in callback_decorator.args[1:]:  # Skip the first element since it's outputs
+                    input_ids.extend(extract_io_ids(arg, variable_values))
+
+                # Organize function details for each callback
+                flowchart_info.append({
+                    'function_name': function_name,
+                    'outputs': [(comp_id, prop) for comp_type, comp_id, prop in output_ids if comp_type == 'Output'],
+                    'inputs': [(comp_id, prop) for comp_type, comp_id, prop in input_ids if comp_type == 'Input'],
+                })
+                function_names.append(function_name)
+
+    # Define node positions (x, y) for visualization
+    num_functions = len(function_names)
+    for idx, function in enumerate(function_names):
+        node_pos[function] = (idx, 1)  # Place nodes horizontally
+    
+
+    return flowchart_info,function_names
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def extract_io_ids(arg, variable_values):
+    """
+    Extracts Input and Output component IDs and properties, handling lists, comprehensions, and concatenations.
+    """
+    ids = []
+    if isinstance(arg, ast.List):  # Regular list of Inputs or Outputs
+        for item in arg.elts:
+            ids.extend(extract_io_ids(item, variable_values))
+    elif isinstance(arg, ast.Call) and isinstance(arg.func, ast.Name):
+        if arg.func.id in {'Input', 'Output'}:
+            # Handle individual Input/Output definitions
+            ids.append((arg.func.id, arg.args[0].s, arg.args[1].s))
+    elif isinstance(arg, ast.ListComp):  # List comprehension
+        # Call extract_comprehension_ids to handle list comprehensions
+        ids.extend(extract_comprehension_ids(arg, variable_values))
+    elif isinstance(arg, ast.BinOp) and isinstance(arg.op, ast.Add):  # Handle concatenations
+        # Recursively process the left and right parts of the concatenation
+        ids.extend(extract_io_ids(arg.left, variable_values))
+        ids.extend(extract_io_ids(arg.right, variable_values))
+    return ids
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def extract_comprehension_ids(arg, variable_values):
+    """
+    Extracts IDs from comprehensions by substituting values in variables like List_col_tab2.
+    """
+    ids = []
+    if isinstance(arg, ast.ListComp):  # List comprehension
+        if isinstance(arg.elt, ast.Call) and isinstance(arg.elt.func, ast.Name):
+            comp_type = arg.elt.func.id  # Either 'Input' or 'Output'
+            component_template = arg.elt.args[0]  # e.g., f'checkbox-{col}-tab-2'
+            property = arg.elt.args[1].s  # e.g., 'value'
+            
+            if isinstance(component_template, ast.JoinedStr):  # Handle f-strings
+                for comp in variable_values.get(arg.generators[0].iter.id, []):  # Substitute list values
+                    formatted_id = ''.join([
+                        part.s if isinstance(part, ast.Str) else str(comp) for part in component_template.values
+                    ])
+                    ids.append((comp_type, formatted_id, property))
+            else:
+                # Handle regular string construction
+                ids.append((comp_type, component_template.s, property))
+    return ids
 
