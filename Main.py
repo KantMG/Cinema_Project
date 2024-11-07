@@ -112,7 +112,7 @@ def render_content(tab, stored_df1):
     if tab == 'tab-1':
         # Placeholder for Tab 3 content
         return html.Div([
-            html.H1("THE SEVENTH ART, A STORY OF INFLUENCE", style={"color": "#FFD700"}, className="text-light"),
+            html.H1("Dash interface dedicated to the analysation of IMDb Datasets", style={"color": "#FFD700", 'height': '100px'}, className="text-light"),
             tab1_content()
         ])
     elif tab == 'tab-2':
@@ -151,14 +151,27 @@ def tab1_content():
     # Save the project on github with: !bash ./save_project_on_git.sh
     GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
     
-    Text1 = f"THIS PROJECT ENLIGHT THE EVOLUTION OVER THE YEARS OF THE MOVIE AND SERIE MAKING."
-    Text2 = f"THE ADAPTATION OF THE WAY OF PRODUCTION AS WELL AS OUR WAY OF CONSOMATION ARE ANALYSED."
+    
+    Text1 = f"This project enlights the evolution over the years of movie and series making."
+    Text2 = f"The adaptation of the way of production as well as our way of consumption are analyzed."
     Text3 = f"HOW MUCH THE COUNTRIES ARE INVESTING IN THE FILMS PRODUCTION AND WHICH IS THE LEVEL OF INFLUENCE OF A COUNTRY OVER THE OTHERS."
     
-    Text4 = f"The IMDb Non-Commercial Datasets has been used to perform this study, the open source can be find here: "+source_data
+    Text4 = (
+    'The IMDb Non-Commercial Datasets, the open source can be find '
+    '<a href="https://developer.imdb.com/non-commercial-datasets/" target="_blank">here</a>.'
+)    
     Text5 = f"It corresponds to a multiple variety of tab-separated-values (TSV) formatted files in the UTF-8 character set. "
-    Text6 = f"The "
     
+    
+    
+    
+    Text7 = f"In addition to the 🏠 Home tab, the interface possess two other tabs that we will depict below."
+    
+    Text8 = f"🏠 Home"
+    
+    Text9 = f"📈 Analytics"
+    
+    Text10 = f"🎥 Movies & Artists"
 
     
     # Print all ids
@@ -167,33 +180,43 @@ def tab1_content():
     
     idgraph='graph-code'
     
-    flowchart_info, function_names = dci.create_detailed_flowchart(current_file_path, component_ids)
+    # flowchart_info, function_names = dci.create_detailed_flowchart(current_file_path, component_ids)
         
     # # Build and print the hierarchy
-    hierarchy = dci.build_hierarchy(flowchart_info)
+    # hierarchy = dci.build_hierarchy(flowchart_info)
     # hierarchy = dci.simplify_hierarchy(hierarchy)
     
     # print(hierarchy, output_to_callbacks)
-    dci.print_hierarchy(hierarchy)
+    # dci.print_hierarchy(hierarchy)
     
     # dci.create_detailed_flowchart(current_file_path, component_ids)
-    print("==============================================================")
+    # print("==============================================================")
     # graph_of_the_code = dci.create_hierarchy_figure(hierarchy)
+    
     print("==================== End Tab1_content ========================")    
+
     return html.Div([
         html.Div([
+            html.H2("Goal:", style={"color": "#FFD700"}, className="text-light"),
             html.P(Text1),
-            html.P(Text2),
-            html.P(Text3),
         ]),
         html.Div([
-            html.P(Text4),
-            html.P(Text5),
-            html.P(Text6),
-        ]),        
-        # html.Div(
-        #     [dcc.Graph(id=idgraph, figure=graph_of_the_code, style={'width': '100%', 'height': '1000px'})], 
-        #     style={'margin-left': '150px', 'width': '80%'}), 
+            html.H2("Dataset:", style={"color": "#FFD700"}, className="text-light"),
+            html.P([
+                html.Span(children='The IMDb Non-Commercial Datasets, the open source can be find '),
+                html.A('here', href='https://developer.imdb.com/non-commercial-datasets/', target='_blank', style={"color": "#FFD700"})
+            ]),
+            html.P(Text5)
+        ])   
+        # html.Div([
+        #     html.H2("Overview:", style={"color": "#FFD700"}, className="text-light"),
+        #     html.P(Text7),
+        #     html.P(Text9, className="text-center"),
+        #     html.Img(src='assets/Dash_tab2.png', alt='Description of image', style={'max-width': '50%', 'height': 'auto'}),
+            
+        #     html.P(Text10, className="text-center"),
+        #     html.Img(src='assets/Dash_tab2.png', alt='Description of image', style={'max-width': '50%', 'height': 'auto'}),
+        # ]),  
         ], style={'padding': '20px'})
 
 
@@ -781,27 +804,55 @@ def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, 
    #============================================================================="""
 
 
-def should_open_browser(flag_file):
-    if not os.path.exists(flag_file):
-        # If the flag file doesn't exist, we should open the browser
-        return True
-    return False
 
 if __name__ == '__main__':
-    # Define the port and URL
-    port = 8054
-    url = f"http://127.0.0.1:{port}/"
-    flag_file = "browser_opened.flag"
+    app.run_server(debug=True, port=8054)
 
-    # Start the Dash server
-    app.run_server(debug=True, port=port)
+    # Specify the URL you want to open
+    url = "http://127.0.0.1:8054/"
     
-    # Give the server a moment to start
-    time.sleep(2)
+    # Open the URL in the default web browser
+    webbrowser.open(url)
 
-    # Check if we should open the browser
-    if should_open_browser(flag_file):
-        webbrowser.open(url)
-        # Create the flag file to indicate that we've opened the browser
-        with open(flag_file, 'w') as f:
-            f.write("Browser opened")
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+# def is_url_accessible(url):
+#     """Check if the URL is accessible."""
+#     try:
+#         response = requests.get(url)
+#         return response.status_code == 200
+#     except requests.ConnectionError:
+#         return False
+
+# def open_browser_if_closed(url, check_interval=5):
+#     """Continuously check if the URL is open, and open it if it's not accessible."""
+#     while True:
+#         if not is_url_accessible(url):
+#             print("URL is not accessible. Opening the browser...")
+#             webbrowser.open(url)
+#         time.sleep(check_interval)
+
+# if __name__ == '__main__':
+#     # Define the port and URL
+#     port = 8054
+#     url = f"http://127.0.0.1:{port}/"
+
+#     # Start the Dash server in a separate thread
+#     server_thread = threading.Thread(target=app.run_server, kwargs={'debug': True, 'port': port})
+#     server_thread.start()
+
+#     # Wait a moment for the server to start
+#     time.sleep(2)
+
+#     # Open the browser initially
+#     if is_url_accessible(url):
+#         print("Server is running, checking URL accessibility.")
+#     else:
+#         print("Opening the browser for the first time.")
+#         webbrowser.open(url)
+
+#     # Start a background thread to check if the URL is accessible and open it if necessary
+#     threading.Thread(target=open_browser_if_closed, args=(url,), daemon=True).start()

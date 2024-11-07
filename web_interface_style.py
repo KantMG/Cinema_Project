@@ -45,8 +45,8 @@ def web_interface_style():
     """        
 
     # Initialize the Dash app with the dark theme
-    app = dash.Dash(__name__, suppress_callback_exceptions=True, external_stylesheets=[dbc.themes.DARKLY])  # Use the DARKLY theme from Bootstrap
-
+    app = dash.Dash(__name__, suppress_callback_exceptions=True)  # Use the DARKLY theme from Bootstrap
+        
     # Define dark theme styles
     dark_dropdown_style = {
         'backgroundColor': '#1e1e1e',  # Dark background for dropdown
@@ -63,114 +63,121 @@ def web_interface_style():
         'borderRadius': '5px',  # Optional: Add rounded corners
     }
 
-    # CSS to style the dropdown's options menu (this will apply globally)
-    app.index_string = '''
-    <!DOCTYPE html>
-    <html>
-        <head>
-            <title>Dash Dark Theme</title>
-            <link rel="stylesheet" href="/assets/style.css">  <!-- Add this line -->
-            <style>
-                body {
-                    background-color: #343a40; /* Ensure dark background */
-                    color: white; /* Ensure white text */
-                }
-                
-                /* Dark theme for dropdown options */
-                .Select-menu-outer {
-                    background-color: #333 !important;  /* Dark background for the options menu */
-                    color: white !important;  /* White text for the options */
-                }
-                
-                .Select-option {
-                    background-color: #333 !important;  /* Dark background for individual options */
-                    color: white !important;  /* White text */
-                }
-                
-                .Select-option.is-focused {
-                    background-color: #444 !important;  /* Highlight option on hover */
-                    color: white !important;  /* Ensure the text stays white */
-                }
-                
-                .Select-control {
-                    background-color: #1e1e1e !important;  /* Dark background for the dropdown control */
-                    color: white !important;  /* White text */
-                    border: 1px solid #555 !important;  /* Dark border */
-                }
-                
-                /* Ensuring selected text in the dropdown remains white */
-                .Select-value-label {
-                    color: white !important;
-                }
-            </style>
-        </head>
-        <body>
-            <div id="react-entry-point">
-                {%app_entry%}
-            </div>
-            <footer>
-                {%config%}
-                {%scripts%}
-                {%renderer%}
-            </footer>
-        </body>
-    </html>
-    '''
-
 
     #Creation of the app layout
     app.layout = html.Div([
-        # Tabs Component
-        dcc.Tabs(id='tabs', value='tab-1', children=[
-            dcc.Tab(id='tabs-1', label='🏠 Home', value='tab-1', 
-                     style={
-                         'backgroundColor': '#000000',  # Dark black background
-                         'color': 'white',
-                         'border': 'none',
-                         'borderBottom': '2px solid white',
-                         'borderRight': '2px solid white',
-                         'position': 'relative'  # Relative position for pseudo-element
-                     },
-                     selected_style={
-                         'backgroundColor': '#222222',  # Slightly lighter for selected tab
-                         'color': 'white',
-                         'border': 'none',
-                         'borderBottom': '2px solid white',
-                         'borderRight': '2px solid white',
-                     }),
-            dcc.Tab(id='tabs-2', label='📈 Analytics', value='tab-2', 
-                     style={
-                         'backgroundColor': '#000000',
-                         'color': 'white',
-                         'border': 'none',
-                         'borderBottom': '2px solid white',
-                         'borderRight': '2px solid white',
-                         'position': 'relative'
-                     },
-                     selected_style={
-                         'backgroundColor': '#222222',
-                         'color': 'white',
-                         'border': 'none',
-                         'borderBottom': '2px solid white',
-                         'borderRight': '2px solid white',
-                     }),
-            dcc.Tab(id='tabs-3', label='🎥 Movies & Artists', value='tab-3', 
-                     style={
-                         'backgroundColor': '#000000',
-                         'color': 'white',
-                         'border': 'none',
-                         'borderBottom': '2px solid white',
-                         'borderRight': '2px solid white',
-                         'position': 'relative'
-                     },
-                     selected_style={
-                         'backgroundColor': '#222222',
-                         'color': 'white',
-                         'border': 'none',
-                         'borderBottom': '2px solid white',
-                         'borderRight': '2px solid white',
-                     }),
-        ]),
+        html.Div(
+            className='header-container',
+            style={'display': 'flex', 'alignItems': 'center', 'padding': '20px'},  # Flexbox layout for header
+            children=[
+                # IMDB Logo
+                html.Img(src='assets/IMDb_Logo_Rectangle_Gold.webp', style={'height': '100px', 'borderRadius': '10px 10px 10px 10px'}),  # Replace with your logo's path and adjust the size
+                # Container for Tabs
+                html.Div(
+                    className='tabs-container',
+                    children=[
+                        # Tabs Component
+                        dcc.Tabs(id='tabs', value='tab-1', style={'height': 'auto'}, children=[
+                            dcc.Tab(id='tabs-1', label='🏠 Home', value='tab-1', 
+                                     style={
+                                         'backgroundColor': '#DAA520',  # Dark black background
+                                         'color': 'black',
+                                         'border': 'none',
+                                         'borderRadius': '10px 10px 10px 10px',  
+                                         'width': '80%',                    # Width relative to container
+                                         'height': '60px',              # Adjusted height
+                                         'display': 'flex',
+                                         'alignItems': 'center',            # Center vertically
+                                         'justifyContent': 'center',        # Center horizontally
+                                         'margin-right': '10px',
+                                         'font-size': '20px',   #Text size */
+                                         'font-weight': 'bold',   #Text size */
+                                        },
+                                     selected_style={
+                                         'backgroundColor': '#228B22',  # Slightly lighter for selected tab
+                                         'color': 'black',
+                                         'border': 'none',
+                                         'borderRadius': '10px 10px 10px 10px',  
+                                         'width': '80%',                    # Width relative to container
+                                         'height': '60px',                  # Adjusted height
+                                         'display': 'flex',
+                                         'alignItems': 'center',            # Center vertically
+                                         'justifyContent': 'center',        # Center horizontally
+                                         'margin-right': '10px',
+                                         'font-size': '20px',   #Text size */
+                                         'font-weight': 'bold',   #Text size */
+                                         # 'borderBottom': '2px solid white',
+                                         # 'borderRight': '2px solid white',
+                                        }
+                                     ),
+                            dcc.Tab(id='tabs-2', label='📈 Analytics', value='tab-2', 
+                                     style={
+                                         'backgroundColor': '#DAA520',
+                                         'color': 'black',
+                                         'border': 'none',
+                                         'borderRadius': '10px 10px 10px 10px',  
+                                         'width': '80%',                    # Width relative to container
+                                         'height': '60px',                  # Adjusted height
+                                         'display': 'flex',
+                                         'alignItems': 'center',            # Center vertically
+                                         'justifyContent': 'center',        # Center horizontally
+                                         'margin-right': '10px',
+                                         'font-size': '20px',   #Text size */
+                                         'font-weight': 'bold',   #Text size */
+                                        },
+                                     selected_style={
+                                         'backgroundColor': '#228B22',
+                                         'color': 'black',
+                                         'border': 'none',
+                                         'borderRadius': '10px 10px 10px 10px',  
+                                         'width': '80%',                    # Width relative to container
+                                         'height': '60px',                  # Adjusted height
+                                         'display': 'flex',
+                                         'alignItems': 'center',            # Center vertically
+                                         'justifyContent': 'center',        # Center horizontally
+                                         'margin-right': '10px',
+                                         'font-size': '20px',   #Text size */
+                                         'font-weight': 'bold',   #Text size */
+                                         # 'borderBottom': '2px solid white',
+                                         # 'borderRight': '2px solid white',
+                                     }
+                                     ),
+                            dcc.Tab(id='tabs-3', label='🎥 Movies & Artists', value='tab-3', 
+                                     style={
+                                         'backgroundColor': '#DAA520',
+                                         'color': 'black',
+                                         'border': 'none',
+                                         'borderRadius': '10px 10px 10px 10px',  
+                                         'width': '80%',                    # Width relative to container
+                                         'height': '60px',                  # Adjusted height'
+                                         'display': 'flex',
+                                         'alignItems': 'center',            # Center vertically
+                                         'justifyContent': 'center',        # Center horizontally
+                                         'font-size': '20px',   #Text size */
+                                         'font-weight': 'bold',   #Text size */
+                                        },
+                                     selected_style={
+                                         'backgroundColor': '#228B22',
+                                         'color': 'black',
+                                         'border': 'none',
+                                         'borderRadius': '10px 10px 10px 10px',  
+                                         'width': '80%',                    # Width relative to container
+                                         'height': '60px',                  # Adjusted height
+                                         'display': 'flex',
+                                         'alignItems': 'center',            # Center vertically
+                                         'justifyContent': 'center',        # Center horizontally
+                                         'font-size': '20px',   #Text size */
+                                         'font-weight': 'bold',   #Text size */
+                                         # 'borderBottom': '2px solid white',
+                                         # 'borderRight': '2px solid white',
+                                     }
+                                     ),
+                            ])
+                ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'flex-start', 'height': '50px', 'margin': '50px'}  # Adjust according to height
+        
+               ),
+            ]
+        ),
         
         # Hidden store to hold df1 data
         dcc.Store(id='stored-df1', data=None),

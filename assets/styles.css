@@ -1,0 +1,89 @@
+/* General styles for the body */
+body {
+    background-color: #101820; /* Dark background for the app */
+    color: white; /* Default text color for the entire body */
+    margin: 50px; /* Remove default margin */
+    font-family: Arial, sans-serif; /* Use a clean font */
+}
+
+/* General styles for the tabs container */
+.tabs-container {
+    width: 100%; /* Full width for the container */
+    display: flex;
+    justify-content: center; /* Center the tabs horizontally */
+    position: absolute; /* Positioning at the top */
+    top: 0; /* Aligns to the top */
+}
+
+/* Style for each tab */
+.Tab {
+    border-radius: 10px; /* Round corners for the tabs */
+    transition: background-color 0.3s; /* Smooth transition for hover effects */
+    text-align: center; /* Center text horizontally */
+    line-height: 20px; /* Vertical alignment for text */
+    background-color: #DAA520; /* Default background color */
+    color: white; /* Default text color */
+    width: 80%; /* Width of each tab */
+    height: 30px; /* Fixed height for all tabs */
+    display: flex; /* Use flexbox for alignment */
+    align-items: center; /* Center vertically */
+    justify-content: center; /* Center horizontally */
+    margin-right: 10px; /* Space to the right between tabs */
+
+    /* Font styling */
+    font-size: 30px; /* Larger text size */
+    font-weight: bold; /* Bold text */
+}
+
+/* Remove right margin for the last tab */
+.Tab:last-child {
+    margin-right: 0; /* No margin on the right side of the last tab */
+}
+
+/* Custom styles for the Tabs */
+.Tab.selected {
+    background-color: #DAA520; /* Background for the selected tab */
+    color: black; /* Text color for the selected tab */
+    font-weight: bold;  /* Highlight selected tab */
+}
+
+/* Adjust hover properties if needed */
+.Tab:hover {
+    background-color: #FFC300; /* Lighter shade on hover for better UX */
+}
+
+/* Dropdown Styling */
+.Select-control {
+    background-color: #1e1e1e; /* Dark background for the dropdown */
+    color: white; /* White text color */
+    border: 1px solid #555; /* Dark border */
+}
+
+/* Dropdown options */
+.Select-menu-outer {
+    background-color: #1e1e1e; /* Dark background for the options menu */
+    color: white; /* White text for options */
+}
+
+/* Styling individual dropdown options */
+.Select-option {
+    background-color: #1e1e1e; /* Dark background for each option */
+    color: white; /* White text */
+}
+
+/* Highlighted option when focused or hovered */
+.Select-option.is-focused {
+    background-color: #FFC300; /* Highlight color on hover */
+    color: white; /* Text color for highlighted option */
+}
+
+/* Ensure selected text in the dropdown remains solid white */
+.Select-value-label {
+    color: white !important; /* Ensure solid white (with !important to override) */
+    font-weight: normal; /* Ensure it's not bold if preferred */ 
+}
+
+/* Ensure dropdown placeholder text is also solid white */
+.Select-placeholder {
+    color: rgba(255, 255, 255, 0.5); /* Shaded color for placeholder */
+}

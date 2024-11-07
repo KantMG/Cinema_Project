@@ -358,7 +358,7 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
 
     fig_json_serializable.update_layout(
         plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#343a40',  # Dark gray for the paper
+        paper_bgcolor='#101820',  # Dark gray for the paper
         font=dict(color='white'),  # White text color
         title = figname,
         title_font=dict(size=20, color='white')
@@ -367,7 +367,7 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
     if x_column is not None and (d_column =="1D"or d_column =="2D") and g_column != 'Pie':
         fig_json_serializable.update_layout(
             plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-            paper_bgcolor='#343a40',  # Dark gray for the paper
+            paper_bgcolor='#101820',  # Dark gray for the paper
             font=dict(color='white'),  # White text color
             title = figname,
             title_font=dict(size=20, color='white'),  # Title styling
@@ -391,7 +391,7 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
     elif x_column is not None and d_column =="3D":
         fig_json_serializable.update_layout(
             plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-            paper_bgcolor='#343a40',  # Dark gray for the paper
+            paper_bgcolor='#101820',  # Dark gray for the paper
             font=dict(color='white'),  # White text color
             title = figname,
             title_font=dict(size=20, color='white'),  # Title styling
