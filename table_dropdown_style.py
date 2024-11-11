@@ -57,7 +57,35 @@ def get_max_width(col_data, col_name):
    #============================================================================="""
 
 
-def dropdown_table(df, id_table, dark_dropdown_style, uniform_style, need_dropdown):
+def get_column_width(col_name):
+
+    """
+    Goal: Calculate the associated dropdown for each table column.
+
+    Parameters:
+    - col_name: The name of the dataframe column.
+
+    Returns:
+    - The dropdown dimension.
+    """    
+
+    All_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "directors", "writers", "nconst", "category", "characters", "title", "isOriginalTitle"]
+    
+    All_width_columns = [100, 100, 150, 100, 100, 100, 200, 200, 100, 200, 200, 400, 100]
+                        # [100, 100, 150, 100, 100, 100, 200, 200, 100, 200, 200, 400, 100]
+
+    # Create a dictionary mapping columns to their respective widths
+    width_map = {All_columns[i]: All_width_columns[i]-2 for i in range(len(All_columns))}
+        
+    return width_map.get(col_name, None)  # Returns None if the column isn't found
+    
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_dropdown):
 
     """
     Goal: Create the table and the associated dropdown.
@@ -75,9 +103,9 @@ def dropdown_table(df, id_table, dark_dropdown_style, uniform_style, need_dropdo
     """    
     
     columns = df.columns
-    
+
     # Calculate widths, ensuring 'title' is handled specifically
-    column_widths = {col: get_max_width(df[col], col) for col in columns}
+    column_widths = {col: get_column_width(col) for col in columns}
     
     if need_dropdown == True:
         # Create dropdowns using calculated widths
@@ -88,13 +116,14 @@ def dropdown_table(df, id_table, dark_dropdown_style, uniform_style, need_dropdo
     
             if dtype == "float64":
                 dropdown_with_label = html.Div([
+                    
                     dcc.Input(
-                        id=f'{col}-dropdown',
+                        id=f'{col}-dropdown-table-'+tab,
                         type='text',
                         debounce=True,
                         style=dropdown_style
                     )
-                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 2px'})
             else:
                 # Collect all unique values, splitting them by commas and ensuring uniqueness
                 all_roles = set()
@@ -108,14 +137,15 @@ def dropdown_table(df, id_table, dark_dropdown_style, uniform_style, need_dropdo
                 # unique_values = sorted(df[col].unique())
                 dropdown_with_label = html.Div([
                     dcc.Dropdown(
-                        id=f'{col}-dropdown',
+                        id=f'{col}-dropdown-table-'+tab,
                         options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
                         # value='All',
                         style=dropdown_style,
                         className='dash-dropdown',
-                        multi=True
+                        multi=True,
+                        clearable=True
                     )
-                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 2px'})
         
             dropdowns_with_labels.append(dropdown_with_label)
     else:
@@ -141,7 +171,7 @@ def dropdown_table(df, id_table, dark_dropdown_style, uniform_style, need_dropdo
             'textOverflow': 'ellipsis',
             'whiteSpace': 'nowrap',
             'textAlign': 'center',
-            'height': '40px',
+            'height': 'auto',
             'lineHeight': '40px'
         },
         fixed_columns={'headers': True, 'data': 0},

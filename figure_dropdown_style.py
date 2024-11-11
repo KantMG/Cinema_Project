@@ -205,18 +205,23 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
     dropdowns_with_labels = []
     for col in columns:
         dtype = df[col].dtype
-        dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
-
+        dropdown_style = {**dark_dropdown_style, **uniform_style}  #, 'width': f'{column_widths[col]}px'
+        
+        dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'margin': '2px 0'}  # Vertical alignment and spacing
+        
         if dtype == "float64":
-            dropdown_with_label = html.Div([
-                html.Label(f'{col}'),
-                dcc.Input(
-                    id=f'fig-dropdown-{col}-'+tab,
-                    type='text',
-                    debounce=True,
-                    style=dropdown_style
-                )
-            ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'{col}:'),
+                    dcc.Input(
+                        id=f'fig-dropdown-{col}-'+tab,
+                        type='text',
+                        debounce=True,
+                        style={**dropdown_style, 'margin-top': '5px'}  # Adding margin for spacing
+                    )
+                ]
+            )
         else:
             # Collect all unique values, splitting them by commas and ensuring uniqueness
             all_roles = set()
@@ -228,18 +233,20 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
             # Convert to a sorted list
             unique_values = sorted(all_roles)
             
-            # unique_values = sorted(df[col].unique())
-            dropdown_with_label = html.Div([
-                html.Label(f'{col}'),
-                dcc.Dropdown(
-                    id=f'fig-dropdown-{col}-'+tab,
-                    options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
-                    # value='All',
-                    style=dropdown_style,
-                    className='dash-dropdown',
-                    multi=True
-                )
-            ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 5px'})
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'{col}:'),
+                    dcc.Dropdown(
+                        id=f'fig-dropdown-{col}-'+tab,
+                        options=[{'label': val, 'value': val} for val in unique_values],
+                        style=dropdown_style,
+                        className='dash-dropdown',
+                        multi=True,
+                        clearable=True
+                    )
+                ]
+            )
     
         dropdowns_with_labels.append(dropdown_with_label)
 

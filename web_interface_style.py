@@ -179,8 +179,6 @@ def web_interface_style():
             ]
         ),
         
-        # Hidden store to hold df1 data
-        dcc.Store(id='stored-df1', data=None),
         
         # Hidden store to hold df2 data
         dcc.Store(id='stored-df2', data=None),

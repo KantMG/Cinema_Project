@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Oct 16 19:12:21 2024
+Created on Mon Nov 11 16:25:01 2024
 
 @author: quentin
 """
+
 
 """#=============================================================================
    #=============================================================================
@@ -103,11 +104,6 @@ selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "average
 selected_filter  = [None for i in selected_columns]
 df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
-
-List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
-List_filter = [None, None, None, None]
-df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-
 print("")
 print("Open done")
 
@@ -117,9 +113,10 @@ app, dark_dropdown_style, uniform_style = wis.web_interface_style()
 # Callback to manage tab content
 @app.callback(
     Output('tabs-content', 'children'),
-    Input('tabs', 'value')
+    Input('tabs', 'value'),
+    State('stored-df1', 'data')
 )
-def render_content(tab):
+def render_content(tab, stored_df1):
     if tab == 'tab-1':
         # Placeholder for Tab 3 content
         return html.Div([
@@ -246,11 +243,9 @@ def tab2_content():
     print("Time computation=", time.time()-start_time)
     print("=====================  Tab2_content  =========================")
     # Display dropdowns without loading data initially
-    # df1_placeholder = fd.df_empty(List_col_tab2, dtypes=List_dtype_tab2)  
-    exclude_cols = ["tconst","directors","writers"]
-    df_selected = df1[[col for col in df1.columns if col not in exclude_cols]]
-    dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
-    dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df_selected, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
+    df1_placeholder = fd.df_empty(List_col_tab2, dtypes=List_dtype_tab2)    
+    dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
+    dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_checkboxes_figure_filter(df1_placeholder, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
 
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
@@ -265,6 +260,104 @@ def tab2_content():
         ], style={'padding': '20px'})
     ], style={'padding': '20px'})
     
+
+# =============================================================================
+# Callback for df1 in tab-2
+# =============================================================================
+
+# @app.callback(
+#     Output('stored-df1', 'data'),
+#     [Input('tabs', 'value')] +  # Use the tab selection for context
+#     [Input('x-dropdown-tab-2', 'value'),  # x-axis dropdown
+#      Input('y-dropdown-tab-2', 'value'),  # y-axis dropdown
+#      Input('z-dropdown-tab-2', 'value')] +  # z-axis dropdown
+#     [Input(f'checkbox-{col}-tab-2', 'value') for col in List_col_tab2] +  # Each checkbox's value
+#     [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2]  # Rest of dropdowns
+# )
+# def update_stored_df1(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, *args):
+#     print()
+#     print(colored("------------ callback update_stored_df1 ------------", "red"))
+    
+#     ctx = dash.callback_context
+#     # Print out which component triggered the callback for debugging
+#     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+#     print("Triggered component:", triggered_id)
+#     print()
+    
+#     # Collect values from checkboxes
+#     checkbox_values = list(args[0:len(List_col_tab2)])  # Get the values for checkboxes
+    
+#     # Collect values from the filter  input
+#     filter_values = list(args[len(List_col_tab2):-1])  # Get the values for checkboxes   
+            
+#     # Print debug information
+#     print("Active Tab=", selected_tab)
+#     print("Time computation=", time.time()-start_time)
+#     print("X Dropdown Value:", x_dropdown_value)
+#     print("Y Dropdown Value:", y_dropdown_value)
+#     print("Z Dropdown Value:", z_dropdown_value)
+#     print("Checkbox Values:", checkbox_values)
+#     print("Filter Value:", filter_values)
+
+#     if selected_tab == 'tab-2':
+#         if x_dropdown_value is None:
+#             print("X Dropdown Value is None, returning no update.")
+#             return dash.no_update  
+        
+#         selected_columns = []
+#         selected_filter = []
+        
+#         # Add x_dropdown_value if it's not already in checkbox_values
+#         if x_dropdown_value not in checkbox_values and x_dropdown_value not in selected_columns:
+#             selected_columns.append(x_dropdown_value)
+#             # Append None for the filter associated with x_dropdown_value
+#             selected_filter.append(None)
+        
+#         # Add y_dropdown_value if it's not already in checkbox_values and not already added
+#         if y_dropdown_value not in checkbox_values and y_dropdown_value not in selected_columns:
+#             selected_columns.append(y_dropdown_value)
+#             # Append None for the filter associated with y_dropdown_value
+#             selected_filter.append(None)
+
+#         # Add z_dropdown_value if it's not already in checkbox_values and not already added
+#         if z_dropdown_value not in checkbox_values and z_dropdown_value not in selected_columns:
+#             selected_columns.append(z_dropdown_value)
+#             # Append None for the filter associated with y_dropdown_value
+#             selected_filter.append(None)
+        
+#         # Add values from checkbox_values that are not empty or duplicates
+#         for index, value in enumerate(checkbox_values):
+#             if value and value[0] not in selected_columns:  # Take the first value assuming it's a list with one item
+#                 selected_columns.append(value[0])
+#                 selected_filter.append(filter_values[index])
+            
+#             if value and value[0] == x_dropdown_value :
+#                 selected_filter[0] = filter_values[index]
+#             if value and value[0] == y_dropdown_value :
+#                 selected_filter[1] = filter_values[index]
+#             if value and value[0] == z_dropdown_value :
+#                 selected_filter[0] = filter_values[index]
+                
+#         print("Selected Columns:", selected_columns)  # Debugging output for selected columns
+#         print("Selected Filter:", selected_filter)
+        
+#         # Call your open_dataframe function to get the data
+#         df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+#         # # Check if the folder exists
+#         # if os.path.exists(folder_path):
+#         #     # Remove the folder and all its contents
+#         #     shutil.rmtree(folder_path)
+#         #     print(f"Successfully removed the folder: {folder_path}")
+#         # else:
+#         #     print(f"The folder does not exist: {folder_path}")
+#         # df1.to_parquet('temp_df1.parquet')  # Store the DataFrame
+#         # print("Data loaded and saved.")
+        
+#         print(df1)
+        
+#         return df1#"Data loaded and saved."
+
+#     return dash.no_update
 
 
 # =============================================================================
@@ -377,6 +470,35 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
 
 
 @app.callback(
+    [Output(f'fig-dropdown-{col}-tab-2', 'options') for col in df_col_string_tab2],  # Rest of dropdowns
+    [Input(f'checkbox-{col}-tab-2', 'value') for col in df_col_string_tab2],
+    Input('tabs', 'value'),
+    Input('stored-df1', 'data')
+)
+def update_filter_dropdown_tab2(*args):
+    print()
+    print(colored("------------ callback update_filter_dropdown_tab2 ------------", "red"))
+    selected_boxes = list(args[:-2])
+    selected_tab = args[-2]
+    stored_df1 = args[-1]
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
+    ctx = dash.callback_context
+    # Print out which component triggered the callback for debugging
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    print("Triggered component:", triggered_id)
+    print()
+    if selected_tab == 'tab-2':
+        if all(not sublist for sublist in selected_boxes):
+            print("No filters selected.")
+            return [[] for col in df_col_string_tab2] # Return an empty options list if the DF is not ready
+        print(f"Selected filter: {selected_boxes}")  # Additional debugging
+        # stored_df1 = dd.read_parquet('temp_df1.parquet')
+        return update_filter_dropdown_utility(selected_boxes, stored_df1)
+    return [[] for col in df_col_string_tab2]  # If not in the right tab
+
+
+@app.callback(
     Output('graph-output-tab-2', 'figure'),
     [Input('tabs', 'value'),
      Input('x-dropdown-tab-2', 'value'),
@@ -384,10 +506,9 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input('z-dropdown-tab-2', 'value'),
      Input('Func-dropdown-tab-2', 'value'),
      Input('Graph-dropdown-tab-2', 'value'),
-     Input('Dim-dropdown-tab-2', 'value')] +
-    [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2]
+     Input('Dim-dropdown-tab-2', 'value')]
 )
-def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, *args):
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value):
     print()
     print(colored("------------ callback update_graph_tab2 ------------", "red"))
 
@@ -410,15 +531,10 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         #     print("Stored DF1 is not ready yet.")
         # else:
         #     stored_df1 = dd.read_parquet('temp_df1.parquet')
-        
-    filter_values = list(args[0:])
-    filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
-    df1_filtered = od.apply_filter(df1, filter_values)
-    
+
     print("x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value=",x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value)
-    print("filter_values=",filter_values)
     print("stored_df1=", df1)
-    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, df1_filtered, Large_file_memory)
+    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, df1, Large_file_memory)
   
     
 """
@@ -442,10 +558,15 @@ def update_ui(input_value):
     print()
     print(colored("------------ callback update_ui ------------", "red"))
 
+    List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
+
+    List_filter = [None, None, None, None]
+
+    df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+        
     # Check if the input value exists in the 'nconst' column of df_name
     if input_value in df_name['primaryName'].values:
-        
-        print(input_value)
+
         nconst_value = df_name[df_name['primaryName'] == input_value]['nconst'].iloc[0]
         birthYear_value = int(df_name[df_name['primaryName'] == input_value]['birthYear'].iloc[0])
         deathYear_value = int(df_name[df_name['primaryName'] == input_value]['deathYear'].iloc[0])
@@ -458,21 +579,10 @@ def update_ui(input_value):
         List_filter = [None, None, None, None, None, None, None, None, nconst_value, None, None, None, True]
         
         df2 = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-        filters = {List_col[i]: (List_filter[i] if List_filter[i] != '' else None) for i in range(min(len(List_col), len(List_filter)))}
-        df2 = od.apply_filter(df2, filters)
-        exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle", "characters"]
+        exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle"]
         df2 = df2.drop(columns=exclude_col)
         
-        # Create a mapping from nconst to primaryName
-        mapping = dict(zip(df_name['nconst'], df_name['primaryName']))
-        
-        # Replace the strings in df2 using the mapping
-        df2['directors'] = df2['directors'].replace(mapping)
-        df2['writers'] = df2['writers'].replace(mapping)
-        
-        
-        if Large_file_memory:
-            df2 = df2.compute()
+        df2 = df2.compute()
         
         if len(df2.index) == 0: 
             return html.Div([
@@ -488,9 +598,9 @@ def update_ui(input_value):
             primaryProfession = primaryProfession[primaryProfession > 1].index.tolist()
 
             # Create the table with the appropriate dropdowns for each column
-            dropdowns_with_labels, data_table_df2 = tds.dropdown_table(df2, 'table-df2', 'tab-3', dark_dropdown_style, uniform_style, True)
+            dropdowns_with_labels, data_table_df2 = tds.dropdown_table(df2, 'table-df2', dark_dropdown_style, uniform_style, True)
             
-            exclude_col = ["title"]
+            exclude_col = ["title", "characters"]
             df2_filter = df2.drop(columns=exclude_col)            
             dropdowns_with_labels_for_fig = fds.dropdown_figure(df2_filter, 'graph-df2', 'tab-3', dark_dropdown_style, uniform_style, Large_file_memory)
             dropdowns_with_labels_for_fig_filter = fds.dropdown_figure_filter(df2_filter, 'graph-df2', 'tab-3', dark_dropdown_style, uniform_style)
@@ -526,11 +636,10 @@ def update_ui(input_value):
 # =============================================================================
 # Callback for table-df2 in tab-3
 # =============================================================================
-tab = 'tab-3'
 
 # Create a list of Input objects for each dropdown
-List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "title"]
-dropdown_inputs_tab3 = [Input(f'{col}-dropdown-table-'+tab, 'value') for col in List_col_tab3]
+List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "characters", "title"]
+dropdown_inputs_tab3 = [Input(f'{col}-dropdown', 'value') for col in List_col_tab3]
 
 @app.callback(
     Output('table-df2', 'data'),
@@ -721,7 +830,7 @@ if __name__ == '__main__':
     url = "http://127.0.0.1:8054/"
     
     # Open the URL in the default web browser
-    webbrowser.open(url)
+    # webbrowser.open(url)
 
 """#=============================================================================
    #=============================================================================

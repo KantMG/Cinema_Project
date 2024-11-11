@@ -248,26 +248,28 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
         )
        # Convert columns to the specified types
         for col, expected_type in info["types"].items():
-            if expected_type == float:
+            print(col, expected_type)
+            if expected_type in [float, "float64"]:
                 if Large_file_memory:
                     df[col] = dd.to_numeric(df[col], errors='coerce')
                     # Handle NA values
-                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary                    
-                    # na_count = df[col].isna().sum().compute()  # Evaluate the count
-                    # print(f"NA count in '{col}': {na_count}")
-                # df[col] = df[col].astype('Int64')  # Use 'Int64' for nullable integers
+                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary  
+                else:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    # Handle NA values
+                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary     
+                   
             elif expected_type == str:
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
 
-        
         # desired_number_of_partitions = 4
         # df=df.repartition(npartitions=desired_number_of_partitions)
         
         # Get the infos on the DataFrame
         dis.infos_on_data(df) if Get_file_sys_mem==True else None
                 
-        # Log the time taken to apply filters
-        df = apply_filter(df, info["filters"])
+        # # Log the time taken to apply filters
+        # df = apply_filter(df, info["filters"])
         log_performance(f"Read {file}", file_start_time)
         print()
         
@@ -282,13 +284,18 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     # Merge Dask DataFrames on 'tconst' to create a single unified DataFrame
     if len(dataframes) > 1:
         i = 0
-        merged_df = dataframes[i].compute()
+        if Large_file_memory:
+            merged_df = dataframes[i].compute()
+        else:
+            merged_df = dataframes[i]    
         print()
         print("Time taken to compute dataframe "+str(i)+": {:.2f} seconds".format(time.time() - start_time))
         print()
         for df in dataframes[1:]:
             i+=1
-            df = df.compute()
+
+            if Large_file_memory:        
+                df = df.compute()
             
             if "category" in df.columns:
                 # Group by 'tconst' and 'nconst' and join the 'category' values
@@ -297,8 +304,11 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
                     'characters': 'first'   # Keep the first non-empty value from characters (if any)
                 })
             
-            merged_df = dd.merge(merged_df, df, on='tconst', how='inner')
-            
+            if Large_file_memory:
+                merged_df = dd.merge(merged_df, df, on='tconst', how='inner')
+            else:
+                merged_df = pd.merge(merged_df, df, on='tconst', how='inner')
+                
             print("Time taken to merge dataframe "+str(i)+": {:.2f} seconds".format(time.time() - start_time))
             print()
         # merged_df = dd.from_pandas(merged_df, npartitions=2)
@@ -357,7 +367,7 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
     else:
         df = pd.read_csv(
             filepath,
-            sep=';',
+            sep='\t',
             usecols=usecols,
             encoding='utf-8',
             on_bad_lines='skip',
@@ -393,6 +403,7 @@ def apply_filter(df, filters):
     if not filters:
         return df
     else:
+        print(filters)
         for col, filter_value in filters.items():
             print(col, filter_value)
             if filter_value is not None and filter_value != 'All':  
@@ -545,6 +556,11 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
                     df[col] = dd.to_numeric(df[col], errors='coerce')
                     # Handle NA values
                     df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary                    
+                else:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    # Handle NA values
+                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary   
+            
             elif expected_type == str:
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
 
@@ -555,12 +571,13 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
         dis.infos_on_data(df) if Get_file_sys_mem==True else None
 
         # Apply the filter to the DataFrame
-        df = apply_filter(df, info["filters"])
+        # df = apply_filter(df, info["filters"])
         df = df[df['birthYear'] != -1]
         
         log_performance(f"Reading {file}", file_start_time)    
-    
-    df = df.compute()
+        
+    if Large_file_memory:
+        df = df.compute()
             
     # Print the final merged DataFrame (head only, to avoid loading too much data)
     # print("\nFinal Merged DataFrame:")
