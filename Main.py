@@ -518,7 +518,7 @@ def update_ui(input_value):
     
     # If the input does not correspond to any primaryName, filter df_name
     filtered_df = df_name[df_name['primaryName'].str.contains(input_value, case=False, na=False)]
-    dropdowns_with_labels_df_name, data_table_df_name = tds.dropdown_table(filtered_df, 'table-df_name', dark_dropdown_style, uniform_style, False)
+    dropdowns_with_labels_df_name, data_table_df_name = tds.dropdown_table(filtered_df, 'table-df_name', 'tab-3' , dark_dropdown_style, uniform_style, False)
     return data_table_df_name, None
 
 

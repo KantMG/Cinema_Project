@@ -52,38 +52,72 @@ body {
     background-color: #FFC300; /* Lighter shade on hover for better UX */
 }
 
-/* Dropdown Styling */
-.Select-control {
-    background-color: #1e1e1e; /* Dark background for the dropdown */
-    color: white; /* White text color */
-    border: 1px solid #555; /* Dark border */
+
+.dropdown-container {
+    display: flex; /* Use flexbox to layout elements */
+    flex-direction: column; /* Stack elements vertically */
+    gap: 10px; /* Consistent spacing between elements */
+    width: 100%; /* Full-width container */
 }
 
-/* Dropdown options */
-.Select-menu-outer {
-    background-color: #1e1e1e; /* Dark background for the options menu */
-    color: white; /* White text for options */
+
+/* Targeting dropdowns specifically with both classes */
+.dash-dropdown.dynamic-width {
+    background-color: #1e1e1e !important; /* Ensure background is applied */
+    color: #f8f9fa !important; /* Ensure text color remains white */
+    border: 1px solid #555 !important; /* Consistent dark border */
+    border-radius: 5px !important; /* Rounded corners */
 }
 
-/* Styling individual dropdown options */
-.Select-option {
-    background-color: #1e1e1e; /* Dark background for each option */
-    color: white; /* White text */
+/* Target the Select control from the dropdown component */
+.dash-dropdown.dynamic-width .Select-control {
+    background-color: #1e1e1e !important; /* Match dropdown background */
+    color: #f8f9fa !important; /* Text color */
+    border: none !important; /* Remove default border */
+    min-height: 40px; /* Adjust minimum height */
 }
 
-/* Highlighted option when focused or hovered */
-.Select-option.is-focused {
-    background-color: #FFC300; /* Highlight color on hover */
-    color: white; /* Text color for highlighted option */
+/* Styles for dropdown menu options */
+.dash-dropdown.dynamic-width .Select-menu-outer {
+    background-color: #1e1e1e !important; /* Menu background color */
+    color: white !important; /* Menu text color */
 }
 
-/* Ensure selected text in the dropdown remains solid white */
-.Select-value-label {
-    color: white !important; /* Ensure solid white (with !important to override) */
-    font-weight: normal; /* Ensure it's not bold if preferred */ 
+/* Individual options */
+.dash-dropdown.dynamic-width .Select-option {
+    background-color: #1e1e1e !important; /* Option background color */
+    color: white !important; /* Text color */
 }
 
-/* Ensure dropdown placeholder text is also solid white */
-.Select-placeholder {
-    color: rgba(255, 255, 255, 0.5); /* Shaded color for placeholder */
+/* Highlighted option when focused */
+.dash-dropdown.dynamic-width .Select-option.is-focused {
+    background-color: #FFC300 !important; /* Highlight color */
+    color: white !important; /* Ensure text remains white */
+}
+
+/* Placeholder text styles */
+.dash-dropdown.dynamic-width .Select-placeholder {
+    color: rgba(255, 255, 255, 0.5) !important; /* Light color for placeholder */
+}
+
+/* General styles for input fields that need to match the dropdown theme */
+.dash-input.dynamic-width {
+    background-color: #1e1e1e !important; /* Dark background matching dropdown */
+    color: #f8f9fa !important; /* White text color */
+    border: 1px solid #555 !important; /* Dark border */
+    border-radius: 5px !important; /* Rounded corners */
+    height: 40px !important; /* Set a consistent height */
+    width: 100% !important; /* Responsive width */
+    box-sizing: border-box; /* Ensure padding is included in width calculations */
+}
+
+/* Placeholder text for inputs */
+.dash-input.dynamic-width::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important; /* Lightened color for placeholder text */
+}
+
+/* Style adjustments for focused state */
+.dash-input.dynamic-width:focus {
+    outline: none; /* Remove default focus outline */
+    border: 2px solid #FFC300 !important; /* Highlight border color on focus */
 }

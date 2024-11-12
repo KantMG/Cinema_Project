@@ -58,9 +58,9 @@ def web_interface_style():
 
     # Define a consistent style for both input and dropdown elements
     uniform_style = {
-        'width': '160px',  # Set a consistent width
-        'height': '40px',  # Set a consistent width
-        'borderRadius': '5px',  # Optional: Add rounded corners
+        'minWidth': '160px',  # Set a minimum width
+        'minHeight': '40px',  # Set a minimum height
+        'borderRadius': '5px',  # Rounded corners
     }
 
 

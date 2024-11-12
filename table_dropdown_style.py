@@ -69,13 +69,12 @@ def get_column_width(col_name):
     - The dropdown dimension.
     """    
 
-    All_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "directors", "writers", "nconst", "category", "characters", "title", "isOriginalTitle"]
+    All_columns = ["title", "startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "directors", "writers", "nconst", "category", "characters", "isOriginalTitle"]
     
-    All_width_columns = [100, 100, 150, 100, 100, 100, 200, 200, 100, 200, 200, 400, 100]
-                        # [100, 100, 150, 100, 100, 100, 200, 200, 100, 200, 200, 400, 100]
+    All_width_columns = [400, 80, 80, 150, 80, 80, 80, 200, 200, 80, 200, 200, 80]
 
     # Create a dictionary mapping columns to their respective widths
-    width_map = {All_columns[i]: All_width_columns[i]-2 for i in range(len(All_columns))}
+    width_map = {All_columns[i]: All_width_columns[i] for i in range(len(All_columns))}
         
     return width_map.get(col_name, None)  # Returns None if the column isn't found
     
@@ -112,88 +111,90 @@ def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_d
         dropdowns_with_labels = []
         for col in columns:
             dtype = df[col].dtype
-            dropdown_style = {**dark_dropdown_style, **uniform_style, 'width': f'{column_widths[col]}px'}
+        
+            # Container for each input/dropdown
+            container_style = {'display': 'flex', 'flexDirection': 'column', 'width': '100%'}  # Flex for vertical stacking
+            element = None
+
+            dropdown_style = {'width': f'{column_widths[col]}px', 'height': '40px', 'boxSizing': 'border-box'}
     
             if dtype == "float64":
-                dropdown_with_label = html.Div([
-                    
-                    dcc.Input(
-                        id=f'{col}-dropdown-table-'+tab,
-                        type='text',
-                        debounce=True,
-                        style=dropdown_style
-                    )
-                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 2px'})
+                element = dcc.Input(
+                    id=f'{col}-dropdown-table-' + tab,
+                    type='text',
+                    debounce=True,
+                    className='dash-input dynamic-width',
+                    style=dropdown_style
+                )
             else:
                 # Collect all unique values, splitting them by commas and ensuring uniqueness
                 all_roles = set()
                 for value in df[col].dropna().unique():
-                    # Split the value by comma and strip any extra spaces
                     roles = [role.strip() for role in str(value).split(',')]
                     all_roles.update(roles)
-                
-                # Convert to a sorted list
-                unique_values = sorted(all_roles)
-                # unique_values = sorted(df[col].unique())
-                dropdown_with_label = html.Div([
-                    dcc.Dropdown(
-                        id=f'{col}-dropdown-table-'+tab,
-                        options=[{'label': val, 'value': val} for val in unique_values], #[{'label': 'All', 'value': 'All'}] + 
-                        # value='All',
-                        style=dropdown_style,
-                        className='dash-dropdown',
-                        multi=True,
-                        clearable=True
-                    )
-                ], style={'display': 'inline-block', 'width': f'{column_widths[col]}px', 'padding': '0 2px'})
         
-            dropdowns_with_labels.append(dropdown_with_label)
+                unique_values = sorted(all_roles)
+        
+                element = dcc.Dropdown(
+                    id=f'{col}-dropdown-table-' + tab,
+                    options=[{'label': val, 'value': val} for val in unique_values],
+                    className='dash-dropdown dynamic-width',
+                    style=dropdown_style,
+                    multi=True,
+                    clearable=True
+                ) 
+
+            # Append each element wrapped in a container
+            dropdowns_with_labels.append(html.Div(
+                children=[element],
+                style=container_style  # Use flexbox styling for the container
+            ))
+
     else:
         dropdowns_with_labels = None
     
-    # Ensure the DataTable columns use the same calculated widths
+
+
     data_table = dash_table.DataTable(
         id=id_table,
         data=df.to_dict('records'),
         columns=[{'id': c, 'name': c} for c in columns],
         fixed_rows={'headers': True},
         style_table={
-            'minWidth': str(int(len(columns) * 170)) + 'px',  # Minimum width calculation
-            'overflowX': 'auto',  # Allow horizontal scrolling
-            'paddingLeft': '2px',  # Add padding to prevent it from being cut off
+            # 'className': 'table-container',  # Apply table container style
+            'minWidth': str(int(len(columns) * 170)) + 'px',
+            'overflowX': 'auto',
+            'paddingLeft': '2px',
             'paddingRight': '20px',
-            'marginLeft': '8px'  # Ensure some margin on the left side
+            'marginLeft': '8px'
+        },
+        style_header={
+            # 'className': 'table-header',    # Apply header style
+            'backgroundColor': '#343a40',
+            'color': 'white',
+            'whiteSpace': 'nowrap',
+            'textAlign': 'center',
         },
         style_cell={
+            # 'className': 'table-cell',       # Apply cell style
             'backgroundColor': '#1e1e1e',
             'color': '#f8f9fa',
             'overflow': 'hidden',
             'textOverflow': 'ellipsis',
             'whiteSpace': 'nowrap',
             'textAlign': 'center',
-            'height': 'auto',
-            'lineHeight': '40px'
         },
-        fixed_columns={'headers': True, 'data': 0},
+        style_data={
+            'whiteSpace': 'nowrap',
+            'textAlign': 'center',
+        },
         style_data_conditional=[
             {
                 'if': {'column_id': col},
                 'width': f'{column_widths[col]}px'
             } for col in columns
-        ],
-        style_header={
-            'backgroundColor': '#343a40',
-            'color': 'white',
-            'whiteSpace': 'nowrap',
-            'textAlign': 'center',
-            'height': '40px'
-        },
-        style_data={
-            'whiteSpace': 'nowrap',
-            'textAlign': 'center',
-            'backgroundColor': '#1e1e1e',
-        }
+        ]
     )
-    
+
     return dropdowns_with_labels, data_table
 

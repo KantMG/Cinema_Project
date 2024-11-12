@@ -97,7 +97,9 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
         'height': '40px',  # Set a consistent width
         'borderRadius': '5px',  # Optional: Add rounded corners
     }
-
+    
+    dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
+    
     # Create the dropdowns for each column
     dropdowns_with_labels = []
     for axi in axis:
@@ -109,8 +111,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in dim_type],
                     value='1D',  # Set default to "All", meaning no filtering
-                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
-                    className='dash-dropdown'  # Add custom class to target with CSS
+                    style=dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
         elif axi == 'Graph':
@@ -121,8 +123,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in graph_type],
                     value='Histogram',  # Set default to "All", meaning no filtering
-                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
-                    className='dash-dropdown'  # Add custom class to target with CSS
+                    style=dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
         elif axi == 'Func':
@@ -133,8 +135,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in function_on_y],
                     # value='All',  # Set default to "All", meaning no filtering
-                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
-                    className='dash-dropdown'  # Add custom class to target with CSS
+                    style=dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
         elif axi== 'z':
@@ -143,8 +145,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
-                    className='dash-dropdown'  # Add custom class to target with CSS
+                    style=dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
         elif axi== 'y':
@@ -153,8 +155,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                 dcc.Dropdown(
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
-                    className='dash-dropdown'  # Add custom class to target with CSS
+                    style=dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
         else:
@@ -164,8 +166,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     id=f'{axi}-dropdown-'+tab,
                     options=[{'label': val, 'value': val} for val in columns],
                     # value=None,
-                    style={**dark_dropdown_style, **uniform_style},  # Apply dark theme style
-                    className='dash-dropdown'  # Add custom class to target with CSS
+                    style=dropdown_style,  # Apply dark theme style
+                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
                 )
             ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
 
@@ -205,7 +207,8 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
     dropdowns_with_labels = []
     for col in columns:
         dtype = df[col].dtype
-        dropdown_style = {**dark_dropdown_style, **uniform_style}  #, 'width': f'{column_widths[col]}px'
+        # dropdown_style = {**dark_dropdown_style, **uniform_style}  #, 'width': f'{column_widths[col]}px'
+        dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
         
         dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'margin': '2px 0'}  # Vertical alignment and spacing
         
@@ -218,7 +221,8 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
                         id=f'fig-dropdown-{col}-'+tab,
                         type='text',
                         debounce=True,
-                        style={**dropdown_style, 'margin-top': '5px'}  # Adding margin for spacing
+                        style=dropdown_style,  # Adding margin for spacing
+                        className='dash-input dynamic-width'
                     )
                 ]
             )
@@ -241,7 +245,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
                         id=f'fig-dropdown-{col}-'+tab,
                         options=[{'label': val, 'value': val} for val in unique_values],
                         style=dropdown_style,
-                        className='dash-dropdown',
+                        className='dash-dropdown dynamic-width',
                         multi=True,
                         clearable=True
                     )
