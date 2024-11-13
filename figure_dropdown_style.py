@@ -98,78 +98,102 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
         'borderRadius': '5px',  # Optional: Add rounded corners
     }
     
-    dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
+    dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}
     
     # Create the dropdowns for each column
     dropdowns_with_labels = []
     for axi in axis:
         if axi == 'Dim':
             # Get unique values and sort them
-            dropdown_with_label = html.Div([
-                html.Label(f'Select graph {axi}'),  # Label for the dropdown
-                dcc.Dropdown(
-                    id=f'{axi}-dropdown-'+tab,
-                    options=[{'label': val, 'value': val} for val in dim_type],
-                    value='1D',  # Set default to "All", meaning no filtering
-                    style=dropdown_style,  # Apply dark theme style
-                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
-                )
-            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in dim_type],
+                        value='1D',  # Set default to "All", meaning no filtering
+                        style=uniform_style,
+                        className='dash-dropdown dynamic-width',
+                        clearable=True
+                    )
+                ]
+            )
         elif axi == 'Graph':
-            # Get unique values and sort them
-            dropdown_with_label = html.Div([
-                html.Label(f'Select a {axi} type'),  # Label for the dropdown
-                dcc.Dropdown(
-                    id=f'{axi}-dropdown-'+tab,
-                    options=[{'label': val, 'value': val} for val in graph_type],
-                    value='Histogram',  # Set default to "All", meaning no filtering
-                    style=dropdown_style,  # Apply dark theme style
-                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
-                )
-            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in graph_type],
+                        value='Histogram',  # Set default to "All", meaning no filtering
+                        style=uniform_style,
+                        className='dash-dropdown dynamic-width',
+                        clearable=True
+                    )
+                ]
+            )
         elif axi == 'Func':
-            # Get unique values and sort them
-            dropdown_with_label = html.Div([
-                html.Label(f'Select {axi} on y'),  # Label for the dropdown
-                dcc.Dropdown(
-                    id=f'{axi}-dropdown-'+tab,
-                    options=[{'label': val, 'value': val} for val in function_on_y],
-                    # value='All',  # Set default to "All", meaning no filtering
-                    style=dropdown_style,  # Apply dark theme style
-                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
-                )
-            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in function_on_y],
+                        # value=None,
+                        style=uniform_style,
+                        className='dash-dropdown dynamic-width',
+                        clearable=True
+                    )
+                ]
+            )
         elif axi== 'z':
-            dropdown_with_label = html.Div([
-                html.Label(f'Select {axi}'),  # Label for the dropdown
-                dcc.Dropdown(
-                    id=f'{axi}-dropdown-'+tab,
-                    options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                    style=dropdown_style,  # Apply dark theme style
-                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
-                )
-            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in columns],
+                        # value=None,
+                        style=uniform_style,
+                        className='dash-dropdown dynamic-width',
+                        clearable=True
+                    )
+                ]
+            )
         elif axi== 'y':
-            dropdown_with_label = html.Div([
-                html.Label(f'Select {axi}'),  # Label for the dropdown
-                dcc.Dropdown(
-                    id=f'{axi}-dropdown-'+tab,
-                    options=[{'label': val, 'value': val} for val in columns],  #[{'label': 'None', 'value': 'None'}] + 
-                    style=dropdown_style,  # Apply dark theme style
-                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
-                )
-            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in columns],
+                        # value=None,
+                        style=uniform_style,
+                        className='dash-dropdown dynamic-width',
+                        clearable=True
+                    )
+                ]
+            )
         else:
-            dropdown_with_label = html.Div([
-                html.Label(f'Select {axi}'),  # Label for the dropdown
-                dcc.Dropdown(
-                    id=f'{axi}-dropdown-'+tab,
-                    options=[{'label': val, 'value': val} for val in columns],
-                    # value=None,
-                    style=dropdown_style,  # Apply dark theme style
-                    className='dash-dropdown dynamic-width'  # Add custom class to target with CSS
-                )
-            ], style={'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'})  # Align label and dropdown vertically
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in columns],
+                        # value=None,
+                        style=uniform_style,
+                        className='dash-dropdown dynamic-width',
+                        clearable=True
+                    )
+                ]
+            )
 
         dropdowns_with_labels.append(dropdown_with_label)
 

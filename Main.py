@@ -34,7 +34,6 @@ import threading
 import requests
 import shutil
 
-
 import web_interface_style as wis
 import Dash_callback_ids as dci
 
