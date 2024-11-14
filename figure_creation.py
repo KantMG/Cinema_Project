@@ -259,12 +259,12 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
             
             if x_column in df_col_string:
                 # Grouping y_column values
-                n = 10  # Number of top categories to keep
+                n = 12  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, x_column, 'count', n)
 
             if y_column in df_col_string:
                 # Grouping y_column values
-                n = 10  # Number of top categories to keep
+                n = 6  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
 
             if g_column=="Histogram":
@@ -301,12 +301,12 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
 
             if y_column in df_col_string:
                 # Grouping y_column values
-                n = 10  # Number of top categories to keep
+                n = 6  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
 
             if z_column in df_col_string:
                 # Grouping y_column values
-                n = 10  # Number of top categories to keep
+                n = 6  # Number of top categories to keep
                 data_for_plot = group_y_values(data_for_plot, z_column, n)
             
             y_values = data_for_plot[y_column].unique()
