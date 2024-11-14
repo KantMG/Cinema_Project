@@ -20,6 +20,7 @@ Created on Wed Oct 16 19:12:21 2024
 import dash
 from dash import dcc, html, dash_table
 from dash.dependencies import Input, Output, State
+import dash_bootstrap_components as dbc
 import pandas as pd
 import dask.dataframe as dd
 import plotly.graph_objects as go
@@ -93,12 +94,14 @@ List_filter_tab2 = [None for i in List_col_tab2]
 df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
 df_col_string_tab2 = ["genres"]
 
+List_col_exclude_tab2 = ["tconst"]
+
 
 List_dim = ["1D", "2D", "3D"]
-List_graph_type = ["Histogram", "Curve", "Scatter", "Colormesh", "Pie"]
+List_graph_type = ["Histogram", "Curve", "Scatter", "Colormesh", "Pie", "Histogram Movie"]
 
 
-selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "directors", "writers"]
+selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"] #, "directors", "writers"
 selected_filter  = [None for i in selected_columns]
 df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
@@ -261,7 +264,28 @@ def tab2_content():
                                      dropdowns_with_labels_for_fig_tab2,
                                      dropdowns_with_labels_for_fig_filter_tab2)
             
-        ], style={'padding': '20px'})
+        ], style={'padding': '20px'}),
+        
+        dbc.Button("Open Input Modal", id="open-modal", n_clicks=0, className='button'),
+        dbc.Modal(
+            [
+                dbc.ModalHeader("Create Function"),
+                dbc.ModalBody(
+                    [
+                        dcc.Input(id="input-function-name", type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter function name"),
+                        html.Span(":", style={'margin': '0 10px'}),
+                        dcc.Input(id="input-function", type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter operation (e.g., A + B)"),
+                    ]
+                ),
+                dbc.ModalFooter(
+                    dbc.Button("Submit", id="submit-button", n_clicks=0, style=uniform_style, className='button')
+                ),
+            ],
+            id="modal",
+            size="lg",
+        ),
+        html.Div(id='output-div')
+        
     ], style={'padding': '20px'})
     
 
@@ -269,6 +293,52 @@ def tab2_content():
 # =============================================================================
 # Callback for graph in tab-2
 # =============================================================================
+
+@app.callback(
+    Output("modal", "is_open"),
+    [Input("open-modal", "n_clicks"), Input("submit-button", "n_clicks")],
+    [State("modal", "is_open")]
+)
+def toggle_modal(open_clicks, submit_clicks, is_open):
+    if open_clicks or submit_clicks:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output('output-div', 'children'),
+    [Input('submit-button', 'n_clicks')],
+    [State('input-function-name', 'value'), State('input-function', 'value')]
+)
+def update_output(n_clicks, func_name, input_value):
+    if n_clicks > 0:
+        print(df1.columns)  # To verify the columns
+        try:
+            # Transform input expression to reference DataFrame columns correctly
+            # Use .replace to replace column names with df['column_name']
+            expression = input_value
+            for column in df1.columns:
+                expression = expression.replace(column, f"df['{column}']")
+                
+            # Create a new function that evaluates the transformed expression
+            exec(f"def {func_name}(df): return {expression}", {}, locals())
+            # Calculate the result for all rows
+            df1[func_name] = locals()[func_name](df1)  # Add a new column with the results
+            
+            return f"New column '{func_name}' added to the dataframe." #{df1[func_name].tolist()}
+        except Exception as e:
+            return f"Error: {str(e)}"
+    return ""
+
+
+@app.callback(
+    Output('x-dropdown-tab-2', 'options'),
+    [Input('submit-button', 'n_clicks')],
+    [State('input-function-name', 'value'), State('input-function', 'value')]
+)
+def update_dropdown_options(n_clicks, func_name, input_value):
+    print(df1.columns)
+    print(List_col_exclude_tab2)
+    return [{'label': col, 'value': col} for col in df1.columns if col not in List_col_exclude_tab2]
 
 @app.callback(
     Output('y-dropdown-tab-2', 'options'),
@@ -290,8 +360,8 @@ def update_y_dropdown_tab2(selected_x, selected_tab):
             print("X Dropdown Value is None, returning an empty list [].")
             return []
         print(f"Selected X: {selected_x}")  # Additional debugging
-        exclude_cols=[]
-        return update_y_dropdown_utility(selected_x, List_col_tab2, exclude_cols)
+        exclude_cols=List_col_exclude_tab2
+        return update_y_dropdown_utility(selected_x, df1.columns, exclude_cols)
     return dash.no_update
 
 @app.callback(
@@ -315,8 +385,8 @@ def update_z_dropdown_tab2(selected_x, selected_y, selected_tab):
             print("Y Dropdown Value is None, returning an empty list [].")
             return []
         print(f"Selected y: {selected_y}")  # Additional debugging
-        exclude_cols=[]
-        return update_z_dropdown_utility(selected_x, selected_y, List_col_tab2, exclude_cols)
+        exclude_cols=List_col_exclude_tab2
+        return update_z_dropdown_utility(selected_x, selected_y, df1.columns, exclude_cols)
     return dash.no_update
 
 @app.callback(
@@ -634,14 +704,16 @@ def update_y_dropdown_utility(selected_x, List_cols, exclude_cols):
     """
     Utility function to generate dropdown options for the y-axis based on the selected x-axis column and dataframe.
     """
-    return [{'label': col, 'value': col} for col in List_cols if col != selected_x]
+    return [{'label': col, 'value': col} for col in List_cols 
+                    if col != selected_x and col not in exclude_cols]
 
 def update_z_dropdown_utility(selected_x, selected_y, List_cols, exclude_cols):
     """
     Utility function to generate dropdown options for the z-axis based on the selected x-axis and y-axis column and dataframe.
     """
-    return [{'label': col, 'value': col} for col in List_cols if col not in (selected_x, selected_y)]
- 
+    return [{'label': col, 'value': col} for col in List_cols 
+                    if col not in (selected_x, selected_y) and col not in exclude_cols]
+
 def update_func_dropdown_utility(selected_y, df_col_numeric):
     """
     Utility function to generate dropdown options for the function based on the selected y-axis column.

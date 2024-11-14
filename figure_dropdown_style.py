@@ -405,7 +405,7 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                         style={'margin-left': '20px', 'width': '30%'},  # Container for the heading and dropdowns
                         children=[
                             # Heading above dropdowns
-                            html.H1(
+                            html.H2(
                                 'Select filters on the dataframe.',
                                 style={'margin-bottom': '10px'},  # Add some space below the heading
                                 className="text-light"
@@ -415,7 +415,8 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                                 dropdowns_with_labels_for_fig_filter,
                                 style={
                                     'display': 'flex',
-                                    'flex-direction': 'column',  # Arrange dropdowns vertically
+                                    'flexWrap': 'wrap',  # Allow wrapping to new lines
+                                    # 'flex-direction': 'column',  # Arrange dropdowns vertically
                                     'justify-content': 'flex-start',
                                     'gap': '10px',  # Add spacing between dropdowns
                                 }

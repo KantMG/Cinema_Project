@@ -54,6 +54,36 @@ body {
 
 
 
+/* Base button styles */
+.button {
+    display: inline-block; /* Ensures the button can adjust size */
+    padding: 10px 20px; /* Spacing inside the button */
+    font-size: 16px; /* Text size */
+    font-weight: bold; /* Text boldness */
+    color: black; /* Text color */
+    background-color: #FFD700; /* Background color */
+    border: none; /* No border */
+    border-radius: 5px; /* Slightly rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    text-align: center; /* Center text */
+    text-decoration: none; /* No underline */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+}
+
+/* Hover effect */
+.button:hover {
+    background-color: #0056b3; /* Darker shade for hover */
+    transform: scale(1.05); /* Slightly increase size on hover */
+}
+
+/* Active state */
+.button:active {
+    transform: scale(0.95); /* Slightly decrease size on click */
+}
+
+
+
+
 /* Dropdowns classe */
 
 .dropdown-container {

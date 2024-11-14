@@ -164,3 +164,74 @@ def figure_plotly(plotly_fig, ax, x_column, y_column, z_column, f_column, g_colu
             ax.plot(np.arange(len(x_values)), data_for_plot, linewidth=4.)
         if g_column=="Scatter":
             ax.scatter(np.arange(len(x_values)), data_for_plot, linewidth=4.)
+            
+            
+            
+            
+def apply_filter(df, filters):
+    
+    """
+    Goal: 
+    - Apply the given filters to the DataFrame.
+    
+    Parameters:
+    - df: DataFrame to filter
+    - filters: Dictionary where keys are columns and values are filter conditions
+    
+    Returns:
+    - df: Filtered DataFrame
+    """    
+    
+    print("Apply filter.")
+    if not filters:
+        return df
+
+    for col, filter_value in filters.items():
+        print(col, filter_value)
+        
+        if filter_value is not None and filter_value != 'All':  
+            
+            if isinstance(filter_value, bool):
+                # Handle boolean filters directly
+                df = df[df[col] == filter_value]
+                
+            elif ">" in str(filter_value):
+                # Handle greater than or equal filters (e.g., ">=7.0")
+                threshold = float(filter_value.split(">")[1])
+                df = df[df[col] > threshold]
+            elif "<" in str(filter_value):
+                # Handle less than or equal filters (e.g., "<=5.0")
+                threshold = float(filter_value.split("<")[1])
+                df = df[df[col] < threshold]
+            elif ">=" in str(filter_value):
+                # Handle greater than or equal filters (e.g., ">=7.0")
+                threshold = float(filter_value.split(">=")[1])
+                df = df[df[col] >= threshold]
+            elif "<=" in str(filter_value):
+                # Handle less than or equal filters (e.g., "<=5.0")
+                threshold = float(filter_value.split("<=")[1])
+                df = df[df[col] <= threshold]
+            elif "=" in str(filter_value):
+                # Handle equality filters (e.g., "=nm0005690")
+                value = filter_value.split("=")[1]
+                df = df[df[col] == value]
+            elif isinstance(filter_value, str) and filter_value.endswith('*'):
+                # Remove the asterisk and apply an exact match filter
+                exact_value = filter_value[:-1]
+                df = df[df[col] == exact_value]
+            else:
+                if 'All' in filter_value:
+                    return df
+                else:
+                    # Check if 'value' is a list and apply the filter accordingly
+                    if isinstance(filter_value, list):
+                        # Use regex pattern to match any of the values in the list
+                        pattern = '|'.join(map(re.escape, filter_value))  # Escape special characters to avoid regex issues
+                        df = df[df[col].str.contains(pattern, na=False)]
+                    else:
+                        # Single value case, handle as before
+                        df = df[df[col].str.contains(str(filter_value), na=False)]
+            print(df[col])
+    print()
+    return df
+    

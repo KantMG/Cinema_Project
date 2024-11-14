@@ -134,6 +134,9 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
     - ylabel: The ylabel of the axis (can be None).
     - zlabel: The zlabel of the axis (can be None).
     """
+
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres", "directors", "writers", "category"]
     
     if x_column is not None: 
         figname = 'Movies over the ' + x_column
@@ -160,7 +163,12 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
     else: 
         figname = 'No data selected'
         xlabel, ylabel, zlabel = "None","None","None"
-        
+    
+    if x_column in df_col_string:
+        xlabel_temp = xlabel
+        xlabel = ylabel
+        ylabel = xlabel_temp
+    
     return figname, xlabel, ylabel, zlabel
 
 
@@ -217,53 +225,90 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
     else:
         y_values, fig_y_value = None, None
 
+    x_axis = x_column
+    y_axis = 'count'
+    if x_column in df_col_string:
+        x_axis = 'count'
+        y_axis = x_column
+
     if d_column=="1D": 
         if str(y_column)=='None':
+                
             if g_column=="Histogram":
                 plotly_fig = px.bar(
                     data_for_plot, 
-                    x=x_column, 
-                    y='count'
+                    x=x_axis, 
+                    y=y_axis
                     )
             if g_column=="Curve":
                 plotly_fig = px.line(
                     data_for_plot, 
-                    x=x_column, 
-                    y='count'
+                    x=x_axis, 
+                    y=y_axis
                     ) #, color=y_column, symbol="country"
             if g_column=="Scatter":
                 plotly_fig = px.scatter(
                     data_for_plot,
-                    x=x_column,
-                    y='count',
+                    x=x_axis,
+                    y=y_axis,
                     # log_x=True,
                     size_max=60
                     )
         elif str(y_column)!='None' and str(z_column)=='None':
+
+            
+            if x_column in df_col_string:
+                # Grouping y_column values
+                n = 10  # Number of top categories to keep
+                data_for_plot = group_small_values(data_for_plot, x_column, 'count', n)
+
+            if y_column in df_col_string:
+                # Grouping y_column values
+                n = 10  # Number of top categories to keep
+                data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
+
             if g_column=="Histogram":
                 plotly_fig = px.bar(
                     data_for_plot, 
-                    x=x_column, 
-                    y='count',
+                    x=x_axis, 
+                    y=y_axis,
                     color=y_column
                     )
             if g_column=="Curve":
                 plotly_fig = px.line(
                     data_for_plot, 
-                    x=x_column, 
-                    y='count',
+                    x=x_axis, 
+                    y=y_axis,
                     color=y_column
                     ) #symbol="country"
             if g_column=="Scatter":
                 plotly_fig = px.scatter(
                     data_for_plot,
-                    x=x_column,
-                    y='count',
+                    x=x_axis,
+                    y=y_axis,
                     color=y_column,
                     # log_x=True,
                     size_max=60
                     )
+            if g_column=="Histogram Movie":
+               plotly_fig = px.bar(
+                   data_for_plot, 
+                   x=x_axis, 
+                   y=y_axis,
+                   animation_frame=y_column
+                   )
         else:
+
+            if y_column in df_col_string:
+                # Grouping y_column values
+                n = 10  # Number of top categories to keep
+                data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
+
+            if z_column in df_col_string:
+                # Grouping y_column values
+                n = 10  # Number of top categories to keep
+                data_for_plot = group_y_values(data_for_plot, z_column, n)
+            
             y_values = data_for_plot[y_column].unique()
             if g_column=="Histogram":
                plotly_fig = px.bar(
@@ -295,8 +340,23 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     # log_x=True,
                     size_max=60
                 )
+            if g_column=="Histogram Movie":
+               plotly_fig = px.bar(
+                   data_for_plot, 
+                   x=x_column, 
+                   y='count',
+                   color=y_column,
+                   animation_frame='year'
+                   )
+
 
     if g_column=="Pie": #d_column=="2D" and 
+
+            if x_column in df_col_string:
+                # Grouping y_column values
+                n = 6  # Number of top categories to keep
+                data_for_plot = group_small_values(data_for_plot, x_column, 'count', n)
+
             x_values,fig_x_value,y_values,fig_y_value=None,None,None,None
             plotly_fig = px.pie(
                 data_for_plot, 
@@ -337,6 +397,37 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
    #============================================================================="""
 
 
+# Function to group small values
+def group_small_values(data, col, count_column, n):
+    
+    print(n)
+    print(col)
+    print(count_column)
+    
+    # # Get the top n values based on count
+    # top_n = data.nlargest(n, count_column)[col].unique()
+    
+    # Group by genres and sum the counts
+    grouped_data = data.groupby(col)[count_column].sum().reset_index()
+    
+    # Get the top n genres based on summed counts
+    top_n_genres = grouped_data.nlargest(n, count_column)
+    print(top_n_genres)
+    
+    # Extract the genres
+    top_n = top_n_genres[col].unique()
+    print(top_n)
+    
+    # Replace values not in top_n with "Other"
+    data[col] = data[col].where(data[col].isin(top_n), 'Other')
+    
+    return data
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column):
 
     """
@@ -356,12 +447,15 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
     - fig_json_serializable: Dash figure updated.
     """
 
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+
     fig_json_serializable.update_layout(
         plot_bgcolor='#1e1e1e',  # Darker background for the plot area
         paper_bgcolor='#101820',  # Dark gray for the paper
         font=dict(color='white'),  # White text color
-        title = figname,
-        title_font=dict(size=20, color='white')
+        # title = figname,
+        # title_font=dict(size=20, color='white')
         )
 
     if x_column is not None and (d_column =="1D"or d_column =="2D") and g_column != 'Pie':
@@ -369,9 +463,10 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
             plot_bgcolor='#1e1e1e',  # Darker background for the plot area
             paper_bgcolor='#101820',  # Dark gray for the paper
             font=dict(color='white'),  # White text color
-            title = figname,
-            title_font=dict(size=20, color='white'),  # Title styling
+            # title = figname,
+            # title_font=dict(size=20, color='white'),  # Title styling
             xaxis=dict(
+                # range=[0, 2000] if g_column == 'Histogram Movie' else None,
                 title=dict(text=xlabel, font=dict(size=20, color='white')),  # X-axis label styling
                 tickfont=dict(color='white', size=18),  # X-axis tick color
                 tickangle=0,  # Rotate the x-axis labels for better readability
@@ -385,16 +480,18 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
                 tickangle=0,  # Rotate the x-axis labels for better readability
                 showgrid=True,  # Grid styling
                 gridcolor='gray',  # Grid color
-                categoryorder='category ascending',  # Ensures categorical x-values are treated correctly
+                categoryorder='total ascending' if x_column in df_col_string else 'category ascending',  # Ensures categorical x-values are treated correctly
+                
             )
+            
         )
     elif x_column is not None and d_column =="3D":
         fig_json_serializable.update_layout(
             plot_bgcolor='#1e1e1e',  # Darker background for the plot area
             paper_bgcolor='#101820',  # Dark gray for the paper
             font=dict(color='white'),  # White text color
-            title = figname,
-            title_font=dict(size=20, color='white'),  # Title styling
+            # title = figname,
+            # title_font=dict(size=20, color='white'),  # Title styling
             scene=dict(
                     xaxis=dict(
                         title=dict(text=xlabel, font=dict(size=18, color='white')),  # X-axis label styling
@@ -421,6 +518,45 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
                     )
             )
         )
+
+    if g_column == 'Histogram Movie':
+        fig_json_serializable.update_layout(
+        margin=dict(l=150, r=20, t=20, b=20)
+        )
+        
+        # Update layout to include a slider
+        fig_json_serializable.update_layout(
+            updatemenus=[{
+                'buttons': [
+                    {
+                        'label': 'Play',
+                        'method': 'animate',
+                        'args': [None, {
+                            'frame': {'duration': 1000, 'redraw': True},
+                            'mode': 'immediate',
+                            'transition': {'duration': 300}
+                        }]
+                    },
+                    {
+                        'label': 'Pause',
+                        'method': 'animate',
+                        'args': [[None], {
+                            'frame': {'duration': 0, 'redraw': True},
+                            'mode': 'immediate',
+                            'transition': {'duration': 0}
+                        }]
+                    }
+                ],
+                'direction': 'down',
+                'showactive': False,
+                'x': 0.1,
+                'xanchor': 'left',
+                'y': 1.1,
+                'yanchor': 'top',
+            }]
+        )
+
+
 
     if d_column == "3D":
         name = 'default'

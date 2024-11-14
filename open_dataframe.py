@@ -386,7 +386,6 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
 
 
 def apply_filter(df, filters):
-    
     """
     Goal: 
     - Apply the given filters to the DataFrame.
@@ -398,48 +397,67 @@ def apply_filter(df, filters):
     Returns:
     - df: Filtered DataFrame
     """    
-    
+
     print("Apply filter.")
+    
     if not filters:
         return df
-    else:
-        print(filters)
-        for col, filter_value in filters.items():
-            print(col, filter_value)
-            if filter_value is not None and filter_value != 'All':  
-                if isinstance(filter_value, bool):
-                    # Handle boolean filters directly
-                    df = df[df[col] == filter_value]
-                elif ">=" in str(filter_value):
-                    # Handle greater than or equal filters (e.g., ">=7.0")
-                    threshold = float(filter_value.split(">=")[1])
+    
+    for col, filter_value in filters.items():
+        print(col, filter_value)
+        
+        if filter_value is None or filter_value == 'All':
+            continue  # Skip if filter_value is None or 'All'
+        
+        if isinstance(filter_value, bool):
+            df = df[df[col] == filter_value]
+        
+        elif isinstance(filter_value, list):
+            # Use regex pattern to match any of the values in the list
+            pattern = '|'.join(map(re.escape, filter_value))
+            df = df[df[col].str.contains(pattern, na=False)]
+        
+        elif isinstance(filter_value, str) and filter_value.endswith('*'):
+            exact_value = filter_value[:-1]
+            df = df[df[col] == exact_value]
+        
+        else:
+            # Check for interval filtering like "<10" or "<=10" and ">10" or ">=10"
+            if '>=' in filter_value or '>' in filter_value or '<=' in filter_value or '<' in filter_value:
+                if '>=' in filter_value:
+                    threshold = float(filter_value.split('>=')[1])
                     df = df[df[col] >= threshold]
-                elif "<=" in str(filter_value):
-                    # Handle less than or equal filters (e.g., "<=5.0")
-                    threshold = float(filter_value.split("<=")[1])
+                elif '>' in filter_value:
+                    threshold = float(filter_value.split('>')[1])
+                    df = df[df[col] > threshold]
+                elif '<=' in filter_value:
+                    threshold = float(filter_value.split('<=')[1])
                     df = df[df[col] <= threshold]
-                elif "=" in str(filter_value):
-                    # Handle equality filters (e.g., "=nm0005690")
-                    value = filter_value.split("=")[1]
-                    df = df[df[col] == value]
-                elif isinstance(filter_value, str) and filter_value.endswith('*'):
-                    # Remove the asterisk and apply an exact match filter
-                    exact_value = filter_value[:-1]
-                    df = df[df[col] == exact_value]
+                elif '<' in filter_value:
+                    threshold = float(filter_value.split('<')[1])
+                    df = df[df[col] < threshold]
+                    
+            elif '!=' in filter_value:
+                threshold = float(filter_value.split('!=')[1])
+                df = df[df[col] != threshold]  # Apply not equal condition
+            elif '=' in filter_value:
+                threshold = float(filter_value.split('=')[1])
+                df = df[df[col] == threshold]
+            elif '-' in filter_value:
+                bounds = filter_value.split('-')
+                lower_bound = float(bounds[0])
+                upper_bound = float(bounds[1]) if len(bounds) > 1 else None
+                if upper_bound is not None:
+                    df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
                 else:
-                    if 'All' in filter_value:
-                        return df
-                    else:
-                        # Check if 'value' is a list and apply the filter accordingly
-                        if isinstance(filter_value, list):
-                            # Use regex pattern to match any of the values in the list
-                            pattern = '|'.join(map(re.escape, filter_value))  # Escape special characters to avoid regex issues
-                            df = df[df[col].str.contains(pattern, na=False)]
-                        else:
-                            # Single value case, handle as before
-                            df = df[df[col].str.contains(str(filter_value), na=False)]
-                print(df[col])
-    print()
+                    df = df[df[col] >= lower_bound]
+    
+            print(f"Filtered df for {col}:")
+            print(f"{df[col]}")
+    
+        if df.empty:
+            print("Filtered DataFrame is empty. Returning empty DataFrame.")
+
     return df
     
 

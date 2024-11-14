@@ -85,7 +85,11 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, g
         ).reset_index()
         avg_col_name = 'avg_' + z_column
         data_for_plot.rename(columns={'avg_z_column': avg_col_name}, inplace=True)
-            
+    
+    if x_column in df_col_string:
+        data_for_plot = data_for_plot.sort_values(by='count', ascending=False)
+
+    
     return Para, data_for_plot, x_column, y_column, z_column
 
 
