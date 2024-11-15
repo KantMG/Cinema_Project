@@ -98,12 +98,15 @@ List_col_exclude_tab2 = ["tconst"]
 
 
 List_dim = ["1D", "2D", "3D"]
-List_graph_type = ["Histogram", "Curve", "Scatter", "Colormesh", "Pie", "Histogram Movie"]
+List_graph_type = ["Histogram", "Curve", "Scatter", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
 
 
 selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"] #, "directors", "writers"
 selected_filter  = [None for i in selected_columns]
 df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+
+
+df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
 
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
@@ -253,7 +256,14 @@ def tab2_content():
     df_selected = df1[[col for col in df1.columns if col not in exclude_cols]]
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
     dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df_selected, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
+    
+    button_dropdown_function_tab2 = fds.button_dropdown_function("Function creation", "open-modal-function-tab-2", "input-function-name-tab-2", "input-function-tab-2", "submit-button-function-tab-2", "modal-function-tab-2", "output-div-function-tab-2", dark_dropdown_style, uniform_style)
 
+
+    button_dropdown_regression_tab2 = fds.button_dropdown_regression("Regression model", "open-modal-regression-tab-2", "dropdown-regression-tab-2", "order-regression-tab-2", "submit-button-regression-tab-2", "modal-regression-tab-2", "output-div-regression-tab-2", dark_dropdown_style, uniform_style)
+
+
+    
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
@@ -262,30 +272,14 @@ def tab2_content():
         html.Div([
             fds.figure_position_dash('graph-output-tab-2',
                                      dropdowns_with_labels_for_fig_tab2,
-                                     dropdowns_with_labels_for_fig_filter_tab2)
+                                     dropdowns_with_labels_for_fig_filter_tab2,
+                                     button_dropdown_function_tab2,
+                                     button_dropdown_regression_tab2
+                                     )
             
         ], style={'padding': '20px'}),
-        
-        dbc.Button("Open Input Modal", id="open-modal", n_clicks=0, className='button'),
-        dbc.Modal(
-            [
-                dbc.ModalHeader("Create Function"),
-                dbc.ModalBody(
-                    [
-                        dcc.Input(id="input-function-name", type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter function name"),
-                        html.Span(":", style={'margin': '0 10px'}),
-                        dcc.Input(id="input-function", type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter operation (e.g., A + B)"),
-                    ]
-                ),
-                dbc.ModalFooter(
-                    dbc.Button("Submit", id="submit-button", n_clicks=0, style=uniform_style, className='button')
-                ),
-            ],
-            id="modal",
-            size="lg",
-        ),
-        html.Div(id='output-div')
-        
+
+
     ], style={'padding': '20px'})
     
 
@@ -295,9 +289,9 @@ def tab2_content():
 # =============================================================================
 
 @app.callback(
-    Output("modal", "is_open"),
-    [Input("open-modal", "n_clicks"), Input("submit-button", "n_clicks")],
-    [State("modal", "is_open")]
+    Output("modal-function-tab-2", "is_open"),
+    [Input("open-modal-function-tab-2", "n_clicks"), Input("submit-button-function-tab-2", "n_clicks")],
+    [State("modal-function-tab-2", "is_open")]
 )
 def toggle_modal(open_clicks, submit_clicks, is_open):
     if open_clicks or submit_clicks:
@@ -305,16 +299,22 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
     return is_open
 
 @app.callback(
-    Output('output-div', 'children'),
-    [Input('submit-button', 'n_clicks')],
-    [State('input-function-name', 'value'), State('input-function', 'value')]
+    Output('output-div-function-tab-2', 'children'),
+    [Input('submit-button-function-tab-2', 'n_clicks')],
+    [State('input-function-name-tab-2', 'value'), State('input-function-tab-2', 'value')]
 )
 def update_output(n_clicks, func_name, input_value):
+    print("Submit button clicks:", n_clicks)  # Check for clicks
+    print("Function Name:", func_name)  # Current function name
+    print("Input Value:", input_value)  # Value of input expression
+    
     if n_clicks > 0:
-        print(df1.columns)  # To verify the columns
         try:
+            # Validate that func_name and input_value are provided
+            if not func_name or not input_value:
+                return "Error: Function name and input expression are required."
+
             # Transform input expression to reference DataFrame columns correctly
-            # Use .replace to replace column names with df['column_name']
             expression = input_value
             for column in df1.columns:
                 expression = expression.replace(column, f"df['{column}']")
@@ -324,21 +324,33 @@ def update_output(n_clicks, func_name, input_value):
             # Calculate the result for all rows
             df1[func_name] = locals()[func_name](df1)  # Add a new column with the results
             
-            return f"New column '{func_name}' added to the dataframe." #{df1[func_name].tolist()}
+            return f"New column '{func_name}' added to the dataframe."
         except Exception as e:
             return f"Error: {str(e)}"
     return ""
 
-
 @app.callback(
     Output('x-dropdown-tab-2', 'options'),
-    [Input('submit-button', 'n_clicks')],
-    [State('input-function-name', 'value'), State('input-function', 'value')]
+    [Input('submit-button-function-tab-2', 'n_clicks')],
+    [State('input-function-name-tab-2', 'value'), State('input-function-tab-2', 'value')]
 )
 def update_dropdown_options(n_clicks, func_name, input_value):
     print(df1.columns)
     print(List_col_exclude_tab2)
     return [{'label': col, 'value': col} for col in df1.columns if col not in List_col_exclude_tab2]
+
+
+
+@app.callback(
+    Output("modal-regression-tab-2", "is_open"),
+    [Input("open-modal-regression-tab-2", "n_clicks"), Input("submit-button-regression-tab-2", "n_clicks")],
+    [State("modal-regression-tab-2", "is_open")]
+)
+def toggle_modal(open_clicks, submit_clicks, is_open):
+    if open_clicks or submit_clicks:
+        return not is_open
+    return is_open
+
 
 @app.callback(
     Output('y-dropdown-tab-2', 'options'),
@@ -453,10 +465,13 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input('z-dropdown-tab-2', 'value'),
      Input('Func-dropdown-tab-2', 'value'),
      Input('Graph-dropdown-tab-2', 'value'),
-     Input('Dim-dropdown-tab-2', 'value')] +
+     Input('Dim-dropdown-tab-2', 'value'),
+     Input("dropdown-regression-tab-2", "value"),
+     Input("order-regression-tab-2", "value"),
+     Input("submit-button-regression-tab-2", "n_clicks")] +
     [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2]
 )
-def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, *args):
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, sub_bot_reg_value, *args):
     print()
     print(colored("------------ callback update_graph_tab2 ------------", "red"))
 
@@ -465,7 +480,9 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     print("Triggered component:", triggered_id)
     print()
-
+    if triggered_id == "dropdown-regression-tab-2" or triggered_id == "order-regression-tab-2":
+        return dash.no_update
+    
     # Load the Dask DataFrame from Parquet
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
@@ -484,10 +501,10 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
     df1_filtered = od.apply_filter(df1, filter_values)
     
-    print("x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value=",x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value)
+    print("x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value=",x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value)
     print("filter_values=",filter_values)
     print("stored_df1=", df1)
-    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, df1_filtered, Large_file_memory)
+    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, df1_filtered, Large_file_memory)
   
     
 """
@@ -753,7 +770,7 @@ def update_filter_dropdown_utility(selected_boxes, df):
         
     return dropdowns 
 
-def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, stored_df, large_file_memory):
+def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order, stored_df, large_file_memory):
     """
     Utility function to generate a graph based on the provided parameters.
     """
@@ -771,7 +788,7 @@ def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, 
         # Apply filters on the dataframe
         # filtered_data_graph = od.apply_filter(filtered_data_graph, selected_values)
         # Create the figure based on filtered data
-    fig = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, func_column, graph_type, dim_type, large_file_memory)
+    fig = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order, large_file_memory)
     return fig
 
 # =============================================================================

@@ -361,7 +361,88 @@ def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, un
    #============================================================================="""
 
 
-def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter):
+def button_dropdown_function(text_button, id_button, id_created_func_name, id_created_func, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
+    
+    botom_style = uniform_style
+    
+    botom_style['marginRight'] = 'auto'
+    
+    return html.Div([
+    dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle("  Create Function")),
+            dbc.ModalBody(
+                [
+                    dcc.Input(id=id_created_func_name, type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter function name"),
+                    html.Span(":", style={'margin': '0 10px'}),
+                    dcc.Input(id=id_created_func, type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter operation (e.g., A + B)"),
+                ]
+            ),
+            dbc.ModalFooter(
+                dbc.Button("Submit", id=id_submit_button, n_clicks=0, style=botom_style, className='button')
+            ),
+        ],
+        id=id_modal,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    ),
+    html.Div(id=id_output_div)
+    ])
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def button_dropdown_regression(text_button, id_button, id_dropdown, id_order_reg, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
+
+    dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
+        
+
+    
+    return html.Div([
+    dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle("  Create regression")),
+            dbc.ModalBody(
+                [   
+                    dcc.Dropdown(
+                        id=id_dropdown,
+                        options=["Linear Regression", "Decision Tree", "k-NN", "Polynomial Regression"],
+                        # value='Decision Tree',
+                        clearable=False,
+                        style=uniform_style,
+                        className='dash-dropdown dynamic-width'
+                    ),
+                    html.Span(":", style={'margin': '0 10px'}),
+                    dcc.Input(id=id_order_reg, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter a number"),
+                ]
+            ),
+            dbc.ModalFooter(
+                dbc.Button("Submit", id=id_submit_button, n_clicks=0, className='button')
+            ),
+        ],
+        id=id_modal,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    ),
+    html.Div(id=id_output_div) 
+    ])
+    
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter, button_dropdown_function, button_dropdown_regression):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -420,7 +501,29 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                                     'justify-content': 'flex-start',
                                     'gap': '10px',  # Add spacing between dropdowns
                                 }
-                            )
+                            ),
+                            
+                            html.Span("", style={'margin': '0 10px'}),
+                            
+                            html.Div(
+                                button_dropdown_function,
+                                style={
+                                    'display': 'flex',
+                                    'justify-content': 'flex-start',
+                                    'gap': '10px',  # Add spacing between dropdowns
+                                }
+                            ),       
+                            
+                            html.Span("", style={'margin': '0 10px'}),
+                            
+                            html.Div(
+                                button_dropdown_regression,
+                                style={
+                                    'display': 'flex',
+                                    'justify-content': 'flex-start',
+                                    'gap': '10px',  # Add spacing between dropdowns
+                                }
+                            ),                                                        
                         ]
                     )
                 ]

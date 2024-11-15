@@ -24,6 +24,13 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import numpy as np
 
+from sklearn.model_selection import train_test_split
+from sklearn import linear_model, tree, neighbors
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LinearRegression
+
+
 from termcolor import colored
 
 import matplotlib.pyplot as plt
@@ -64,7 +71,7 @@ cmaps = [('Perceptually Uniform Sequential', [
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column, Large_file_memory):
+def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -77,6 +84,8 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column
     - f_column: Function to operate on df_temp[x_column,y_column]
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
+    - r_column: Type of regression for the data.
+    - o_column: Order of the regression for the data.
     - Large_file_memory: Estimate if the file is too large to be open with panda
 
     Returns:
@@ -99,7 +108,7 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column
         print(data_for_plot)
         print()
         # Add the core of the figure
-        fig_json_serializable = figure_plotly(fig_json_serializable, x_column, y_column, z_column, f_column, g_column, d_column, data_for_plot)
+        fig_json_serializable = figure_plotly(fig_json_serializable, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot)
 
     # Update the figure layout
     fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column)       
@@ -177,7 +186,7 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
    #============================================================================="""
 
 
-def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, d_column, data_for_plot):
+def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot):
 
     """
     Goal: Create the plot inside the figure regarding the inputs.
@@ -190,6 +199,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
     - f_column: Function to operate on df_temp[x_column,y_column]
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
+    - r_column: Type of regression for the data.
+    - o_column: Order of the regression for the data.
     - data_for_plot: Data to plot.
 
     Returns:
@@ -256,7 +267,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     )
         elif str(y_column)!='None' and str(z_column)=='None':
 
-            
             if x_column in df_col_string:
                 # Grouping y_column values
                 n = 12  # Number of top categories to keep
@@ -267,36 +277,32 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                 n = 6  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
 
-            if g_column=="Histogram":
+            if "Histogram" in g_column:
                 plotly_fig = px.bar(
                     data_for_plot, 
                     x=x_axis, 
                     y=y_axis,
-                    color=y_column
+                    color=y_column if "Movie" not in g_column else None,
+                    animation_frame=y_column if "Movie" in g_column else None
                     )
-            if g_column=="Curve":
+            if "Curve" in g_column:
                 plotly_fig = px.line(
                     data_for_plot, 
                     x=x_axis, 
                     y=y_axis,
-                    color=y_column
+                    color=y_column if "Movie" not in g_column else None,
+                    animation_frame=y_column if "Movie" in g_column else None
                     ) #symbol="country"
-            if g_column=="Scatter":
+            if "Scatter" in g_column:
                 plotly_fig = px.scatter(
                     data_for_plot,
                     x=x_axis,
                     y=y_axis,
-                    color=y_column,
+                    size_max=60,
                     # log_x=True,
-                    size_max=60
+                    color=y_column if "Movie" not in g_column else None,
+                    animation_frame=y_column if "Movie" in g_column else None
                     )
-            if g_column=="Histogram Movie":
-               plotly_fig = px.bar(
-                   data_for_plot, 
-                   x=x_axis, 
-                   y=y_axis,
-                   animation_frame=y_column
-                   )
         else:
 
             if y_column in df_col_string:
@@ -315,7 +321,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                    data_for_plot, 
                    x=x_column, 
                    y='count',
-                   color=y_column
+                   color=y_column if "Movie" not in g_column else None,
+                   animation_frame=y_column if "Movie" in g_column else None
                    )
             if g_column=="Curve":
                 plotly_fig = go.Figure()
@@ -335,19 +342,10 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     x=x_column,
                     y='count',
                     size='avg_'+z_column,
-                    color=y_column,
-                    # hover_name=y_column,
-                    # log_x=True,
-                    size_max=60
+                    size_max=60,
+                    color=y_column if "Movie" not in g_column else None,
+                    animation_frame=y_column if "Movie" in g_column else None
                 )
-            if g_column=="Histogram Movie":
-               plotly_fig = px.bar(
-                   data_for_plot, 
-                   x=x_column, 
-                   y='count',
-                   color=y_column,
-                   animation_frame='year'
-                   )
 
 
     if g_column=="Pie": #d_column=="2D" and 
@@ -389,8 +387,75 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
         y_values=pivoted_data.index  # Explicitly set tick positions
         fig_y_value=[str(val) for val in y_values]  # Cust
 
+
+
+    if r_column != None:
+
+        Dict_regression_models = {'Linear Regression': linear_model.LinearRegression,
+                  'Decision Tree': tree.DecisionTreeRegressor,
+                  'k-NN': neighbors.KNeighborsRegressor,
+                  'Polynomial Regression': lambda: make_pipeline(PolynomialFeatures(degree=o_column), linear_model.LinearRegression())  # Use a lambda to return a new instance
+                  }        
+
+        # Instantiate the model
+        model = Dict_regression_models[r_column]()
+        
+        print("model=",model)
+        
+        X_reg = data_for_plot[[x_axis]]
+        y_reg = data_for_plot[y_axis]
+        
+        print(X_reg)
+        print(y_reg)
+        # Fit the model
+        model.fit(X_reg, y_reg)
+
+
+        # # Check if the model is polynomial and handle it accordingly
+        # if r_column == 'Polynomial Regression':
+        #     linear_model = model.named_steps['linearregression']  # Access the linear regression step
+        #     print(f"Intercept: {linear_model.intercept_}")
+        #     print(f"Coefficients: {linear_model.coef_}")
+        #     equation = format_coefs(linear_model.coef_.round(2))
+            
+        # elif r_column == 'Linear Regression':
+        #     print(f"Intercept: {model.intercept_}")
+        #     print(f"Coefficient: {model.coef_[0]}")
+        #     equation = f"{model.coef_[0]} * x + {model.intercept_}"
+
+        # if r_column == "Linear Regression" or r_column ==  'Polynomial Regression':
+        #     equation = format_coefs(model.coef_.round(2))    
+        
+        
+        # Make predictions (optional)
+        predictions = model.predict(X_reg)
+        
+        # You can also view the predictions alongside the original DataFrame if desired
+        data_for_plot['predicted_count'] = predictions   
+
+    
+
+        # Plotly figure with the original data and the regression line
+        plotly_fig.add_trace(go.Scatter(
+            x=data_for_plot[x_axis],
+            y=data_for_plot['predicted_count'],
+            mode='lines',
+            name=r_column,  # if r_column in ['Decision Tree','k-NN'] else equation
+            line=dict(color='red', width=2)  # Customizing line color and width
+        ))
+
     return plotly_fig       
 
+
+def format_coefs(coefs):
+    equation_list = [f"{coef}x^{i}" for i, coef in enumerate(coefs)]
+    equation = "$" +  " + ".join(equation_list) + "$"
+
+    replace_map = {"x^0": "", "x^1": "x", '+ -': '- '}
+    for old, new in replace_map.items():
+        equation = equation.replace(old, new)
+
+    return equation
 
 """#=============================================================================
    #=============================================================================
@@ -524,37 +589,37 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
         margin=dict(l=150, r=20, t=20, b=20)
         )
         
-        # Update layout to include a slider
-        fig_json_serializable.update_layout(
-            updatemenus=[{
-                'buttons': [
-                    {
-                        'label': 'Play',
-                        'method': 'animate',
-                        'args': [None, {
-                            'frame': {'duration': 1000, 'redraw': True},
-                            'mode': 'immediate',
-                            'transition': {'duration': 300}
-                        }]
-                    },
-                    {
-                        'label': 'Pause',
-                        'method': 'animate',
-                        'args': [[None], {
-                            'frame': {'duration': 0, 'redraw': True},
-                            'mode': 'immediate',
-                            'transition': {'duration': 0}
-                        }]
-                    }
-                ],
-                'direction': 'down',
-                'showactive': False,
-                'x': 0.1,
-                'xanchor': 'left',
-                'y': 1.1,
-                'yanchor': 'top',
-            }]
-        )
+        # # Update layout to include a slider
+        # fig_json_serializable.update_layout(
+        #     updatemenus=[{
+        #         'buttons': [
+        #             {
+        #                 'label': 'Play',
+        #                 'method': 'animate',
+        #                 'args': [None, {
+        #                     'frame': {'duration': 1000, 'redraw': True},
+        #                     'mode': 'immediate',
+        #                     'transition': {'duration': 300}
+        #                 }]
+        #             },
+        #             {
+        #                 'label': 'Pause',
+        #                 'method': 'animate',
+        #                 'args': [[None], {
+        #                     'frame': {'duration': 0, 'redraw': True},
+        #                     'mode': 'immediate',
+        #                     'transition': {'duration': 0}
+        #                 }]
+        #             }
+        #         ],
+        #         'direction': 'down',
+        #         'showactive': False,
+        #         'x': 0.1,
+        #         'xanchor': 'left',
+        #         'y': 1.1,
+        #         'yanchor': 'top',
+        #     }]
+        # )
 
 
 

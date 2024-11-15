@@ -380,6 +380,43 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
     return df
 
 
+def update_dataframe(df, col, val, n_val):
+    
+    """
+    Goal: 
+    - Update the DataFrame.
+    
+    Parameters:
+    - df: DataFrame to update.
+    - col: List of columns to update in the DataFrame.
+    - val: The value which already exist in the dataframe.
+    - n_val: The value to add in the dataframe in each cell which doesn't contain val.
+    
+    Returns:
+    - df: DataFrame updated.
+    """        
+
+    # Iterate through each specified column
+    for column in col:
+        # Check if the column exists in the DataFrame
+        if column in df.columns:
+            # Update cells based on specified conditions
+            df[column] = df[column].apply(lambda x: 
+                x + ','+n_val if isinstance(x, str) and x and val not in x else x)
+    
+    return df
+
+    
+    # # Iterate through each specified column
+    # for column in col:
+    #     # Check if the column exists in the DataFrame
+    #     if column in df.columns:
+    #         # Update cells that do not contain 'val'
+    #         df[column] = df[column].apply(lambda x: n_val if x != val else x)
+    
+    # return df    
+
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
