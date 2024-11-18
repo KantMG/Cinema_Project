@@ -117,88 +117,27 @@ body {
     width: 100%; /* Full-width container */
 }
 
-/* Targeting dropdowns specifically with both classes */
-.dash-dropdown.dynamic-width {
-    background-color: #1e1e1e !important; /* Ensure background is applied */
-    color: #f8f9fa !important; /* Ensure text color remains white */
-    border: 1px solid #555 !important; /* Consistent dark border */
-    border-radius: 5px !important; /* Rounded corners */
+
+
+/* Specific styles for the selected value in the dropdown */
+.dash-dropdown .Select-control {
+    background-color: #1e1e1e !important; /* Background */
+    color: #f8f9fa !important; /* Text color */
     box-shadow: none !important; /* Remove box shadow */
 }
 
-
-/* Selected value in the dropdown */
-.dash-dropdown.dynamic-width .Select-value {
-    background-color: #1e1e1e !important; /* Match dropdown background */
-    color: white !important; /* Ensure selected value is white */
-    padding: 5px 10px; /* Adjust padding values */
-    display: flex; /* Use flexbox */
-    align-items: center; /* Center vertically */
-    justify-content: center; /* Center horizontally */
-}
-/* Ensure no shading effect occurs on selected state */
-.dash-dropdown.dynamic-width .Select-value.is-selected {
-    background-color: #1e1e1e !important; /* Same as dropdown background */
-    color: white !important; /* Ensure text remains white */
-}
-.dash-dropdown.dynamic-width .Select-value.is-focused {
-    background-color: #1e1e1e !important; /* Same as dropdown background */
-    color: white !important;
-}
-
-/* Resetting dropdown control styles for selected value */
-.dash-dropdown.dynamic-width .Select-control {
-	box-shadow: none !important; /* Remove box shadow */
-    background-color: #1e1e1e !important; /* Match dropdown background */
-    color: white !important; /* Set text color to white */
-}
-/* Setting styles for when the Select is focused */
-.dash-dropdown.dynamic-width .Select-control.is-focused {
-    background-color: #1e1e1e !important; /* Background when focused */
-    color: white !important; /* Text color when focused */
-    border: 1px solid #FFC300 !important; /* Optional: Highlight border color on focus */
-}
-/* Setting styles for when the dropdown is opened */
-.dash-dropdown.dynamic-width .Select-control.is-open {
-    background-color: #1e1e1e !important; /* Background when dropdown is opened */
-    color: white !important; /* Text color when dropdown is opened */
-}
-
-
 /* Styles for dropdown menu options */
-.dash-dropdown.dynamic-width .Select-menu-outer {
+.dash-dropdown .Select-menu {
     background-color: #1e1e1e !important; /* Menu background color */
     color: white !important; /* Menu text color */
 }
 
-
-/* Individual options */
-.dash-dropdown.dynamic-width .Select-option {
-    background-color: #1e1e1e !important; /* Option background color */
-    color: white !important; /* Text color */
-}
-/* Option hover state */
-.dash-dropdown.dynamic-width .Select-option:hover {
-    background-color: #333 !important; /* Background on hover */
-    color: white !important; /* Ensure text remains white on hover */
-}
-/* Highlighted option when focused */
-.dash-dropdown.dynamic-width .Select-option.is-focused {
-    background-color: #FFC300 !important; /* Highlight color */
-    color: white !important; /* Ensure text remains white */
-}
-/* Disabled option styles */
-.dash-dropdown.dynamic-width .Select-option.is-disabled {
-    background-color: #1e1e1e !important; /* Same background as others */
-    color: rgba(255, 255, 255, 0.5) !important; /* Lighter color for disabled */
-    cursor: not-allowed; /* Not allowed cursor */
+/* Styling for selected value in the dropdown control */
+.dash-dropdown .Select-value {
+    background-color: #1e1e1e !important; /* Match dropdown background */
+    color: #f8f9fa !important; /* Ensure selected value is white */
 }
 
-
-/* Placeholder text styles */
-.dash-dropdown.dynamic-width .Select-placeholder {
-    color: rgba(255, 255, 255, 0.5) !important; /* Light color for placeholder */
-}
 
 /* End Dropdowns classe */
 

@@ -98,7 +98,7 @@ List_col_exclude_tab2 = ["tconst"]
 
 
 List_dim = ["1D", "2D", "3D"]
-List_graph_type = ["Histogram", "Curve", "Scatter", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
+List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
 
 
 selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"] #, "directors", "writers"
@@ -352,6 +352,7 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
     return is_open
 
 
+
 @app.callback(
     Output('y-dropdown-tab-2', 'options'),
     [Input('x-dropdown-tab-2', 'value')]+
@@ -458,7 +459,7 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
 
 
 @app.callback(
-    Output('graph-output-tab-2', 'figure'),
+    Output('graph-output-tab-2', 'figure'), Output('figure-store-tab-2', 'data'),
     [Input('tabs', 'value'),
      Input('x-dropdown-tab-2', 'value'),
      Input('y-dropdown-tab-2', 'value'),
@@ -468,12 +469,17 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input('Dim-dropdown-tab-2', 'value'),
      Input("dropdown-regression-tab-2", "value"),
      Input("order-regression-tab-2", "value"),
-     Input("submit-button-regression-tab-2", "n_clicks")] +
-    [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2]
-)
-def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, sub_bot_reg_value, *args):
+     Input("submit-button-regression-tab-2", "n_clicks"),
+     Input("hide-dropdowns", "n_clicks")] +
+    [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2],
+    State('graph-output-tab-2', 'figure'),
+    State('figure-store-tab-2', 'data')
+    )
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, sub_bot_reg_value, hide_drop_fig, *args):
     print()
     print(colored("------------ callback update_graph_tab2 ------------", "red"))
+    current_fig = args[-2]
+    data_for_plot = args[-1]
 
     ctx = dash.callback_context
     # Print out which component triggered the callback for debugging
@@ -482,6 +488,27 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     print()
     if triggered_id == "dropdown-regression-tab-2" or triggered_id == "order-regression-tab-2":
         return dash.no_update
+    
+    if triggered_id == "submit-button-regression-tab-2":
+        return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, current_fig, data_for_plot)
+    
+    if  triggered_id == "hide-dropdowns":
+        
+        fig_json_serializable = go.Figure(current_fig)
+        
+        if hide_drop_fig % 2 == 1:  # Check if the button has been clicked an odd number of times
+            # Remove the dropdowns
+            print(hide_drop_fig, "1")
+            # fig_json_serializable.update_layout(updatemenus=[])
+            fig_json_serializable["layout"]["updatemenus"] = []
+            print(fig_json_serializable)
+        else:
+            print(hide_drop_fig, "2")
+            # Restore dropdowns
+            fig_json_serializable.update_layout(updatemenus=fig_json_serializable["layout"]["updatemenus"])
+            print(fig_json_serializable)
+            
+        return fig_json_serializable, data_for_plot
     
     # Load the Dask DataFrame from Parquet
     print("Active Tab=", selected_tab)
@@ -497,7 +524,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         # else:
         #     stored_df1 = dd.read_parquet('temp_df1.parquet')
         
-    filter_values = list(args[0:])
+    filter_values = list(args[0:-2])
     filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
     df1_filtered = od.apply_filter(df1, filter_values)
     
@@ -505,8 +532,8 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     print("filter_values=",filter_values)
     print("stored_df1=", df1)
     return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, df1_filtered, Large_file_memory)
-  
-    
+
+
 """
 # =============================================================================
 # =============================================================================
@@ -693,7 +720,7 @@ def update_func_dropdown_tab3(selected_y, selected_tab):
     dropdown_inputs_fig_tab3,
     State('stored-df2', 'data')
 )
-def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, *args):
+def update_graph_tab3(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, func_dropdown_value, graph_dropdown_value, dim_dropdown_value, *args):
     print()
     print(colored("------------ callback update_graph_tab3 ------------", "red")) 
     # selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig_tab3)}
@@ -788,8 +815,19 @@ def update_graph_utility(x_column, y_column, z_column, func_column, graph_type, 
         # Apply filters on the dataframe
         # filtered_data_graph = od.apply_filter(filtered_data_graph, selected_values)
         # Create the figure based on filtered data
-    fig = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order, large_file_memory)
-    return fig
+    fig, data_for_plot = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order, large_file_memory)
+    # print("fig=",fig)
+    # print("data_for_plot=",data_for_plot)
+    return fig, data_for_plot
+
+def update_graph_minor_change_utility(x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order, fig_json_serializable, data_for_plot):
+    """
+    Utility function to update a graph based on the provided parameters.
+    """
+    fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order)
+    # print("fig=",fig)
+    # print("data_for_plot=",data_for_plot)
+    return fig, data_for_plot
 
 # =============================================================================
 # End Utility Function for Graphs

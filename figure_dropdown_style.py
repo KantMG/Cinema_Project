@@ -82,7 +82,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     function_on_y = ["Avg"]
     
     # Get the type of graph
-    graph_type = ["Histogram", "Curve", "Scatter", "Colormesh"]
+    graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh"]
 
     # Get the graph dimension
     dim_type = ["1D", "2D", "3D"]
@@ -96,6 +96,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
         'width': '160px',  # Set a consistent width
         'height': '40px',  # Set a consistent width
         'borderRadius': '5px',  # Optional: Add rounded corners
+        'backgroundColor': '#1e1e1e',
+        'color': '#f8f9fa'
     }
     
     dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}
@@ -114,7 +116,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         options=[{'label': val, 'value': val} for val in dim_type],
                         value='1D',  # Set default to "All", meaning no filtering
                         style=uniform_style,
-                        className='dash-dropdown dynamic-width',
+                        className='dash-dropdown',
                         clearable=True
                     )
                 ]
@@ -129,7 +131,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         options=[{'label': val, 'value': val} for val in graph_type],
                         value='Histogram',  # Set default to "All", meaning no filtering
                         style=uniform_style,
-                        className='dash-dropdown dynamic-width',
+                        className='dash-dropdown',
                         clearable=True
                     )
                 ]
@@ -144,7 +146,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         options=[{'label': val, 'value': val} for val in function_on_y],
                         # value=None,
                         style=uniform_style,
-                        className='dash-dropdown dynamic-width',
+                        className='dash-dropdown',
                         clearable=True
                     )
                 ]
@@ -159,7 +161,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         options=[{'label': val, 'value': val} for val in columns],
                         # value=None,
                         style=uniform_style,
-                        className='dash-dropdown dynamic-width',
+                        className='dash-dropdown',
                         clearable=True
                     )
                 ]
@@ -174,7 +176,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         options=[{'label': val, 'value': val} for val in columns],
                         # value=None,
                         style=uniform_style,
-                        className='dash-dropdown dynamic-width',
+                        className='dash-dropdown',
                         clearable=True
                     )
                 ]
@@ -189,7 +191,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         options=[{'label': val, 'value': val} for val in columns],
                         # value=None,
                         style=uniform_style,
-                        className='dash-dropdown dynamic-width',
+                        className='dash-dropdown',
                         clearable=True
                     )
                 ]
@@ -232,7 +234,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
     for col in columns:
         dtype = df[col].dtype
         # dropdown_style = {**dark_dropdown_style, **uniform_style}  #, 'width': f'{column_widths[col]}px'
-        dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
+        dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box', 'backgroundColor': '#1e1e1e', 'color': '#f8f9fa'}
         
         dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'margin': '2px 0'}  # Vertical alignment and spacing
         
@@ -269,7 +271,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
                         id=f'fig-dropdown-{col}-'+tab,
                         options=[{'label': val, 'value': val} for val in unique_values],
                         style=dropdown_style,
-                        className='dash-dropdown dynamic-width',
+                        className='dash-dropdown',
                         multi=True,
                         clearable=True
                     )
@@ -363,10 +365,8 @@ def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, un
 
 def button_dropdown_function(text_button, id_button, id_created_func_name, id_created_func, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
     
-    botom_style = uniform_style
-    
-    botom_style['marginRight'] = 'auto'
-    
+    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+        
     return html.Div([
     dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
     dbc.Modal(
@@ -374,13 +374,14 @@ def button_dropdown_function(text_button, id_button, id_created_func_name, id_cr
             dbc.ModalHeader(dbc.ModalTitle("  Create Function")),
             dbc.ModalBody(
                 [
-                    dcc.Input(id=id_created_func_name, type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter function name"),
+                    dcc.Input(id=id_created_func_name, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter function name"),
                     html.Span(":", style={'margin': '0 10px'}),
-                    dcc.Input(id=id_created_func, type="text", style=uniform_style, className='dash-input dynamic-width', placeholder="Enter operation (e.g., A + B)"),
+                    dcc.Input(id=id_created_func, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter operation (e.g., A + B)"),
                 ]
             ),
+            html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
-                dbc.Button("Submit", id=id_submit_button, n_clicks=0, style=botom_style, className='button')
+                dbc.Button("Submit", id=id_submit_button, n_clicks=0, className='button')
             ),
         ],
         id=id_modal,
@@ -400,10 +401,8 @@ def button_dropdown_function(text_button, id_button, id_created_func_name, id_cr
 
 def button_dropdown_regression(text_button, id_button, id_dropdown, id_order_reg, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
 
-    dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
+    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
         
-
-    
     return html.Div([
     dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
     dbc.Modal(
@@ -413,16 +412,17 @@ def button_dropdown_regression(text_button, id_button, id_dropdown, id_order_reg
                 [   
                     dcc.Dropdown(
                         id=id_dropdown,
-                        options=["Linear Regression", "Decision Tree", "k-NN", "Polynomial Regression"],
+                        options=["Linear Regression", "Decision Tree", "k-NN", "Polynomial Regression", "Savitzky-Golay Filter"],
                         # value='Decision Tree',
-                        clearable=False,
-                        style=uniform_style,
-                        className='dash-dropdown dynamic-width'
+                        clearable=True,
+                        style=dropdown_style,
+                        className='dash-dropdown'
                     ),
                     html.Span(":", style={'margin': '0 10px'}),
-                    dcc.Input(id=id_order_reg, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter a number"),
+                    dcc.Input(id=id_order_reg, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter an order if needed"),
                 ]
             ),
+            html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
                 dbc.Button("Submit", id=id_submit_button, n_clicks=0, className='button')
             ),
@@ -478,7 +478,8 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                 children=[
                     # Graph on the left
                     html.Div(
-                        [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'})], 
+                        [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'}),
+                         dcc.Store(id='figure-store-tab-2', data={})], 
                         style={'margin-left': '20px', 'width': '70%'}
                     ),
                     # Dropdowns and heading in a vertical column on the right
@@ -523,7 +524,18 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                                     'justify-content': 'flex-start',
                                     'gap': '10px',  # Add spacing between dropdowns
                                 }
-                            ),                                                        
+                            ),  
+                            
+                            html.Span("", style={'margin': '0 10px'}),
+                            
+                            html.Div(
+                                html.Button("Hide Dropdowns on figure", id='hide-dropdowns', n_clicks=0, className='button'),
+                                style={
+                                    'display': 'flex',
+                                    'justify-content': 'flex-start',
+                                    'gap': '10px',  # Add spacing between dropdowns
+                                }
+                            ),  
                         ]
                     )
                 ]

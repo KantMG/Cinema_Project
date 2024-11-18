@@ -25,11 +25,11 @@ import pandas as pd
 import numpy as np
 
 from sklearn.model_selection import train_test_split
-from sklearn import linear_model, tree, neighbors
+from sklearn import linear_model as lm, tree, neighbors
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression
-
+from scipy import signal
 
 from termcolor import colored
 
@@ -100,7 +100,7 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column
     
     # Create the label of the figure
     figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, f_column, g_column, d_column)
-
+    
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
         Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, f_column, g_column, Large_file_memory)
@@ -108,15 +108,17 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column
         print(data_for_plot)
         print()
         # Add the core of the figure
-        fig_json_serializable = figure_plotly(fig_json_serializable, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot)
-
+        fig_json_serializable, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel)
+    
     # Update the figure layout
     fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column)       
     
     plt.close()
     # =============================================================================
     print(colored("=============================================================================", "green"))
-    return fig_json_serializable
+    if x_column is None: 
+        return fig_json_serializable, None
+    return fig_json_serializable, data_for_plot.to_dict(orient='records')
 
 
 """#=============================================================================
@@ -186,7 +188,7 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
    #============================================================================="""
 
 
-def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot):
+def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel):
 
     """
     Goal: Create the plot inside the figure regarding the inputs.
@@ -303,6 +305,21 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     color=y_column if "Movie" not in g_column else None,
                     animation_frame=y_column if "Movie" in g_column else None
                     )
+
+            if "Boxes" in g_column:
+                if x_column in df_col_string:
+                    x_axis = y_column
+                    xlabel = y_column
+                else:
+                    y_axis = y_column
+                    ylabel = y_column
+                
+                plotly_fig = px.box(
+                    data_for_plot, 
+                    x=x_axis, 
+                    y=y_axis,
+                    points=False)
+
         else:
 
             if y_column in df_col_string:
@@ -363,12 +380,40 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                 )
 
     if d_column=="2D" and g_column=="Colormesh":        
-        plotly_fig = px.density_heatmap(
+        # plotly_fig = px.density_heatmap(
+        #     data_for_plot, 
+        #     x=x_column, 
+        #     y=y_column, 
+        #     nbinsx=100, nbinsy=100, 
+        #     z='count',
+        #     color_continuous_scale="Viridis")
+        # plotly_fig.add_trace(go.Heatmap(z=data_for_plot.values.tolist(), colorscale="Viridis"))
+
+        px_fig = px.density_heatmap(
             data_for_plot, 
             x=x_column, 
             y=y_column, 
-            nbinsx=100, nbinsy=100, 
+            # nbinsx=100, nbinsy=100, 
+            z='count',
             color_continuous_scale="Viridis")
+
+        # Get the z data from the px figure
+        z_data = px_fig.data[0].z  # Access the z values (the counts)
+        x_values = px_fig.data[0].x  # Access the x values (start years)
+        y_values = px_fig.data[0].y  # Access the y values (runtime minutes)
+        
+        # Create a Go Figure and add the Heatmap trace
+        plotly_fig = go.Figure()
+        
+        # Add Heatmap trace
+        plotly_fig.add_trace(go.Heatmap(
+            x=x_values,
+            y=y_values,
+            z=z_data,
+            colorscale='Viridis'
+        ))
+
+
 
                     
     if d_column == "3D" and g_column == "Histogram":
@@ -388,17 +433,50 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
         fig_y_value=[str(val) for val in y_values]  # Cust
 
 
+    return plotly_fig, xlabel, ylabel, zlabel  
 
-    if r_column != None:
 
-        Dict_regression_models = {'Linear Regression': linear_model.LinearRegression,
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order):
+    
+    
+    plotly_fig = go.Figure(fig_json_serializable)
+    
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+    
+    # Define a list of colors for the bars
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2'] 
+    
+    x_axis = x_column
+    y_axis = 'count'
+    if x_column in df_col_string:
+        x_axis = 'count'
+        y_axis = x_column    
+    
+    print(x_axis,y_axis)    
+
+    # Creating a DataFrame
+    data_for_plot = pd.DataFrame(data_for_plot)
+    
+    # Resetting the index to have a clean index
+    data_for_plot.reset_index(drop=True, inplace=True)
+
+    
+    if reg_type != "Savitzky-Golay Filter":
+
+        Dict_regression_models = {'Linear Regression': lm.LinearRegression,
                   'Decision Tree': tree.DecisionTreeRegressor,
                   'k-NN': neighbors.KNeighborsRegressor,
-                  'Polynomial Regression': lambda: make_pipeline(PolynomialFeatures(degree=o_column), linear_model.LinearRegression())  # Use a lambda to return a new instance
+                  'Polynomial Regression': lambda: make_pipeline(PolynomialFeatures(degree=reg_order), lm.LinearRegression())  # Use a lambda to return a new instance
                   }        
 
         # Instantiate the model
-        model = Dict_regression_models[r_column]()
+        model = Dict_regression_models[reg_type]()
         
         print("model=",model)
         
@@ -409,22 +487,20 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
         print(y_reg)
         # Fit the model
         model.fit(X_reg, y_reg)
-
-
-        # # Check if the model is polynomial and handle it accordingly
-        # if r_column == 'Polynomial Regression':
-        #     linear_model = model.named_steps['linearregression']  # Access the linear regression step
-        #     print(f"Intercept: {linear_model.intercept_}")
-        #     print(f"Coefficients: {linear_model.coef_}")
-        #     equation = format_coefs(linear_model.coef_.round(2))
-            
-        # elif r_column == 'Linear Regression':
-        #     print(f"Intercept: {model.intercept_}")
-        #     print(f"Coefficient: {model.coef_[0]}")
-        #     equation = f"{model.coef_[0]} * x + {model.intercept_}"
-
-        # if r_column == "Linear Regression" or r_column ==  'Polynomial Regression':
-        #     equation = format_coefs(model.coef_.round(2))    
+        
+        round_coef = 2
+        # Get coefficients
+        if reg_type == 'Linear Regression':
+            # Output coefficients for Linear Regression
+            print("Coefficients:", model.coef_)
+            # rounded_coefs = [round(coef, round_coef) for coef in model.coef_]
+            equation = format_coefs(model.coef_, reg_type)
+        elif reg_type == 'Polynomial Regression':
+            # Output coefficients for Polynomial Regression
+            linear_model = model.named_steps['linearregression']
+            # rounded_coefs = [round(coef, round_coef) for coef in linear_model.coef_]
+            print("Coefficients:", linear_model.coef_)
+            equation = format_coefs(linear_model.coef_, reg_type)
         
         
         # Make predictions (optional)
@@ -433,29 +509,55 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
         # You can also view the predictions alongside the original DataFrame if desired
         data_for_plot['predicted_count'] = predictions   
 
-    
 
         # Plotly figure with the original data and the regression line
         plotly_fig.add_trace(go.Scatter(
             x=data_for_plot[x_axis],
             y=data_for_plot['predicted_count'],
             mode='lines',
-            name=r_column,  # if r_column in ['Decision Tree','k-NN'] else equation
+            name=reg_type if reg_type in ['Decision Tree','k-NN'] else equation,
+            line=dict(color='red', width=2)  # Customizing line color and width
+        ))
+    
+    else:
+        
+        window_lenght = len(data_for_plot[x_axis])//5
+        print("window_lenght=",window_lenght)
+        
+        plotly_fig.add_trace(go.Scatter(
+            x=data_for_plot[x_axis],
+            y=signal.savgol_filter(data_for_plot[y_axis],
+                                   window_lenght, # window size used for filtering
+                                   reg_order), # order of fitted polynomial
+            mode='lines',
+            name=reg_type,
             line=dict(color='red', width=2)  # Customizing line color and width
         ))
 
-    return plotly_fig       
+        
+    fig_json_serializable = plotly_fig.to_dict()
+        
+    plt.close()
+    # =============================================================================
+    print(colored("=============================================================================", "green"))
+    
+    return fig_json_serializable, data_for_plot.to_dict(orient='records') 
 
 
-def format_coefs(coefs):
-    equation_list = [f"{coef}x^{i}" for i, coef in enumerate(coefs)]
-    equation = "$" +  " + ".join(equation_list) + "$"
-
-    replace_map = {"x^0": "", "x^1": "x", '+ -': '- '}
-    for old, new in replace_map.items():
-        equation = equation.replace(old, new)
-
+def format_coefs(coefs, reg_type, x_variable='x'):
+    round_coef = 2
+    if reg_type == 'Linear Regression':
+        # For linear regression, the equation is in the form: y = m*x + b
+        equation = r"y = " + " + ".join([f"{coef:.{round_coef}f}*{x_variable}^{i}" if i > 0 
+                                           else f"{coef:.{round_coef}f}" 
+                                           for i, coef in enumerate(coefs)])
+    elif reg_type == 'Polynomial Regression':
+        # For polynomial regression, the equation is constructed similarly
+        equation = r"y = " + " + ".join([f"{coef:.{round_coef}f}*{x_variable}^{i}" for i, coef in enumerate(coefs)])
+    else:
+        equation = "Unsupported regression type"
     return equation
+
 
 """#=============================================================================
    #=============================================================================
@@ -583,44 +685,104 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
                     )
             )
         )
+        
+    if g_column == 'Colormesh':    
 
+        # Update 3D scene options
+        fig_json_serializable.update_scenes(
+            aspectratio=dict(x=1, y=1, z=0.7),
+            aspectmode="manual"
+        )
+        
+        # Add dropdowns
+        button_layer_1_height = 1.08
+        
+        updatemenus=[
+            dict(
+                buttons=list([
+                    dict(
+                        args=["colorscale", "Viridis"],
+                        label="Viridis",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["colorscale", "Cividis"],
+                        label="Cividis",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["colorscale", "Blues"],
+                        label="Blues",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["colorscale", "Greens"],
+                        label="Greens",
+                        method="restyle"
+                    ),
+                ]),
+                direction="down",
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.1,
+                xanchor="left",
+                y=button_layer_1_height,
+                yanchor="top"
+            ),
+            dict(
+                buttons=list([
+                    dict(
+                        args=["reversescale", False],
+                        label="False",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=["reversescale", True],
+                        label="True",
+                        method="restyle"
+                    )
+                ]),
+                direction="down",
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.37,
+                xanchor="left",
+                y=button_layer_1_height,
+                yanchor="top"
+            ),
+            dict(
+                buttons=list([
+                    dict(
+                        args=[{"contours.showlines": False, "type": "contour"}],
+                        label="Hide lines",
+                        method="restyle"
+                    ),
+                    dict(
+                        args=[{"contours.showlines": True, "type": "contour"}],
+                        label="Show lines",
+                        method="restyle"
+                    ),
+                ]),
+                direction="down",
+                pad={"r": 10, "t": 10},
+                showactive=True,
+                x=0.58,
+                xanchor="left",
+                y=button_layer_1_height,
+                yanchor="top"
+            ),
+        ]
+    
+        fig_json_serializable.update_layout(
+        updatemenus=updatemenus
+        )
+        
+        
     if g_column == 'Histogram Movie':
         fig_json_serializable.update_layout(
         margin=dict(l=150, r=20, t=20, b=20)
         )
         
-        # # Update layout to include a slider
-        # fig_json_serializable.update_layout(
-        #     updatemenus=[{
-        #         'buttons': [
-        #             {
-        #                 'label': 'Play',
-        #                 'method': 'animate',
-        #                 'args': [None, {
-        #                     'frame': {'duration': 1000, 'redraw': True},
-        #                     'mode': 'immediate',
-        #                     'transition': {'duration': 300}
-        #                 }]
-        #             },
-        #             {
-        #                 'label': 'Pause',
-        #                 'method': 'animate',
-        #                 'args': [[None], {
-        #                     'frame': {'duration': 0, 'redraw': True},
-        #                     'mode': 'immediate',
-        #                     'transition': {'duration': 0}
-        #                 }]
-        #             }
-        #         ],
-        #         'direction': 'down',
-        #         'showactive': False,
-        #         'x': 0.1,
-        #         'xanchor': 'left',
-        #         'y': 1.1,
-        #         'yanchor': 'top',
-        #     }]
-        # )
-
 
 
     if d_column == "3D":
