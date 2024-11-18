@@ -19,7 +19,7 @@ Created on Mon Oct  7 17:50:57 2024
 
 
 import Function_dataframe as fd
-
+import pandas as pd
 
 """#=============================================================================
    #=============================================================================
@@ -79,12 +79,27 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, f_column, g
     #Case where z_column is not None
     else:
         # Calculate average z_column and count for each (x_column, y_column) combination
-        data_for_plot = df_temp.groupby([x_column, y_column]).agg(
-            avg_z_column=('{}'.format(z_column), 'mean'),
-            count=('{}'.format(z_column), 'size')
-        ).reset_index()
-        avg_col_name = 'avg_' + z_column
-        data_for_plot.rename(columns={'avg_z_column': avg_col_name}, inplace=True)
+        
+        if f_column == "Avg" or f_column is None:
+            data_for_plot = df_temp.groupby([x_column, y_column]).agg(
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                count=('{}'.format(z_column), 'size')
+            ).reset_index()
+            avg_col_name = 'avg_' + z_column
+            data_for_plot.rename(columns={'avg_z_column': avg_col_name}, inplace=True)
+        elif f_column == "Weight on y":
+
+            def calculate_stats(group):
+                weighted_avg = (group[y_column] * group[z_column]).sum() / group[z_column].sum()
+                ratings_std = group[y_column].std() if group[z_column].count() > 1 else 0
+                n_votes = group[z_column].sum()
+                standard_error = ratings_std / (n_votes ** 0.5) if n_votes > 0 else 0
+                return pd.Series({y_column: weighted_avg, 'error': standard_error})
+        
+            data_for_plot = df_temp.groupby(x_column).apply(calculate_stats).reset_index()
+
+
+            
     
     if x_column in df_col_string:
         data_for_plot = data_for_plot.sort_values(by='count', ascending=False)

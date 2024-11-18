@@ -154,10 +154,12 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
         xlabel = x_column
         
         if d_column == "1D":
-            if str(f_column)=='None':
+            if str(f_column)=='None' or str(f_column)=='Weight on y':
                 ylabel = 'Number of movies'
-            elif str(f_column)=='Avg':
+            elif str(f_column)=='Avg' and z_column is None:
                 ylabel = 'Average '+y_column+' of the movies'
+            elif str(f_column)=='Avg' and z_column is not None:
+                ylabel = 'Number of movies'          
             zlabel = "None"
         
         elif d_column == "2D":
@@ -304,7 +306,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     # log_x=True,
                     color=y_column if "Movie" not in g_column else None,
                     animation_frame=y_column if "Movie" in g_column else None
-                    )
+                    )  
+
 
             if "Boxes" in g_column:
                 if x_column in df_col_string:
@@ -333,7 +336,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                 data_for_plot = group_y_values(data_for_plot, z_column, n)
             
             y_values = data_for_plot[y_column].unique()
-            if g_column=="Histogram":
+            if g_column=="Histogram" and f_column == "Avg":
                plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_column, 
@@ -341,7 +344,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                    color=y_column if "Movie" not in g_column else None,
                    animation_frame=y_column if "Movie" in g_column else None
                    )
-            if g_column=="Curve":
+            if g_column=="Curve" and f_column == "Avg":
                 plotly_fig = go.Figure()
                 # Add traces for each unique group
                 for key in data_for_plot[y_column].unique():
@@ -353,7 +356,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                         name=key,
                         line=dict(width=group['avg_'+z_column].mean())  # Set line width based on avg thickness
                     ))
-            if g_column=="Scatter":
+            if g_column=="Scatter" and f_column == "Avg":
                 plotly_fig = px.scatter(
                     data_for_plot,
                     x=x_column,
@@ -363,6 +366,32 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     color=y_column if "Movie" not in g_column else None,
                     animation_frame=y_column if "Movie" in g_column else None
                 )
+
+            if g_column=="Histogram" and f_column == "Weight on y":
+                plotly_fig = px.bar(
+                    data_for_plot,
+                    x=x_axis,
+                    y=y_column,
+                    title='Weighted Average Rating Over the Years',
+                    error_y='error'
+                )             
+            if g_column=="Curve" and f_column == "Weight on y":
+                plotly_fig = px.line(
+                    data_for_plot,
+                    x=x_axis,
+                    y=y_column,
+                    title='Weighted Average Rating Over the Years',
+                    error_y='error'
+                )      
+            if g_column=="Scatter" and f_column == "Weight on y":
+                plotly_fig = px.scatter(
+                    data_for_plot,
+                    x=x_axis,
+                    y=y_column,
+                    title='Weighted Average Rating Over the Years',
+                    error_y='error'
+                )                  
+
 
 
     if g_column=="Pie": #d_column=="2D" and 

@@ -79,7 +79,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     columns = df.columns
     
     # Get the list of y function
-    function_on_y = ["Avg"]
+    function_on_y = ["Avg", "Weight on y"]
     
     # Get the type of graph
     graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh"]

@@ -763,7 +763,7 @@ def update_func_dropdown_utility(selected_y, df_col_numeric):
     Utility function to generate dropdown options for the function based on the selected y-axis column.
     """
     # Get the list of y functions
-    function_on_y = ["Avg"]
+    function_on_y = ["Avg", "Weight on y"]
     
     if selected_y not in df_col_numeric:  # Check if y column is not numeric
         return []
