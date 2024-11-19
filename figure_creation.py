@@ -158,14 +158,14 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
             if x_column == 'count':
                 xlabel = 'Number of movies'
             elif 'avg_' in x_column:
-                xlabel = 'Average '+x_column[3:]+' of the movies'
+                xlabel = 'Average '+x_column[4:]+' of the movies'
             else:
                 xlabel = x_column
             
             if y_column == 'count':
                 ylabel = 'Number of movies'
             elif 'avg_' in y_column:
-                ylabel = 'Average '+y_column[3:]+' of the movies'              
+                ylabel = 'Average '+y_column[4:]+' of the movies'              
             else:
                 ylabel = y_column
             
@@ -173,12 +173,12 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
                 if z_column == 'count':
                     zlabel = 'Number of movies'
                 elif 'avg_' in z_column:
-                    zlabel = 'Average '+z_column[3:]+' of the movies'
+                    zlabel = 'Average '+z_column[4:]+' of the movies'
                 else:
                     zlabel = z_column
                     
                 if zf_column == 'Weight on y':
-                    ylabel = 'Average '+y_column[3:]+' of the movies'
+                    ylabel = 'Average '+z_column[4:]+' of the movies'
                     
             else:
                 zlabel = None
