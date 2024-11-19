@@ -71,7 +71,7 @@ cmaps = [('Perceptually Uniform Sequential', [
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, Large_file_memory):
+def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, r_column, o_column, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -81,7 +81,8 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
-    - f_column: Function to operate on df_temp[x_column,y_column]
+    - yf_column: Function to operate on y_column with the rest of the dataframe
+    - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
     - r_column: Type of regression for the data.
@@ -97,18 +98,18 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column
     # =============================================================================      
     # Create a Dash compatible Plotly graph figure
     fig_json_serializable = go.Figure()  # This figure can now be used with dcc.Graph in Dash
-    
+
     # Create the label of the figure
-    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, f_column, g_column, d_column)
+    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, True)  
     
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
-        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, f_column, g_column, Large_file_memory)
+        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory)
         print("The data ready to be ploted is")
         print(data_for_plot)
         print()
         # Add the core of the figure
-        fig_json_serializable, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel)
+        fig_json_serializable, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel)
     
     # Update the figure layout
     fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column)       
@@ -126,7 +127,7 @@ def create_figure(df, x_column, y_column, z_column, f_column, g_column, d_column
    #============================================================================="""
 
 
-def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
+def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, init):
 
     """
     Goal: Create the figure labels.
@@ -135,7 +136,8 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
     - x_column: Column in the dataframe (can be None).
     - y_column: Column in the dataframe (can be None).
     - z_column: Column in the dataframe (can be None).
-    - f_column: Function to operate on df_temp[x_column,y_column].
+    - yf_column: Function to operate on y_column with the rest of the dataframe
+    - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
 
@@ -149,33 +151,54 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
     df_col_string = ["genres", "directors", "writers", "category"]
     
-    if x_column is not None: 
-        figname = 'Movies over the ' + x_column
-        xlabel = x_column
-        
-        if d_column == "1D":
-            if str(f_column)=='None' or str(f_column)=='Weight on y':
-                ylabel = 'Number of movies'
-            elif str(f_column)=='Avg' and z_column is None:
-                ylabel = 'Average '+y_column+' of the movies'
-            elif str(f_column)=='Avg' and z_column is not None:
-                ylabel = 'Number of movies'          
-            zlabel = "None"
-        
-        elif d_column == "2D":
-            if g_column == 'Colormesh':
-                ylabel = y_column
+    if init == False:
+        if x_column is not None: 
+            figname = 'Movies over the ' + x_column
+    
+            if x_column == 'count':
+                xlabel = 'Number of movies'
+            elif 'avg_' in x_column:
+                xlabel = 'Average '+x_column[3:]+' of the movies'
             else:
-                ylabel = "None"
-            zlabel = "None"
+                xlabel = x_column
+            
+            if y_column == 'count':
+                ylabel = 'Number of movies'
+            elif 'avg_' in y_column:
+                ylabel = 'Average '+y_column[3:]+' of the movies'              
+            else:
+                ylabel = y_column
+            
+            if z_column is not None:
+                if z_column == 'count':
+                    zlabel = 'Number of movies'
+                elif 'avg_' in z_column:
+                    zlabel = 'Average '+z_column[3:]+' of the movies'
+                else:
+                    zlabel = z_column
+                    
+                if zf_column == 'Weight on y':
+                    ylabel = 'Average '+y_column[3:]+' of the movies'
+                    
+            else:
+                zlabel = None
 
-        else:
-            ylabel = y_column
-            zlabel = "None"
 
-    else: 
+            if d_column == "2D":
+                if g_column == 'Colormesh':
+                    ylabel = y_column
+                else:
+                    ylabel = "None"
+                zlabel = "None"
+    
+    
+        else: 
+            figname = 'No data selected'
+            xlabel, ylabel, zlabel = "None","None","None"
+    
+    else:
         figname = 'No data selected'
-        xlabel, ylabel, zlabel = "None","None","None"
+        xlabel, ylabel, zlabel = "None","None","None"        
     
     if x_column in df_col_string:
         xlabel_temp = xlabel
@@ -190,7 +213,7 @@ def label_fig(x_column, y_column, z_column, f_column, g_column, d_column):
    #============================================================================="""
 
 
-def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel):
+def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel):
 
     """
     Goal: Create the plot inside the figure regarding the inputs.
@@ -200,7 +223,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
-    - f_column: Function to operate on df_temp[x_column,y_column]
+    - yf_column: Function to operate on y_column with the rest of the dataframe
+    - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
     - r_column: Type of regression for the data.
@@ -219,36 +243,47 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
     
     legend = "None"
     
-    x_values = data_for_plot[x_column].unique()
-    # Check if all elements are either int or float
-    is_numeric = all(isinstance(x, (int, float)) for x in x_values)
-    if is_numeric:
-        x_values = np.array(x_values)
-        fig_x_value = x_values-min(x_values)
-    else:
-        fig_x_value = list(np.arange(len(x_values)))
-    
-    if str(y_column)!='None':
-        y_values = data_for_plot[y_column].unique()
-        # Check if all elements are either int or float
-        is_numeric = all(isinstance(y, (int, float)) for y in y_values)
-        if is_numeric:
-            y_values = np.array(y_values)
-            fig_y_value = y_values-min(y_values)
-        else:
-            fig_y_value = list(np.arange(len(y_values))) 
-    else:
-        y_values, fig_y_value = None, None
 
     x_axis = x_column
     y_axis = 'count'
+    z_axis = None
+    if str(y_column)!='None':
+        z_axis = y_column
     if x_column in df_col_string:
         x_axis = 'count'
         y_axis = x_column
 
+    if yf_column == "Avg":
+        z_axis = 'avg_' + y_column
+
+    if yf_column == "Avg on the ordinate":
+        x_axis = x_column
+        y_axis = 'avg_' + y_column
+        z_axis = 'count'
+        if x_column in df_col_string:
+            x_axis = 'avg_' + y_column
+            y_axis = x_column
+            z_axis = 'count'
+    
+    if z_column is not None and zf_column == "Avg":
+        t_axis = 'avg_' + z_column
+    
+
+    print("x_axis=", x_axis)
+    print("y_axis=", y_axis)
+    if str(y_column)!='None':
+        print("z_axis=", z_axis)
+    if str(z_column)!='None' and zf_column == "Avg":
+        print("t_axis=", t_axis)
+
+
+    # Rename the label of the figure
+    figname, xlabel, ylabel, zlabel = label_fig(x_axis, y_axis, z_axis, yf_column, zf_column, g_column, d_column, False)  
+
     if d_column=="1D": 
+        
         if str(y_column)=='None':
-                
+            
             if g_column=="Histogram":
                 plotly_fig = px.bar(
                     data_for_plot, 
@@ -269,6 +304,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     # log_x=True,
                     size_max=60
                     )
+        
+        #Case where y_column is None and z_column is None
         elif str(y_column)!='None' and str(z_column)=='None':
 
             if x_column in df_col_string:
@@ -278,7 +315,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
 
             if y_column in df_col_string:
                 # Grouping y_column values
-                n = 6  # Number of top categories to keep
+                n = 7  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
 
             if "Histogram" in g_column:
@@ -286,16 +323,17 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     data_for_plot, 
                     x=x_axis, 
                     y=y_axis,
-                    color=y_column if "Movie" not in g_column else None,
-                    animation_frame=y_column if "Movie" in g_column else None
+                    color=z_axis if "Movie" not in g_column else None,
+                    animation_frame=z_axis if "Movie" in g_column else None
                     )
             if "Curve" in g_column:
                 plotly_fig = px.line(
                     data_for_plot, 
                     x=x_axis, 
                     y=y_axis,
-                    color=y_column if "Movie" not in g_column else None,
-                    animation_frame=y_column if "Movie" in g_column else None
+                    color=z_axis if "Movie" not in g_column else None,
+                    animation_frame=z_axis if "Movie" in g_column else None,
+                    line_group=g_column if "Movie" in g_column else None
                     ) #symbol="country"
             if "Scatter" in g_column:
                 plotly_fig = px.scatter(
@@ -304,11 +342,9 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                     y=y_axis,
                     size_max=60,
                     # log_x=True,
-                    color=y_column if "Movie" not in g_column else None,
-                    animation_frame=y_column if "Movie" in g_column else None
+                    color=z_axis if "Movie" not in g_column else None,
+                    animation_frame=z_axis if "Movie" in g_column else None
                     )  
-
-
             if "Boxes" in g_column:
                 if x_column in df_col_string:
                     x_axis = y_column
@@ -316,35 +352,35 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                 else:
                     y_axis = y_column
                     ylabel = y_column
-                
                 plotly_fig = px.box(
                     data_for_plot, 
                     x=x_axis, 
                     y=y_axis,
                     points=False)
 
+        #Case where z_column is not None
         else:
-
+            
             if y_column in df_col_string:
                 # Grouping y_column values
-                n = 6  # Number of top categories to keep
+                n = 7  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
 
             if z_column in df_col_string:
                 # Grouping y_column values
-                n = 6  # Number of top categories to keep
+                n = 7  # Number of top categories to keep
                 data_for_plot = group_y_values(data_for_plot, z_column, n)
-            
-            y_values = data_for_plot[y_column].unique()
-            if g_column=="Histogram" and f_column == "Avg":
+                        
+            # y_values = data_for_plot[y_column].unique()
+            if g_column=="Histogram" and zf_column == "Avg":
                plotly_fig = px.bar(
                    data_for_plot, 
-                   x=x_column, 
-                   y='count',
-                   color=y_column if "Movie" not in g_column else None,
-                   animation_frame=y_column if "Movie" in g_column else None
+                   x=x_axis, 
+                   y=y_axis,
+                   color=z_axis if "Movie" not in g_column else None,
+                   animation_frame=z_axis if "Movie" in g_column else None
                    )
-            if g_column=="Curve" and f_column == "Avg":
+            elif g_column=="Curve" and zf_column == "Avg":
                 plotly_fig = go.Figure()
                 # Add traces for each unique group
                 for key in data_for_plot[y_column].unique():
@@ -356,41 +392,41 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
                         name=key,
                         line=dict(width=group['avg_'+z_column].mean())  # Set line width based on avg thickness
                     ))
-            if g_column=="Scatter" and f_column == "Avg":
+            elif g_column=="Scatter" and zf_column == "Avg":
                 plotly_fig = px.scatter(
                     data_for_plot,
-                    x=x_column,
-                    y='count',
-                    size='avg_'+z_column,
+                    x=x_axis,
+                    y=y_axis,
+                    size=t_axis,
                     size_max=60,
-                    color=y_column if "Movie" not in g_column else None,
-                    animation_frame=y_column if "Movie" in g_column else None
+                    color=z_axis if "Movie" not in g_column else None,
+                    animation_frame=z_axis if "Movie" in g_column else None
                 )
 
-            if g_column=="Histogram" and f_column == "Weight on y":
+            elif g_column=="Histogram" and zf_column == "Weight on y":
                 plotly_fig = px.bar(
                     data_for_plot,
                     x=x_axis,
-                    y=y_column,
-                    title='Weighted Average Rating Over the Years',
-                    error_y='error'
-                )             
-            if g_column=="Curve" and f_column == "Weight on y":
+                    y=z_axis,
+                    title='Weighted Average'+y_column+'Over the'+x_axis,
+                    error_y='standard_error'
+                )
+            elif g_column=="Curve" and zf_column == "Weight on y":
                 plotly_fig = px.line(
                     data_for_plot,
                     x=x_axis,
-                    y=y_column,
-                    title='Weighted Average Rating Over the Years',
-                    error_y='error'
-                )      
-            if g_column=="Scatter" and f_column == "Weight on y":
+                    y=z_axis,
+                    title='Weighted Average'+y_column+'Over the'+x_axis,
+                    error_y='standard_error'
+                )
+            elif g_column=="Scatter" and zf_column == "Weight on y":
                 plotly_fig = px.scatter(
                     data_for_plot,
                     x=x_axis,
-                    y=y_column,
-                    title='Weighted Average Rating Over the Years',
-                    error_y='error'
-                )                  
+                    y=z_axis,
+                    title='Weighted Average'+y_column+'Over the'+x_axis,
+                    error_y='standard_error'
+                )
 
 
 
@@ -398,26 +434,18 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
 
             if x_column in df_col_string:
                 # Grouping y_column values
-                n = 6  # Number of top categories to keep
+                n = 7  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, x_column, 'count', n)
 
-            x_values,fig_x_value,y_values,fig_y_value=None,None,None,None
+            # x_values,fig_x_value,y_values,fig_y_value=None,None,None,None
             plotly_fig = px.pie(
                 data_for_plot, 
                 values="count", 
                 names=x_column
                 )
 
-    if d_column=="2D" and g_column=="Colormesh":        
-        # plotly_fig = px.density_heatmap(
-        #     data_for_plot, 
-        #     x=x_column, 
-        #     y=y_column, 
-        #     nbinsx=100, nbinsy=100, 
-        #     z='count',
-        #     color_continuous_scale="Viridis")
-        # plotly_fig.add_trace(go.Heatmap(z=data_for_plot.values.tolist(), colorscale="Viridis"))
-
+    if d_column=="2D" and g_column=="Colormesh":     
+        
         px_fig = px.density_heatmap(
             data_for_plot, 
             x=x_column, 
@@ -442,8 +470,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
             colorscale='Viridis'
         ))
 
-
-
                     
     if d_column == "3D" and g_column == "Histogram":
         
@@ -456,12 +482,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
         plotly_fig = go.Figure(
             data=[go.Surface(z=pivoted_data.values, x=pivoted_data.columns, y=pivoted_data.index)])
 
-        x_values=pivoted_data.columns  # Explicitly set tick positions
-        fig_x_value=[str(val) for val in x_values]  # Cust
-        y_values=pivoted_data.index  # Explicitly set tick positions
-        fig_y_value=[str(val) for val in y_values]  # Cust
-
-
     return plotly_fig, xlabel, ylabel, zlabel  
 
 
@@ -470,7 +490,28 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, f_column, g_column, 
    #============================================================================="""
 
 
-def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, func_column, graph_type, dim_type, reg_type, reg_order):
+def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order):
+
+    """
+    Goal: Add a trace inside the figure regarding the inputs.
+
+    Parameters:
+    - fig_json_serializable: Dash figure.
+    - data_for_plot: Dataframe which has been use to create the figure that is re-opened in this function.
+    - x_column: Column in the dataframe
+    - y_column: Column in the dataframe (can be None)
+    - z_column: Column in the dataframe (can be None)
+    - yf_column: Function to operate on y_column with the rest of the dataframe
+    - zf_column: Function to operate on z_column with the rest of the dataframe
+    - graph_type: Type of Graphyque for the figure.
+    - dim_type: Graphyque dimension for the figure.
+    - reg_type: Type of regression for the data.
+    - reg_order: Order of the regression for the data.
+
+    Returns:
+    - fig_json_serializable: Dash figure updated with the trace.
+    - data_for_plot: Dataframe updated with the trace.
+    """
     
     
     plotly_fig = go.Figure(fig_json_serializable)
@@ -571,6 +612,11 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     print(colored("=============================================================================", "green"))
     
     return fig_json_serializable, data_for_plot.to_dict(orient='records') 
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
 
 def format_coefs(coefs, reg_type, x_variable='x'):

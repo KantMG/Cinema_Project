@@ -79,7 +79,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     columns = df.columns
     
     # Get the list of y function
-    function_on_y = ["Avg", "Weight on y"]
+    function_on_y = ["Avg", "Avg on the ordinate", "Weight on y"]
     
     # Get the type of graph
     graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh"]
@@ -88,7 +88,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     dim_type = ["1D", "2D", "3D"]
     
     # Get the list of axis and graph function
-    axis = ["x", "y", "z", "Func", "Graph", "Dim"]
+    axis = ["x", "y", "z", "Func on y", "Func on z", "Graph", "Dim"]
 
 
     # Define a consistent style for both input and dropdown elements
@@ -136,7 +136,22 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     )
                 ]
             )
-        elif axi == 'Func':
+        elif axi == 'Func on z':
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in function_on_y],
+                        value="Avg",
+                        style=uniform_style,
+                        className='dash-dropdown'
+                        # clearable=True
+                    )
+                ]
+            )
+        elif axi == 'Func on y':
             dropdown_with_label = html.Div(
                 style=dropdown_container_style,
                 children=[
@@ -466,7 +481,7 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                 dropdowns_with_labels_for_fig,
                 style={
                     'display': 'flex',
-                    'margin-left': '300px',
+                    'margin-left': '200px',
                     'justify-content': 'flex-start',
                     'gap': '5px',
                     'margin-bottom': '20px'  # Add space below the dropdowns
