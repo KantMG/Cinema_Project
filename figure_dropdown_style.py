@@ -450,6 +450,49 @@ def button_dropdown_regression(text_button, id_button, id_dropdown, id_order_reg
     ),
     html.Div(id=id_output_div) 
     ])
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def button_dropdown_smoothing(text_button, id_button, id_dropdown, id_order_reg, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
+
+    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+        
+    return html.Div([
+    dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle("  Select a smoothing function")),
+            dbc.ModalBody(
+                [   
+                    dcc.Dropdown(
+                        id=id_dropdown,
+                        options=["Savitzky-Golay Filter"],
+                        # value='Decision Tree',
+                        clearable=True,
+                        style=dropdown_style,
+                        className='dash-dropdown'
+                    ),
+                    html.Span(":", style={'margin': '0 10px'}),
+                    dcc.Input(id=id_order_reg, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter an order if needed"),
+                ]
+            ),
+            html.Span("", style={'margin': '0 10px'}),
+            dbc.ModalFooter(
+                dbc.Button("Submit", id=id_submit_button, n_clicks=0, className='button')
+            ),
+        ],
+        id=id_modal,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    ),
+    html.Div(id=id_output_div) 
+    ])
     
 
 """#=============================================================================
@@ -457,7 +500,7 @@ def button_dropdown_regression(text_button, id_button, id_dropdown, id_order_reg
    #============================================================================="""
 
 
-def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter, button_dropdown_function, button_dropdown_regression):
+def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter, button_dropdown_function, button_dropdown_regression, button_dropdown_smoothing):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -494,7 +537,7 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                     # Graph on the left
                     html.Div(
                         [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'}),
-                         dcc.Store(id='figure-store-tab-2', data={})], 
+                         dcc.Store(id='figure-store-'+tab, data={})], 
                         style={'margin-left': '20px', 'width': '70%'}
                     ),
                     # Dropdowns and heading in a vertical column on the right
@@ -544,7 +587,18 @@ def figure_position_dash(idgraph, dropdowns_with_labels_for_fig, dropdowns_with_
                             html.Span("", style={'margin': '0 10px'}),
                             
                             html.Div(
-                                html.Button("Hide Dropdowns on figure", id='hide-dropdowns', n_clicks=0, className='button'),
+                                html.Button("Hide Dropdowns on figure", id='hide-dropdowns-'+tab, n_clicks=0, className='button'),
+                                style={
+                                    'display': 'flex',
+                                    'justify-content': 'flex-start',
+                                    'gap': '10px',  # Add spacing between dropdowns
+                                }
+                            ),  
+
+                            html.Span("", style={'margin': '0 10px'}),
+                            
+                            html.Div(
+                                button_dropdown_smoothing,
                                 style={
                                     'display': 'flex',
                                     'justify-content': 'flex-start',

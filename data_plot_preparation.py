@@ -90,7 +90,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, 
     #Case where z_column is not None
     else:
         # Calculate average z_column and count for each (x_column, y_column) combination
-        if yf_column != "Avg" and zf_column == "Avg":
+        if yf_column != "Avg" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
                         
             data_for_plot = df_temp.groupby([x_column, y_column]).agg(
                 avg_z_column=('{}'.format(z_column), 'mean'),

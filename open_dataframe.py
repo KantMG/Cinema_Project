@@ -441,7 +441,7 @@ def apply_filter(df, filters):
         return df
     
     for col, filter_value in filters.items():
-        print(col, filter_value)
+        print(col, filter_value, type(filter_value))
         
         if filter_value is None or filter_value == 'All':
             continue  # Skip if filter_value is None or 'All'
@@ -453,12 +453,9 @@ def apply_filter(df, filters):
             # Use regex pattern to match any of the values in the list
             pattern = '|'.join(map(re.escape, filter_value))
             df = df[df[col].str.contains(pattern, na=False)]
-        
-        elif isinstance(filter_value, str) and filter_value.endswith('*'):
-            exact_value = filter_value[:-1]
-            df = df[df[col] == exact_value]
-        
+
         else:
+            print("4")
             # Check for interval filtering like "<10" or "<=10" and ">10" or ">=10"
             if '>=' in filter_value or '>' in filter_value or '<=' in filter_value or '<' in filter_value:
                 if '>=' in filter_value:
@@ -473,7 +470,6 @@ def apply_filter(df, filters):
                 elif '<' in filter_value:
                     threshold = float(filter_value.split('<')[1])
                     df = df[df[col] < threshold]
-                    
             elif '!=' in filter_value:
                 threshold = float(filter_value.split('!=')[1])
                 df = df[df[col] != threshold]  # Apply not equal condition
@@ -488,6 +484,14 @@ def apply_filter(df, filters):
                     df = df[(df[col] >= lower_bound) & (df[col] <= upper_bound)]
                 else:
                     df = df[df[col] >= lower_bound]
+
+            elif filter_value.endswith('*'):
+                exact_value = filter_value[:-1]
+                df = df[df[col] == exact_value]
+                
+            else:
+                df = df[df[col] == filter_value]
+
     
             print(f"Filtered df for {col}:")
             print(f"{df[col]}")

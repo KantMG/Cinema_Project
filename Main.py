@@ -250,18 +250,21 @@ def tab2_content():
     print()
     print("Time computation=", time.time()-start_time)
     print("=====================  Tab2_content  =========================")
+    tab = 'tab-2'
     # Display dropdowns without loading data initially
     # df1_placeholder = fd.df_empty(List_col_tab2, dtypes=List_dtype_tab2)  
     exclude_cols = ["tconst","directors","writers"]
     df_selected = df1[[col for col in df1.columns if col not in exclude_cols]]
-    dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style, Large_file_memory)
-    dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df_selected, 'graph-df1', 'tab-2', dark_dropdown_style, uniform_style)
+    dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style, Large_file_memory)
+    dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style)
     
-    button_dropdown_function_tab2 = fds.button_dropdown_function("Function creation", "open-modal-function-tab-2", "input-function-name-tab-2", "input-function-tab-2", "submit-button-function-tab-2", "modal-function-tab-2", "output-div-function-tab-2", dark_dropdown_style, uniform_style)
+    button_dropdown_function_tab2 = fds.button_dropdown_function("Function creation", "open-modal-function-"+tab, "input-function-name-"+tab, "input-function-"+tab, "submit-button-function-"+tab, "modal-function-"+tab, "output-div-function-"+tab, dark_dropdown_style, uniform_style)
 
 
-    button_dropdown_regression_tab2 = fds.button_dropdown_regression("Regression model", "open-modal-regression-tab-2", "dropdown-regression-tab-2", "order-regression-tab-2", "submit-button-regression-tab-2", "modal-regression-tab-2", "output-div-regression-tab-2", dark_dropdown_style, uniform_style)
+    button_dropdown_regression_tab2 = fds.button_dropdown_regression("Regression model", "open-modal-regression-"+tab, "dropdown-regression-"+tab, "order-regression-"+tab, "submit-button-regression-"+tab, "modal-regression-"+tab, "output-div-regression-"+tab, dark_dropdown_style, uniform_style)
 
+
+    button_dropdown_smoothing_tab2 = fds.button_dropdown_smoothing("Smoothing", "open-modal-smoothing-"+tab, "dropdown-smoothing-"+tab, "order-smoothing-"+tab, "submit-button-smoothing-"+tab, "modal-smoothing-"+tab, "output-div-smoothing-"+tab, dark_dropdown_style, uniform_style)
 
     
     # Print all ids
@@ -270,11 +273,13 @@ def tab2_content():
     print("==================== End Tab2_content ========================")
     return html.Div([
         html.Div([
-            fds.figure_position_dash('graph-output-tab-2',
+            fds.figure_position_dash(tab,
+                                     'graph-output-'+tab,
                                      dropdowns_with_labels_for_fig_tab2,
                                      dropdowns_with_labels_for_fig_filter_tab2,
                                      button_dropdown_function_tab2,
-                                     button_dropdown_regression_tab2
+                                     button_dropdown_regression_tab2,
+                                     button_dropdown_smoothing_tab2
                                      )
             
         ], style={'padding': '20px'}),
@@ -352,6 +357,19 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
         return not is_open
     return is_open
 
+
+#  -----------------------------------------------------------------
+
+
+@app.callback(
+    Output("modal-smoothing-tab-2", "is_open"),
+    [Input("open-modal-smoothing-tab-2", "n_clicks"), Input("submit-button-smoothing-tab-2", "n_clicks")],
+    [State("modal-smoothing-tab-2", "is_open")]
+)
+def toggle_modal(open_clicks, submit_clicks, is_open):
+    if open_clicks or submit_clicks:
+        return not is_open
+    return is_open
 
 #  -----------------------------------------------------------------
 
@@ -448,7 +466,7 @@ def update_zfunc_dropdown_tab2(selected_z, selected_tab):
         # Proceed to get options based on selected_x and stored_df1...
         print(f"Selected Z: {selected_z}")  # Additional debugging
         
-        function_on_z = ["Avg", "Weight on y"]
+        function_on_z = ["Avg", "Avg on the ordinate", "Weight on y"]
         
         return update_func_dropdown_utility(selected_z, function_on_z, df_col_numeric_tab2, 'Avg')
     return dash.no_update, dash.no_update
@@ -504,12 +522,15 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input("dropdown-regression-tab-2", "value"),
      Input("order-regression-tab-2", "value"),
      Input("submit-button-regression-tab-2", "n_clicks"),
-     Input("hide-dropdowns", "n_clicks")] +
+     Input("dropdown-smoothing-tab-2", "value"),
+     Input("order-smoothing-tab-2", "value"),
+     Input("submit-button-smoothing-tab-2", "n_clicks"),
+     Input("hide-dropdowns-tab-2", "n_clicks")] +
     [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2],
     State('graph-output-tab-2', 'figure'),
     State('figure-store-tab-2', 'data')
     )
-def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, sub_bot_reg_value, hide_drop_fig, *args):
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, sub_bot_reg_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, hide_drop_fig, *args):
     print()
     print(colored("------------ callback update_graph_tab2 ------------", "red"))
     current_fig = args[-2]
@@ -523,10 +544,15 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     if triggered_id == "dropdown-regression-tab-2" or triggered_id == "order-regression-tab-2":
         return dash.no_update
     
+    if triggered_id == "dropdown-smoothing-tab-2" or triggered_id == "order-smoothing-tab-2":
+        return dash.no_update
+
+    
     if triggered_id == "submit-button-regression-tab-2":
         return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, current_fig, data_for_plot)
+
     
-    if  triggered_id == "hide-dropdowns":
+    if  triggered_id == "hide-dropdowns-tab-2":
         
         fig_json_serializable = go.Figure(current_fig)
         
@@ -562,10 +588,12 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
     df1_filtered = od.apply_filter(df1, filter_values)
     
-    print("x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value=",x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value)
+    print("x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value=",x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value)
     print("filter_values=",filter_values)
     print("stored_df1=", df1)
-    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, df1_filtered, Large_file_memory)
+
+
+    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, Large_file_memory)
 
 
 """
@@ -591,6 +619,8 @@ def update_ui(input_value):
 
     # Check if the input value exists in the 'nconst' column of df_name
     if input_value in df_name['primaryName'].values:
+        
+        tab = "tab-3"
         
         print(input_value)
         nconst_value = df_name[df_name['primaryName'] == input_value]['nconst'].iloc[0]
@@ -635,12 +665,19 @@ def update_ui(input_value):
             primaryProfession = primaryProfession[primaryProfession > 1].index.tolist()
 
             # Create the table with the appropriate dropdowns for each column
-            dropdowns_with_labels, data_table_df2 = tds.dropdown_table(df2, 'table-df2', 'tab-3', dark_dropdown_style, uniform_style, True)
+            dropdowns_with_labels, data_table_df2 = tds.dropdown_table(df2, 'table-df2', tab, dark_dropdown_style, uniform_style, True)
             
             exclude_col = ["title"]
             df2_filter = df2.drop(columns=exclude_col)            
-            dropdowns_with_labels_for_fig = fds.dropdown_figure(df2_filter, 'graph-df2', 'tab-3', dark_dropdown_style, uniform_style, Large_file_memory)
-            dropdowns_with_labels_for_fig_filter = fds.dropdown_figure_filter(df2_filter, 'graph-df2', 'tab-3', dark_dropdown_style, uniform_style)
+            dropdowns_with_labels_for_fig_tab3 = fds.dropdown_figure(df2_filter, 'graph-df2', tab, dark_dropdown_style, uniform_style, Large_file_memory)
+            dropdowns_with_labels_for_fig_filter_tab3 = fds.dropdown_figure_filter(df2_filter, 'graph-df2', tab, dark_dropdown_style, uniform_style)
+
+
+            button_dropdown_function_tab3 = fds.button_dropdown_function("Function creation", "open-modal-function-"+tab, "input-function-name-"+tab, "input-function-"+tab, "submit-button-function-"+tab, "modal-function-"+tab, "output-div-function-"+tab, dark_dropdown_style, uniform_style)
+        
+            button_dropdown_regression_tab3 = fds.button_dropdown_regression("Regression model", "open-modal-regression-"+tab, "dropdown-regression-"+tab, "order-regression-"+tab, "submit-button-regression-"+tab, "modal-regression-"+tab, "output-div-regression-"+tab, dark_dropdown_style, uniform_style)
+
+            button_dropdown_smoothing_tab3 = fds.button_dropdown_smoothing("Smoothing", "open-modal-smoothing-"+tab, "dropdown-smoothing-"+tab, "order-smoothing-"+tab, "submit-button-smoothing-"+tab, "modal-smoothing-"+tab, "output-div-smoothing-"+tab, dark_dropdown_style, uniform_style)
             
             return html.Div([
                 html.P(f'The artist '+input_value+' is born in '+str(birthYear_value)+' and died in '+str(deathYear_value)+' during its career as '+', '.join(primaryProfession)+' he participated to the creation of the following productions.'),
@@ -654,9 +691,14 @@ def update_ui(input_value):
                 html.Div([
                     html.H1("Graphic interface dedicated to the dataframe related to the artist "+input_value+".", style={"color": "#FFD700"}, className="text-light"),
                     
-                    fds.figure_position_dash('graph-output-tab-3', 
-                                             dropdowns_with_labels_for_fig, 
-                                             dropdowns_with_labels_for_fig_filter)
+                    fds.figure_position_dash(tab,
+                                             'graph-output-'+tab, 
+                                             dropdowns_with_labels_for_fig_tab3, 
+                                             dropdowns_with_labels_for_fig_filter_tab3,
+                                             button_dropdown_function_tab3,
+                                             button_dropdown_regression_tab3,
+                                             button_dropdown_smoothing_tab3
+                                             )
                     
                 ], style={'padding': '20px'})
                                 
@@ -730,47 +772,84 @@ def update_y_dropdown_tab3(selected_x, selected_tab):
         return update_y_dropdown_utility(selected_x, List_col_fig_tab3, exclude_cols)
     return []  # Return empty if not in the right tab
 
+
+
 @app.callback(
-    Output('Func-dropdown-tab-3', 'options'),
+    [Output('Func on y-dropdown-tab-3', 'options'),
+    Output('Func on y-dropdown-tab-3', 'value')],
     Input('y-dropdown-tab-3', 'value'),
     Input('tabs', 'value')  # Include tab value to conditionally trigger callback
 )
-def update_func_dropdown_tab3(selected_y, selected_tab):
+def update_yfunc_dropdown_tab3(selected_y, selected_tab):
     print()
-    print(colored("------------ callback update_func_dropdown_tab3 ------------", "red")) 
+    print(colored("------------ callback update_yfunc_dropdown_tab3 ------------", "red"))
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
     if selected_tab == 'tab-3':
-        return update_func_dropdown_utility(selected_y, df_col_numeric, None)
-    return []
+        if selected_y is None:
+            print("Y Dropdown Value is None, returning an empty list [].")
+            return [], []  # Return an empty options list if the DF is not ready
+        # Proceed to get options based on selected_x and stored_df1...
+        print(f"Selected Y: {selected_y}")  # Additional debugging
+        
+        function_on_y = ["Avg", "Avg on the ordinate"]
+        
+        return update_func_dropdown_utility(selected_y, function_on_y, df_col_numeric_tab2, None)
+    return dash.no_update, dash.no_update
+
 
 @app.callback(
-    Output('graph-output-tab-3', 'figure'),
+    [Output('Func on z-dropdown-tab-3', 'options'),
+    Output('Func on z-dropdown-tab-3', 'value')],
+    Input('z-dropdown-tab-3', 'value'),
+    Input('tabs', 'value')  # Include tab value to conditionally trigger callback
+)
+def update_zfunc_dropdown_tab3(selected_z, selected_tab):
+    print()
+    print(colored("------------ callback update_zfunc_dropdown_tab2 ------------", "red"))
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
+    if selected_tab == 'tab-3':
+        if selected_z is None:
+            print("Z Dropdown Value is None, returning an empty list [].")
+            return [], []  # Return an empty options list if the DF is not ready
+        # Proceed to get options based on selected_x and stored_df1...
+        print(f"Selected Z: {selected_z}")  # Additional debugging
+        
+        function_on_z = ["Avg", "Avg on the ordinate", "Weight on y"]
+        
+        return update_func_dropdown_utility(selected_z, function_on_z, df_col_numeric_tab2, 'Avg')
+    return dash.no_update, dash.no_update
+
+
+@app.callback(
+    Output('graph-output-tab-3', 'figure'), Output('figure-store-tab-3', 'data'),
     [Input('tabs', 'value'),
      Input('x-dropdown-tab-3', 'value'),
      Input('y-dropdown-tab-3', 'value'),
      Input('z-dropdown-tab-3', 'value'),
-     Input('Func-dropdown-tab-3', 'value'),
+     Input('Func on y-dropdown-tab-3', 'value'),
+     Input('Func on z-dropdown-tab-3', 'value'),
      Input('Graph-dropdown-tab-3', 'value'),
-     Input('Dim-dropdown-tab-3', 'value')] +  # Rest of dropdowns
+     Input('Dim-dropdown-tab-3', 'value')] +
     dropdown_inputs_fig_tab3,
     State('stored-df2', 'data')
 )
 def update_graph_tab3(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, *args):
     print()
     print(colored("------------ callback update_graph_tab3 ------------", "red")) 
-    # selected_values = {col: args[i+5] for i, col in enumerate(List_col_fig_tab3)}
     stored_df2 = args[-1]
     
     # Convert the stored data back to a DataFrame
     df2 = pd.DataFrame(stored_df2)
     # Create a copy of the DataFrame to avoid modifying the original stored data
-    filtered_data_table = df2.copy()
+    filtered_data_table = df2.copy()   
         
     print("Active Tab:", selected_tab)
     print(filtered_data_table)
     if selected_tab == 'tab-3' and stored_df2 is not None:  # Only execute if in the correct tab
             print(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value)
-            return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, filtered_data_table, False)
-    return go.Figure()  # Return a blank figure if not in the right tab
+            return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, filtered_data_table, False)
 
 
 
@@ -798,7 +877,7 @@ def update_func_dropdown_utility(selected_y, function_on_axi, df_col_numeric, in
     """
     
     if selected_y not in df_col_numeric:  # Check if y column is not numeric
-        return []
+        return [], None
     else:
         return [{'label': col, 'value': col} for col in function_on_axi], initial_value
 
@@ -829,7 +908,7 @@ def update_filter_dropdown_utility(selected_boxes, df):
         
     return dropdowns 
 
-def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, stored_df, large_file_memory):
+def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, stored_df, large_file_memory):
     """
     Utility function to generate a graph based on the provided parameters.
     """
@@ -847,7 +926,7 @@ def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_colum
         # Apply filters on the dataframe
         # filtered_data_graph = od.apply_filter(filtered_data_graph, selected_values)
         # Create the figure based on filtered data
-    fig, data_for_plot = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, large_file_memory)
+    fig, data_for_plot = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
     # print("fig=",fig)
     # print("data_for_plot=",data_for_plot)
     return fig, data_for_plot

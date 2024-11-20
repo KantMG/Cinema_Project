@@ -71,7 +71,7 @@ cmaps = [('Perceptually Uniform Sequential', [
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, r_column, o_column, Large_file_memory):
+def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -85,8 +85,6 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
-    - r_column: Type of regression for the data.
-    - o_column: Order of the regression for the data.
     - Large_file_memory: Estimate if the file is too large to be open with panda
 
     Returns:
@@ -109,7 +107,7 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
         print(data_for_plot)
         print()
         # Add the core of the figure
-        fig_json_serializable, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel)
+        fig_json_serializable, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel)
     
     # Update the figure layout
     fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column)       
@@ -213,7 +211,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
    #============================================================================="""
 
 
-def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, r_column, o_column, data_for_plot, xlabel, ylabel, zlabel):
+def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel):
 
     """
     Goal: Create the plot inside the figure regarding the inputs.
@@ -227,8 +225,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
-    - r_column: Type of regression for the data.
-    - o_column: Order of the regression for the data.
     - data_for_plot: Data to plot.
 
     Returns:
@@ -267,7 +263,10 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     
     if z_column is not None and zf_column == "Avg":
         t_axis = 'avg_' + z_column
-    
+    if z_column is not None and zf_column == "Avg on the ordinate":
+        y_axis = 'avg_' + z_column
+        t_axis = 'count'
+        
 
     print("x_axis=", x_axis)
     print("y_axis=", y_axis)
@@ -283,7 +282,14 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     if d_column=="1D": 
         
         if str(y_column)=='None':
-            
+            print(sub_bot_smt_value)
+            if sub_bot_smt_value % 2 == 1:
+                window_lenght = len(data_for_plot[x_axis])//5
+                print("window_lenght=",window_lenght)
+                data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
+                                       window_lenght, # window size used for filtering
+                                       smt_order_value)
+                
             if g_column=="Histogram":
                 plotly_fig = px.bar(
                     data_for_plot, 
@@ -306,17 +312,26 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     )
         
         #Case where y_column is None and z_column is None
-        elif str(y_column)!='None' and str(z_column)=='None':
+        elif str(y_column)!='None' and str(z_column)=='None':           
 
             if x_column in df_col_string:
                 # Grouping y_column values
                 n = 12  # Number of top categories to keep
-                data_for_plot = group_small_values(data_for_plot, x_column, 'count', n)
+                data_for_plot = group_small_values(data_for_plot, y_axis, x_axis, n)
 
             if y_column in df_col_string:
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
-                data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
+                data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+
+
+            print(sub_bot_smt_value)
+            if sub_bot_smt_value % 2 == 1:
+                window_lenght = len(data_for_plot[x_axis])//5
+                print("window_lenght=",window_lenght)
+                data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
+                                       window_lenght, # window size used for filtering
+                                       smt_order_value)
 
             if "Histogram" in g_column:
                 plotly_fig = px.bar(
@@ -364,15 +379,23 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
             if y_column in df_col_string:
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
-                data_for_plot = group_small_values(data_for_plot, y_column, 'count', n)
+                data_for_plot = group_small_values(data_for_plot, z_axis, t_axis, n, x_axis)
 
             if z_column in df_col_string:
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
                 data_for_plot = group_y_values(data_for_plot, z_column, n)
+
+            print(sub_bot_smt_value)
+            if sub_bot_smt_value % 2 == 1:
+                window_lenght = len(data_for_plot[x_axis])//5
+                print("window_lenght=",window_lenght)
+                data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
+                                       window_lenght, # window size used for filtering
+                                       smt_order_value)
                         
             # y_values = data_for_plot[y_column].unique()
-            if g_column=="Histogram" and zf_column == "Avg":
+            if g_column=="Histogram" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
                plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_axis, 
@@ -380,24 +403,33 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                    color=z_axis if "Movie" not in g_column else None,
                    animation_frame=z_axis if "Movie" in g_column else None
                    )
-            elif g_column=="Curve" and zf_column == "Avg":
+            elif g_column=="Curve" and (zf_column == "Avg"):
                 plotly_fig = go.Figure()
                 # Add traces for each unique group
                 for key in data_for_plot[y_column].unique():
                     group = data_for_plot[data_for_plot[y_column] == key]
                     plotly_fig.add_trace(go.Scatter(
-                        x=group[x_column],
-                        y=group['count'],
+                        x=group[x_axis],
+                        y=group[y_axis],
                         mode='lines',
                         name=key,
-                        line=dict(width=group['avg_'+z_column].mean())  # Set line width based on avg thickness
+                        line=dict(width=group[z_axis].mean())  # Set line width based on avg thickness
                     ))
-            elif g_column=="Scatter" and zf_column == "Avg":
+            elif g_column=="Curve" and (zf_column == "Avg on the ordinate"):
+                plotly_fig = px.line(
+                    data_for_plot, 
+                    x=x_axis, 
+                    y=y_axis,
+                    color=z_axis if "Movie" not in g_column else None,
+                    animation_frame=z_axis if "Movie" in g_column else None,
+                    line_group=g_column if "Movie" in g_column else None
+                    )
+            elif g_column=="Scatter" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
                 plotly_fig = px.scatter(
                     data_for_plot,
                     x=x_axis,
                     y=y_axis,
-                    size=t_axis,
+                    size=t_axis if zf_column == "Avg" else None,
                     size_max=60,
                     color=z_axis if "Movie" not in g_column else None,
                     animation_frame=z_axis if "Movie" in g_column else None
@@ -482,7 +514,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
         plotly_fig = go.Figure(
             data=[go.Surface(z=pivoted_data.values, x=pivoted_data.columns, y=pivoted_data.index)])
 
-    return plotly_fig, xlabel, ylabel, zlabel  
+    return plotly_fig, data_for_plot, xlabel, ylabel, zlabel  
 
 
 """#=============================================================================
@@ -640,7 +672,7 @@ def format_coefs(coefs, reg_type, x_variable='x'):
 
 
 # Function to group small values
-def group_small_values(data, col, count_column, n):
+def group_small_values(data, col, count_column, n, col_ref=None):
     
     print(n)
     print(col)
@@ -663,7 +695,63 @@ def group_small_values(data, col, count_column, n):
     # Replace values not in top_n with "Other"
     data[col] = data[col].where(data[col].isin(top_n), 'Other')
     
-    return data
+    print(data)
+
+    result = agregate_value(data, col, count_column, col_ref)
+    
+    print(result)
+    
+    return result
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def agregate_value(data, col_to_agregate, count_col, col_ref=None):
+    # Identify columns to aggregate based on exclusions
+    columns_to_aggregate = data.columns.tolist()
+    
+    if col_ref is not None:
+        columns_to_aggregate.remove(col_ref)
+    columns_to_aggregate.remove(col_to_agregate)
+    columns_to_aggregate.remove(count_col)
+
+    # Create aggregation dictionary for other columns
+    aggregation_dict = {}
+    for col in columns_to_aggregate:
+        # Assign the average calculation for each column
+        aggregation_dict[col] = (col, lambda x: (x * data.loc[x.index, count_col]).sum() / data.loc[x.index, count_col].sum())
+
+    # Perform aggregation
+    if col_ref is not None:
+        temp_data = data.groupby([col_ref, col_to_agregate], as_index=False).agg(
+            count=(count_col, 'sum'),
+            **aggregation_dict
+        )
+    else:
+        temp_data = data.groupby([col_to_agregate], as_index=False).agg(
+            count=(count_col, 'sum'),
+            **aggregation_dict
+        )
+  
+    # Now we want to merge the aggregated data back with the unaggregated data without the grouped rows
+    if col_ref is not None:
+        # Keep other unique entries in the original data
+        other_data = data[~data[col_to_agregate].isin(temp_data[col_to_agregate])]
+
+        # Concatenate the aggregated and the other data
+        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_ref, col_to_agregate])
+    else:
+        # Keep other unique entries in the original data
+        other_data = data[~data[col_to_agregate].isin(temp_data[col_to_agregate])]
+
+        # Concatenate the aggregated and the other data
+        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_to_agregate])
+
+    return final_data.reset_index(drop=True)
+
 
 """#=============================================================================
    #=============================================================================
