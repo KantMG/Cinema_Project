@@ -547,7 +547,10 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     if triggered_id == "dropdown-smoothing-tab-2" or triggered_id == "order-smoothing-tab-2":
         return dash.no_update
 
-    
+    if z_dropdown_value in df_col_string_tab2:
+        return dash.no_update
+
+
     if triggered_id == "submit-button-regression-tab-2":
         return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, current_fig, data_for_plot)
 

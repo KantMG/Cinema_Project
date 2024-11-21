@@ -427,7 +427,7 @@ def button_dropdown_regression(text_button, id_button, id_dropdown, id_order_reg
                 [   
                     dcc.Dropdown(
                         id=id_dropdown,
-                        options=["Linear Regression", "Decision Tree", "k-NN", "Polynomial Regression", "Savitzky-Golay Filter"],
+                        options=["Polynomial Regression", "Decision Tree", "k-NN"],
                         # value='Decision Tree',
                         clearable=True,
                         style=dropdown_style,

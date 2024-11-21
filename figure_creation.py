@@ -29,6 +29,7 @@ from sklearn import linear_model as lm, tree, neighbors
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
 from scipy import signal
 
 from termcolor import colored
@@ -85,6 +86,9 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
+    - sub_bot_smt_value: Button to apply the smoothing.
+    - smt_dropdown_value: Type of smoothing for the data.
+    - smt_dropdown_value: Order of the smoothing for the data.
     - Large_file_memory: Estimate if the file is too large to be open with panda
 
     Returns:
@@ -225,6 +229,9 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
+    - sub_bot_smt_value: Button to apply the smoothing.
+    - smt_dropdown_value: Type of smoothing for the data.
+    - smt_dropdown_value: Order of the smoothing for the data.
     - data_for_plot: Data to plot.
 
     Returns:
@@ -266,13 +273,15 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     if z_column is not None and zf_column == "Avg on the ordinate":
         y_axis = 'avg_' + z_column
         t_axis = 'count'
-        
+    if z_column is not None and zf_column == "Weight on y":
+        y_axis = 'sum_' + z_column
+        t_axis = 'standard_error'         
 
     print("x_axis=", x_axis)
     print("y_axis=", y_axis)
     if str(y_column)!='None':
         print("z_axis=", z_axis)
-    if str(z_column)!='None' and zf_column == "Avg":
+    if str(z_column)!='None':
         print("t_axis=", t_axis)
 
 
@@ -282,14 +291,9 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     if d_column=="1D": 
         
         if str(y_column)=='None':
-            print(sub_bot_smt_value)
-            if sub_bot_smt_value % 2 == 1:
-                window_lenght = len(data_for_plot[x_axis])//5
-                print("window_lenght=",window_lenght)
-                data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
-                                       window_lenght, # window size used for filtering
-                                       smt_order_value)
-                
+            
+            smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis)
+                            
             if g_column=="Histogram":
                 plotly_fig = px.bar(
                     data_for_plot, 
@@ -324,14 +328,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                 n = 7  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
-
-            print(sub_bot_smt_value)
-            if sub_bot_smt_value % 2 == 1:
-                window_lenght = len(data_for_plot[x_axis])//5
-                print("window_lenght=",window_lenght)
-                data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
-                                       window_lenght, # window size used for filtering
-                                       smt_order_value)
+            smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis)
 
             if "Histogram" in g_column:
                 plotly_fig = px.bar(
@@ -375,24 +372,18 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
         #Case where z_column is not None
         else:
-            
+                        
             if y_column in df_col_string:
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
-                data_for_plot = group_small_values(data_for_plot, z_axis, t_axis, n, x_axis)
+                if zf_column == "Avg":
+                    data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+                elif zf_column == "Avg on the ordinate":
+                    data_for_plot = group_small_values(data_for_plot, z_axis, t_axis, n, x_axis)
+                elif zf_column == "Weight on y":
+                    data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
-            if z_column in df_col_string:
-                # Grouping y_column values
-                n = 7  # Number of top categories to keep
-                data_for_plot = group_y_values(data_for_plot, z_column, n)
-
-            print(sub_bot_smt_value)
-            if sub_bot_smt_value % 2 == 1:
-                window_lenght = len(data_for_plot[x_axis])//5
-                print("window_lenght=",window_lenght)
-                data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
-                                       window_lenght, # window size used for filtering
-                                       smt_order_value)
+            smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis)
                         
             # y_values = data_for_plot[y_column].unique()
             if g_column=="Histogram" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
@@ -406,14 +397,14 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
             elif g_column=="Curve" and (zf_column == "Avg"):
                 plotly_fig = go.Figure()
                 # Add traces for each unique group
-                for key in data_for_plot[y_column].unique():
-                    group = data_for_plot[data_for_plot[y_column] == key]
+                for key in data_for_plot[z_axis].unique():
+                    group = data_for_plot[data_for_plot[z_axis] == key]
                     plotly_fig.add_trace(go.Scatter(
                         x=group[x_axis],
                         y=group[y_axis],
                         mode='lines',
                         name=key,
-                        line=dict(width=group[z_axis].mean())  # Set line width based on avg thickness
+                        line=dict(width=group[t_axis].mean())  # Set line width based on avg thickness
                     ))
             elif g_column=="Curve" and (zf_column == "Avg on the ordinate"):
                 plotly_fig = px.line(
@@ -440,7 +431,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     data_for_plot,
                     x=x_axis,
                     y=z_axis,
-                    title='Weighted Average'+y_column+'Over the'+x_axis,
+                    # title='Weighted Average'+y_column+'Over the'+x_axis,
                     error_y='standard_error'
                 )
             elif g_column=="Curve" and zf_column == "Weight on y":
@@ -448,7 +439,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     data_for_plot,
                     x=x_axis,
                     y=z_axis,
-                    title='Weighted Average'+y_column+'Over the'+x_axis,
+                    # title='Weighted Average'+y_column+'Over the'+x_axis,
                     error_y='standard_error'
                 )
             elif g_column=="Scatter" and zf_column == "Weight on y":
@@ -456,7 +447,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     data_for_plot,
                     x=x_axis,
                     y=z_axis,
-                    title='Weighted Average'+y_column+'Over the'+x_axis,
+                    # title='Weighted Average'+y_column+'Over the'+x_axis,
                     error_y='standard_error'
                 )
 
@@ -522,7 +513,39 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
    #============================================================================="""
 
 
-def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order):
+def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis):
+
+    """
+    Goal: Apply a filter on the data.
+
+    Parameters:
+    - sub_bot_smt_value: Button to apply the smoothing.
+    - smt_dropdown_value: Type of smoothing for the data.
+    - smt_dropdown_value: Order of the smoothing for the data.
+    - data_for_plot: Dataframe which will be filtered.
+    - x_axis: Column in the dataframe.
+    - y_axis: Column in the dataframe.
+
+    Returns:
+    - data_for_plot: Dataframe updated.
+    """
+    
+    if sub_bot_smt_value % 2 == 1:
+        window_lenght = len(data_for_plot[x_axis])//5
+        print("window_lenght=",window_lenght)
+        data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
+                               window_lenght, # window size used for filtering
+                               smt_order_value)
+        
+        return data_for_plot
+    
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, reg_type, reg_order):
 
     """
     Goal: Add a trace inside the figure regarding the inputs.
@@ -556,86 +579,141 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     
     x_axis = x_column
     y_axis = 'count'
+    z_axis = None
+    t_axis = None
+    if str(y_column)!='None':
+        z_axis = y_column
     if x_column in df_col_string:
         x_axis = 'count'
-        y_axis = x_column    
+        y_axis = x_column
+
+    if yf_column == "Avg":
+        z_axis = 'avg_' + y_column
+
+    if yf_column == "Avg on the ordinate":
+        x_axis = x_column
+        y_axis = 'avg_' + y_column
+        z_axis = 'count'
+        if x_column in df_col_string:
+            x_axis = 'avg_' + y_column
+            y_axis = x_column
+            z_axis = 'count'
     
-    print(x_axis,y_axis)    
+    if z_column is not None and zf_column == "Avg":
+        t_axis = 'avg_' + z_column
+    if z_column is not None and zf_column == "Avg on the ordinate":
+        y_axis = 'avg_' + z_column
+        t_axis = 'count'
+    if z_column is not None and zf_column == "Weight on y":
+        y_axis = 'sum_' + z_column
+        t_axis = 'standard_error'        
+
+    print("x_axis=", x_axis)
+    print("y_axis=", y_axis)
+    print("z_axis=", z_axis)
+    print("t_axis=", t_axis)
 
     # Creating a DataFrame
     data_for_plot = pd.DataFrame(data_for_plot)
     
     # Resetting the index to have a clean index
     data_for_plot.reset_index(drop=True, inplace=True)
+    
+    print("data_for_plot=")
+    print(data_for_plot)
+    
+    # Calculate the offset
+    offset = data_for_plot[x_axis].values.min()
+    
+    # Adjust x values by subtracting the minimum value
+    x_offset = data_for_plot[x_axis].values - offset
+    x = x_offset.reshape(-1, 1)
+    y = data_for_plot[y_axis].values.reshape(-1, 1)
 
     
-    if reg_type != "Savitzky-Golay Filter":
-
-        Dict_regression_models = {'Linear Regression': lm.LinearRegression,
-                  'Decision Tree': tree.DecisionTreeRegressor,
-                  'k-NN': neighbors.KNeighborsRegressor,
-                  'Polynomial Regression': lambda: make_pipeline(PolynomialFeatures(degree=reg_order), lm.LinearRegression())  # Use a lambda to return a new instance
-                  }        
-
-        # Instantiate the model
-        model = Dict_regression_models[reg_type]()
-        
-        print("model=",model)
-        
-        X_reg = data_for_plot[[x_axis]]
-        y_reg = data_for_plot[y_axis]
-        
-        print(X_reg)
-        print(y_reg)
-        # Fit the model
-        model.fit(X_reg, y_reg)
-        
-        round_coef = 2
-        # Get coefficients
-        if reg_type == 'Linear Regression':
-            # Output coefficients for Linear Regression
-            print("Coefficients:", model.coef_)
-            # rounded_coefs = [round(coef, round_coef) for coef in model.coef_]
-            equation = format_coefs(model.coef_, reg_type)
-        elif reg_type == 'Polynomial Regression':
-            # Output coefficients for Polynomial Regression
-            linear_model = model.named_steps['linearregression']
-            # rounded_coefs = [round(coef, round_coef) for coef in linear_model.coef_]
-            print("Coefficients:", linear_model.coef_)
-            equation = format_coefs(linear_model.coef_, reg_type)
-        
-        
-        # Make predictions (optional)
-        predictions = model.predict(X_reg)
-        
-        # You can also view the predictions alongside the original DataFrame if desired
-        data_for_plot['predicted_count'] = predictions   
-
-
-        # Plotly figure with the original data and the regression line
-        plotly_fig.add_trace(go.Scatter(
-            x=data_for_plot[x_axis],
-            y=data_for_plot['predicted_count'],
-            mode='lines',
-            name=reg_type if reg_type in ['Decision Tree','k-NN'] else equation,
-            line=dict(color='red', width=2)  # Customizing line color and width
-        ))
+    # x, y = data_for_plot[x_axis].values.reshape(-1, 1), data_for_plot[y_axis].values.reshape(-1, 1)
+    if z_column is not None and zf_column == "Weight on y":
+        y = data_for_plot[z_axis].values.reshape(-1, 1)
+        weights = data_for_plot[t_axis].values.reshape(-1, 1).flatten()
     
+    # Split the data
+    if t_axis is not None:
+        if t_axis == 'standard_error':
+            x_train, x_test, y_train, y_test, weights_train, weights_test = train_test_split(x, y, weights, test_size=0.2, random_state=0)
     else:
-        
-        window_lenght = len(data_for_plot[x_axis])//5
-        print("window_lenght=",window_lenght)
-        
-        plotly_fig.add_trace(go.Scatter(
-            x=data_for_plot[x_axis],
-            y=signal.savgol_filter(data_for_plot[y_axis],
-                                   window_lenght, # window size used for filtering
-                                   reg_order), # order of fitted polynomial
-            mode='lines',
-            name=reg_type,
-            line=dict(color='red', width=2)  # Customizing line color and width
-        ))
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
 
+    Dict_regression_models = {
+        'Linear Regression': lm.LinearRegression,
+        'Decision Tree': tree.DecisionTreeRegressor,
+        'k-NN': neighbors.KNeighborsRegressor,
+        'Polynomial Regression': lambda: make_pipeline(PolynomialFeatures(degree=reg_order), lm.LinearRegression())  # Use a lambda to return a new instance
+        }        
+
+    # Instantiate the model
+    model = Dict_regression_models[reg_type]()
+    
+    # Fit the model
+    if t_axis == 'standard_error':
+        model.fit(x_train, y_train, linearregression__sample_weight=weights_train)
+    else:
+        model.fit(x_train, y_train)
+    
+    
+
+    
+    # Make predictions
+    y_pred = model.predict(x_test)    
+
+    print(x_train, y_train)
+    print()
+    print(x_test, y_test)
+    print()
+    print(y_pred)
+    
+    if reg_type == 'Polynomial Regression':
+        # # Get the coefficients and intercept
+        # # Note: Here we access the named steps in the pipeline.
+        poly = model.named_steps['polynomialfeatures']  # Get the PolynomialFeatures step
+        linear_reg = model.named_steps['linearregression']  # Get the LinearRegression step
+        
+        coefficients = linear_reg.coef_
+        intercept = linear_reg.intercept_    
+    
+        # Display the polynomial equation
+        round_coef = 8
+        polynomial_equation = f"y = {round(intercept[0], round_coef)}"
+        for i in range(1, len(coefficients[0])):
+            polynomial_equation += f" + {round(coefficients[0][i], round_coef)} * x^{i}"
+        
+        print(polynomial_equation)
+
+    # Mean Squared Error (MSE)
+    # Average of the squares of the differences between predicted values (y_pred) and actual values (y_test).
+    mse = mean_squared_error(y_test, y_pred)
+    # R-squared (R²)
+    # Proportion of variance in the dependent variable that can be explained by the independent variables in the model.
+    r2 = r2_score(y_test, y_pred)
+    
+    print(f'Mean Squared Error: {mse}')
+    print(f'R^2 Score: {r2}')
+    
+    
+    # Make predictions (optional)
+    predictions = model.predict(x)
+    
+    # You can also view the predictions alongside the original DataFrame if desired
+    data_for_plot['predicted_count'] = predictions   
+
+    # Plotly figure with the original data and the regression line
+    plotly_fig.add_trace(go.Scatter(
+        x=data_for_plot[x_axis],
+        y=data_for_plot['predicted_count'],
+        mode='lines',
+        name=reg_type if reg_type in ['Linear Regression', 'Decision Tree','k-NN'] else "Poly deg "+str(reg_order),#polynomial_equation,
+        line=dict(dash='dash', width=2)  # Customizing line color and width
+    ))
+    
         
     fig_json_serializable = plotly_fig.to_dict()
         
