@@ -1,199 +1,120 @@
-# import numpy as np
-# import pandas as pd
-# import matplotlib.pyplot as plt
-# from sklearn.model_selection import train_test_split
-# from sklearn.preprocessing import PolynomialFeatures
-# from sklearn.linear_model import LinearRegression
-# from sklearn.metrics import mean_squared_error, r2_score
+I have he dataframe data_for_plot
+
+     startYear genres_split  count
+0         1892       Comedy      1
+1         1892         Long      1
+2         1892        Other      3
+3         1892      Romance      1
+4         1892        Short      2
+..         ...          ...    ...
+198       1936         Long      1
+199       1936        Other      1
+200       1936      Western      1
+201       1990       Comedy      1
+202       1990        Short      1
+
+[203 rows x 3 columns]
 
 
-# np.random.seed(0)
-# x = np.sort(np.random.rand(100, 1) * 10)  # Increases the size of the dataset
-# y = 1 + 2 * (x ** 2) + 3 * (x ** 3) + np.random.randn(100, 1) * 10  # A cubic polynomial with noise
+x_axis = "startYear"
+y_axis = "count"
+z_axis = "genres_split"
+
+I want to apply         
+
+window_lenght = len(data_for_plot[x_axis])//5
+data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
+                       window_lenght, # window size used for filtering
+                       smt_order_value)
+
+but I want to do it for each unique vlue of genres_split.
+
+which mean that the signal.savgol_filter must be done on the unique genres_split sepratetly, but all the new filter value must replace the unfilterd value of the data_for_plot 
 
 
-# plt.scatter(x, y, color='blue')
-# plt.title('Complex Polynomial Data')
-# plt.xlabel('x')
-# plt.ylabel('y')
-# plt.show()
+I have the dataframe
 
-# x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
+     startYear genres_split  count
+0         1892       Comedy      1
+1         1892         Long      1
+2         1892        Other      3
+3         1892      Romance      1
+4         1892        Short      2
+..         ...          ...    ...
+198       1936         Long      1
+199       1936        Other      1
+200       1936      Western      1
+201       1990       Comedy      1
+202       1990        Short      1
 
-
-# degree = 5  # Change degree for more complexity
-# poly = PolynomialFeatures(degree=degree)
-# x_poly_train = poly.fit_transform(x_train)
-# x_poly_test = poly.transform(x_test)
-
-
-# model = LinearRegression()
-# model.fit(x_poly_train, y_train)
-
-
-# # Get coefficients and intercept
-# coefficients = model.coef_
-# intercept = model.intercept_
-
-# # Print the coefficients and intercept
-# print(f'Intercept: {intercept[0]}')
-# print('Coefficients:', coefficients[0])
-
-# polynomial_equation = f"y = {intercept[0]}"
-# for i in range(1, len(coefficients[0])):
-#     polynomial_equation += f" + {coefficients[0][i]} * x^{i}"
-
-# print(polynomial_equation)
+[203 rows x 3 columns]
 
 
-# y_pred = model.predict(x_poly_test)
+ the function 
 
-# mse = mean_squared_error(y_test, y_pred)
-# r2 = r2_score(y_test, y_pred)
+        # Function to apply savgol_filter
+        def apply_savgol_filter(group):
+            # Calculate window length based on the size of the group
+            window_length = len(group)//5
+            
+            # Ensure that window_length is odd and less than or equal to the total group length
+            if window_length < 3:  # Savitzky-Golay filter needs at least a size of 3
+                return group  # Skip filtering for groups too small
+            
+            if window_length % 2 == 0:
+                window_length -= 1  # Make sure window_length is odd
+            
+            print(group[y_axis])
+            print("window_length=",window_length)
+            # Apply the savgol_filter
+            filtered_values = signal.savgol_filter(group[y_axis], window_length, smt_order_value)
 
-# print(f'Mean Squared Error: {mse}')
-# print(f'R^2 Score: {r2}')
+            # Replace the original 'count' with the filtered values
+            group[y_axis] = filtered_values
+            
+            print("filtered_values=",filtered_values)
+            
+            return group
+        
+        # Apply the filter to each genre
+        data_for_plot_filter = data_for_plot.groupby(z_axis, as_index=False).apply(apply_savgol_filter)
 
+add an index 
 
+       startYear genres_split  count
+0 28        1899    Adventure    1.0
+  47        1902    Adventure    1.0
+  53        1903    Adventure    3.0
+  61        1904    Adventure    1.0
+  68        1905    Adventure    1.0
+         ...          ...    ...
+7 160       1916      Western   22.0
+  168       1917      Western   30.0
+  176       1918      Western   28.0
+  184       1919      Western   14.0
+  200       1936      Western    1.0
 
-# plt.scatter(x, y, color='blue')
-# plt.scatter(x_test, y_test, color='red')  # Original test data
-# plt.scatter(x_test, y_pred, color='green')  # Predicted values
-
-# # Optional: For better visualization, plot the smooth curve for the polynomial fit
-# x_plot = np.linspace(0, 10, 100).reshape(-1, 1)
-# y_plot = model.predict(poly.transform(x_plot))
-# plt.plot(x_plot, y_plot, color='orange', linewidth=2)  # Fitted polynomial line
-
-# plt.title('Complex Polynomial Regression')
-# plt.xlabel('x')
-# plt.ylabel('y')
-# plt.legend(['Original Data', 'Test Data', 'Predictions', 'Fitted Polynomial'])
-# plt.show()
-
-
-
-
-
-
-import numpy as np
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import LinearRegression
-from sklearn.pipeline import make_pipeline
-from sklearn.metrics import mean_squared_error, r2_score
-
-data = [
-    (1892, 3),
-    (1893, 1),
-    (1894, 7),
-    (1895, 18),
-    (1896, 106),
-    (1897, 37),
-    (1898, 31),
-    (1899, 24),
-    (1900, 41),
-    (1901, 19),
-    (1902, 14),
-    (1903, 26),
-    (1904, 9),
-    (1905, 14),
-    (1906, 19),
-    (1907, 29),
-    (1908, 105),
-    (1909, 188),
-    (1910, 144),
-    (1911, 153),
-    (1912, 195),
-    (1913, 192),
-    (1914, 276),
-    (1915, 344),
-    (1916, 286),
-    (1917, 325),
-    (1918, 296),
-    (1919, 110),
-    (1920, 3),
-    (1921, 2),
-    (1922, 1),
-    (1925, 2),
-    (1936, 1),
-    (1990, 1),
-]
-
-# Create separate lists for startYear and count
-startYear = np.array([year for year, count in data])
-count = np.array([count for year, count in data])
-
-# Calculate the offset
-offset = startYear.min()
-
-# Adjust x values by subtracting the minimum value
-startYear_offset = startYear - offset
-x = startYear_offset.reshape(-1, 1)
-y = count.reshape(-1, 1)
-
-# # Split the data
-# x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
-
-# Define weights for each data point (same length as x and y)
-weights = np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1])
-
-# Split the data
-x_train, x_test, y_train, y_test, weights_train, weights_test = train_test_split(x, y, weights, test_size=0.2, random_state=0)
+[203 rows x 3 columns]
 
 
-# Create a pipeline for polynomial regression
-degree = 8
-model_pipeline = make_pipeline(PolynomialFeatures(degree=degree), LinearRegression())
+I dont want to have th new indice
 
-# Fit the model
-model_pipeline.fit(x_train, y_train, linearregression__sample_weight=weights_train)
 
-# Make predictions
-y_pred = model_pipeline.predict(x_test)
 
-# Get the coefficients and intercept
-poly = model_pipeline.named_steps['polynomialfeatures']  # Get the PolynomialFeatures step
-linear_reg = model_pipeline.named_steps['linearregression']  # Get the LinearRegression step
 
-coefficients = linear_reg.coef_
-intercept = linear_reg.intercept_
+     startYear genres_split  count
+0         1892       Comedy      1
+1         1892         Long      1
+2         1892        Other      3
+3         1892      Romance      1
+4         1892        Short      2
+..         ...          ...    ...
+198       1936         Long      1
+199       1936        Other      1
+200       1936      Western      1
+201       1990       Comedy      1
+202       1990        Short      1
 
-print(x_train, y_train)
-print()
-print(x_test, y_test)
-print()
-print(y_pred)
-
-# Display the polynomial equation
-polynomial_equation = f"y = {intercept[0]}"
-for i in range(1, len(coefficients[0])):
-    polynomial_equation += f" + {coefficients[0][i]} * x^{i}"
-
-print(polynomial_equation)
-
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-print(f'Mean Squared Error: {mse}')
-print(f'R^2 Score: {r2}')
-
-plt.figure()
-# Optional: Plotting for visualization
-plt.plot(startYear, count, color='blue', label='Data')
-plt.scatter(startYear[x_test.flatten() + offset - offset], y_test, color='red', label='Test Data')
-plt.scatter(startYear[x_test.flatten() + offset - offset], y_pred, color='green', label='Predictions')
-
-# Plotting the fitted polynomial curve
-x_plot = np.linspace(min(startYear_offset), max(startYear_offset), 100).reshape(-1, 1)
-y_plot = model_pipeline.predict(x_plot)
-plt.plot(x_plot + offset, y_plot, color='orange', linewidth=2, label=f'Fitted Polynomial, deg {degree}')
-
-plt.title('Polynomial Regression with Pipeline')
-plt.xlabel('Year')
-plt.ylabel('Count')
-plt.legend()
-plt.show()
+[203 rows x 3 columns]
 
 

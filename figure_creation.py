@@ -292,7 +292,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
         
         if str(y_column)=='None':
             
-            smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis)
+            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
                             
             if g_column=="Histogram":
                 plotly_fig = px.bar(
@@ -328,7 +328,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                 n = 7  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
-            smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis)
+            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
 
             if "Histogram" in g_column:
                 plotly_fig = px.bar(
@@ -383,7 +383,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                 elif zf_column == "Weight on y":
                     data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
-            smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis)
+            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
                         
             # y_values = data_for_plot[y_column].unique()
             if g_column=="Histogram" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
@@ -513,7 +513,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
    #============================================================================="""
 
 
-def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis):
+def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis):
 
     """
     Goal: Apply a filter on the data.
@@ -525,20 +525,71 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
     - data_for_plot: Dataframe which will be filtered.
     - x_axis: Column in the dataframe.
     - y_axis: Column in the dataframe.
+    - z_axis: Column in the dataframe.
 
     Returns:
     - data_for_plot: Dataframe updated.
     """
+
+    # Columns in the dataframe which are strings and where the cell can contain multiple values.
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+    
+    print("############## Smoothing #################")
+    
+    print(data_for_plot)
+    
+    data_for_plot['original_index'] = data_for_plot.index
     
     if sub_bot_smt_value % 2 == 1:
-        window_lenght = len(data_for_plot[x_axis])//5
-        print("window_lenght=",window_lenght)
-        data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
-                               window_lenght, # window size used for filtering
-                               smt_order_value)
         
-        return data_for_plot
+        
+        if z_axis is None or z_axis not in df_col_string:
+            window_lenght = len(data_for_plot[x_axis])//5
+            print("window_lenght=",window_lenght)
+            data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
+                                   window_lenght, # window size used for filtering
+                                   smt_order_value)
+
+        else:
+            # Function to apply savgol_filter
+            def apply_savgol_filter(group):
+                # Calculate window length based on the size of the group
+                window_length = len(group)//5
+                
+                # Ensure that window_length is odd and less than or equal to the total group length
+                if window_length < 3:  # Savitzky-Golay filter needs at least a size of 3
+                    return group  # Skip filtering for groups too small
+                
+                if window_length % 2 == 0:
+                    window_length -= 1  # Make sure window_length is odd
+                
+                print(group[y_axis])
+                print("window_length=",window_length)
+                # Apply the savgol_filter
+                filtered_values = signal.savgol_filter(group[y_axis], window_length, smt_order_value)
     
+                # Replace the original 'count' with the filtered values
+                group[y_axis] = filtered_values
+                                
+                return group
+            
+            # Apply the filter to each genre
+            data_for_plot_filtered = data_for_plot.groupby(z_axis, as_index=False, group_keys=False).apply(apply_savgol_filter)
+                        
+            # Sort the DataFrame by the original index
+            data_for_plot_filtered.sort_values(by='original_index', inplace=True)
+                        
+            # Drop the 'original_index' column if you no longer need it
+            data_for_plot_filtered.drop(columns='original_index', inplace=True)
+                
+            data_for_plot = data_for_plot_filtered
+            
+            print("############ End Smoothing ###############")
+    
+    print(data_for_plot)
+    
+    return data_for_plot
+            
 
 """#=============================================================================
    #=============================================================================
