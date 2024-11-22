@@ -73,9 +73,14 @@ if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
 
-selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"] #, "directors", "writers"
+selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "averageRating", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle"
 selected_filter  = [None for i in selected_columns]
 df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+
+if "isOriginalTitle" in df1.columns:
+    df1 = df1.loc[df1["isOriginalTitle"] == 1]
+    df1.reset_index(drop=True, inplace=True)
+
 # Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
 df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
 
@@ -90,10 +95,10 @@ List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie",
 
 
 # Lists of columns that are relevants regarding the tab where where we are.
-List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"]
+List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "directors"] #, "region", "language"
 df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
-df_col_string_tab2 = ["genres"]
-List_col_exclude_tab2 = ["tconst"]
+df_col_string_tab2 = ["genres", "directors"] #, "region", "language"
+List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
 
 List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "title"]
 List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
@@ -538,10 +543,6 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     filter_values = list(args[0:-2])
     filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
     df1_filtered = od.apply_filter(df1, filter_values)
-    
-    # print("x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value=",x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value)
-    # print("filter_values=",filter_values)
-    # print("stored_df1=", df1)
 
     return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, Large_file_memory)
 
@@ -828,42 +829,14 @@ def update_func_dropdown_utility(selected_y, function_on_axi, df_col_numeric, in
     else:
         return [{'label': col, 'value': col} for col in function_on_axi], initial_value
 
-def update_filter_dropdown_utility(selected_boxes, df):
-    """
-    Utility function to generate dropdown options for the function based on the selected y-axis column.
-    """
-    
-    dropdowns = []    
-    
-    for col in selected_boxes:
-        if col == []:
-            dropdowns.append([])
-        else:
-            col = col[0]
-            dopdown_values = []
-            # Collect all unique values, splitting them by commas and ensuring uniqueness
-            all_roles = set()
-            for value in df[col].dropna().unique():
-                # Split the value by comma and strip any extra spaces
-                roles = [role.strip() for role in str(value).split(',')]
-                all_roles.update(roles)
-            
-            # Convert to a sorted list
-            unique_values = sorted(all_roles)
-                
-            dropdowns.append(unique_values)
-        
-    return dropdowns 
-
-def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, stored_df, large_file_memory):
+def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df, large_file_memory):
 
     """
     Utility function to generate a graph based on the provided parameters.
     """
-    if stored_df is None:  # Check if stored_df is None or empty
+    if df is None:  # Check if stored_df is None or empty
         filtered_data_graph = None
     else:
-        df = stored_df
         # Create a copy of the DataFrame to avoid modifying the original stored data
         filtered_data_graph = df.copy()
     # Create the figure based on filtered data

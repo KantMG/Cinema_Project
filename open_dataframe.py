@@ -270,15 +270,11 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
                    
             elif expected_type == str:
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
-
-        # desired_number_of_partitions = 4
-        # df=df.repartition(npartitions=desired_number_of_partitions)
         
         # Get the infos on the DataFrame
         dis.infos_on_data(df) if Get_file_sys_mem==True else None
                 
         # # Log the time taken to apply filters
-        # df = apply_filter(df, info["filters"])
         log_performance(f"Read {file}", file_start_time)
         print()
         
@@ -441,6 +437,8 @@ def apply_filter(df, filters):
 
     print("Apply filter.")
     
+    print(df)
+    
     if not filters:
         return df
     
@@ -527,7 +525,6 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
     Returns:
     - df: DataFrame
     """
-    
     
     # Define the mapping of files to their columns and their types
     file_columns_mapping = {
@@ -634,7 +631,6 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
         dis.infos_on_data(df) if Get_file_sys_mem==True else None
 
         # Apply the filter to the DataFrame
-        # df = apply_filter(df, info["filters"])
         df = df[df['birthYear'] != -1]
         
         log_performance(f"Reading {file}", file_start_time)    
