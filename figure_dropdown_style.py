@@ -628,22 +628,3 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, dropdowns_
    #=============================================================================
    #============================================================================="""
 
-
-def get_dropdown_options(filtered_data, y_column):
-    print("""Generate dropdown options based on the type of y_column.""")
-    # Convert column to numeric, forcing errors to NaN
-    filtered_data[y_column] = pd.to_numeric(filtered_data[y_column], errors='coerce')
-    filtered_data = filtered_data.dropna(subset=[y_column]).copy()
-
-    # Generate options based on the type of y_column
-    if y_column in list_col_num:
-        # Generate numeric ranges
-        min_val, max_val = int(filtered_data[y_column].min()), int(filtered_data[y_column].max())
-        ranges = [f"{i}-{i + 10}" for i in range(min_val, max_val, 10)]  # Adjust range size as needed
-        return ranges
-    else:
-        # For string columns like genres, return unique string values
-        filtered_data[y_column] = filtered_data[y_column].astype(str)  # Ensure column is string type
-        unique_values = filtered_data[y_column].dropna().unique().tolist()
-        return unique_values
-    

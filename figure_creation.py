@@ -107,13 +107,15 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
         Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory)
-        print("The data ready to be ploted is")
+        print("The data ready to be ploted is:")
         print(data_for_plot)
         print()
         # Add the core of the figure
+        print("############## Core figure creation ##############")
         fig_json_serializable, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel)
     
     # Update the figure layout
+    print("############## Update figure layout ##############")
     fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column)       
     
     plt.close()
@@ -246,7 +248,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     
     legend = "None"
     
-
     x_axis = x_column
     y_axis = 'count'
     z_axis = None
@@ -534,21 +535,20 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
     df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
     
-    print("############## Smoothing #################")
-    
-    print(data_for_plot)
-    
-    data_for_plot['original_index'] = data_for_plot.index
-    
     if sub_bot_smt_value % 2 == 1:
         
+        print("############## Smoothing #################")
+        
+        data_for_plot['original_index'] = data_for_plot.index
         
         if z_axis is None or z_axis not in df_col_string:
             window_lenght = len(data_for_plot[x_axis])//5
-            print("window_lenght=",window_lenght)
             data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
                                    window_lenght, # window size used for filtering
                                    smt_order_value)
+            print("window_length=",window_length)
+            print("Data updated by the smoothing")
+            print(data_for_plot)
 
         else:
             # Function to apply savgol_filter
@@ -563,8 +563,10 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
                 if window_length % 2 == 0:
                     window_length -= 1  # Make sure window_length is odd
                 
-                print(group[y_axis])
                 print("window_length=",window_length)
+                print("Amount of data", len(group[y_axis]))
+                print()
+                
                 # Apply the savgol_filter
                 filtered_values = signal.savgol_filter(group[y_axis], window_length, smt_order_value)
     
@@ -583,11 +585,11 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
             data_for_plot_filtered.drop(columns='original_index', inplace=True)
                 
             data_for_plot = data_for_plot_filtered
+        
             
-            print("############ End Smoothing ###############")
-    
-    print(data_for_plot)
-    
+            print("Data updated by the smoothing")
+            print(data_for_plot)
+            
     return data_for_plot
             
 
@@ -670,9 +672,6 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     # Resetting the index to have a clean index
     data_for_plot.reset_index(drop=True, inplace=True)
     
-    print("data_for_plot=")
-    print(data_for_plot)
-    
     # Calculate the offset
     offset = data_for_plot[x_axis].values.min()
     
@@ -710,17 +709,8 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     else:
         model.fit(x_train, y_train)
     
-    
-
-    
     # Make predictions
     y_pred = model.predict(x_test)    
-
-    print(x_train, y_train)
-    print()
-    print(x_test, y_test)
-    print()
-    print(y_pred)
     
     if reg_type == 'Polynomial Regression':
         # # Get the coefficients and intercept
@@ -749,7 +739,6 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     print(f'Mean Squared Error: {mse}')
     print(f'R^2 Score: {r2}')
     
-    
     # Make predictions (optional)
     predictions = model.predict(x)
     
@@ -774,61 +763,40 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     
     return fig_json_serializable, data_for_plot.to_dict(orient='records') 
 
-
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
 
-def format_coefs(coefs, reg_type, x_variable='x'):
-    round_coef = 2
-    if reg_type == 'Linear Regression':
-        # For linear regression, the equation is in the form: y = m*x + b
-        equation = r"y = " + " + ".join([f"{coef:.{round_coef}f}*{x_variable}^{i}" if i > 0 
-                                           else f"{coef:.{round_coef}f}" 
-                                           for i, coef in enumerate(coefs)])
-    elif reg_type == 'Polynomial Regression':
-        # For polynomial regression, the equation is constructed similarly
-        equation = r"y = " + " + ".join([f"{coef:.{round_coef}f}*{x_variable}^{i}" for i, coef in enumerate(coefs)])
-    else:
-        equation = "Unsupported regression type"
-    return equation
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-# Function to group small values
 def group_small_values(data, col, count_column, n, col_ref=None):
     
-    print(n)
-    print(col)
-    print(count_column)
+    """
+    Goal: Group the values which are the less present in the dataframe other the same name "Other".
+
+    Parameters:
+    - data: Dataframe.
+    - col: Column in the dataframe that must be grouped.
+    - count_column: Column in the dataframe (usally count) which will give the total amount of the Other.
+    - n: Integer that will define which value of col are counted in the "Other" value. All values of col which are not in the n first count.
+    - col_ref: Column in the dataframe that will be use as a reference to regroup the values of col.
+
+    Returns:
+    - The updated Dataframe.
+    """
     
-    # # Get the top n values based on count
-    # top_n = data.nlargest(n, count_column)[col].unique()
-    
-    # Group by genres and sum the counts
+    # Group by col value and sum the count_column
     grouped_data = data.groupby(col)[count_column].sum().reset_index()
     
-    # Get the top n genres based on summed counts
+    # Get the top n col value based on summed of count_column
     top_n_genres = grouped_data.nlargest(n, count_column)
-    print(top_n_genres)
     
-    # Extract the genres
+    # Extract the col value
     top_n = top_n_genres[col].unique()
-    print(top_n)
     
     # Replace values not in top_n with "Other"
     data[col] = data[col].where(data[col].isin(top_n), 'Other')
     
-    print(data)
-
-    result = agregate_value(data, col, count_column, col_ref)
-    
-    print(result)
+    result = aggregate_value(data, col, count_column, col_ref)
     
     return result
 
@@ -838,13 +806,27 @@ def group_small_values(data, col, count_column, n, col_ref=None):
    #============================================================================="""
 
 
-def agregate_value(data, col_to_agregate, count_col, col_ref=None):
+def aggregate_value(data, col_to_aggregate, count_col, col_ref=None):
+
+    """
+    Goal: Aggregate the value of the dataframe.
+
+    Parameters:
+    - data: Dataframe.
+    - col_to_aggregate: Column in the dataframe that must be grouped.
+    - count_col: Column in the dataframe (usally count) which will give the total amount of the Other.
+    - col_ref: Column in the dataframe that will be use as a reference to regroup the values of col.
+
+    Returns:
+    - The updated Dataframe.
+    """
+
     # Identify columns to aggregate based on exclusions
     columns_to_aggregate = data.columns.tolist()
     
     if col_ref is not None:
         columns_to_aggregate.remove(col_ref)
-    columns_to_aggregate.remove(col_to_agregate)
+    columns_to_aggregate.remove(col_to_aggregate)
     columns_to_aggregate.remove(count_col)
 
     # Create aggregation dictionary for other columns
@@ -855,12 +837,12 @@ def agregate_value(data, col_to_agregate, count_col, col_ref=None):
 
     # Perform aggregation
     if col_ref is not None:
-        temp_data = data.groupby([col_ref, col_to_agregate], as_index=False).agg(
+        temp_data = data.groupby([col_ref, col_to_aggregate], as_index=False).agg(
             count=(count_col, 'sum'),
             **aggregation_dict
         )
     else:
-        temp_data = data.groupby([col_to_agregate], as_index=False).agg(
+        temp_data = data.groupby([col_to_aggregate], as_index=False).agg(
             count=(count_col, 'sum'),
             **aggregation_dict
         )
@@ -868,16 +850,16 @@ def agregate_value(data, col_to_agregate, count_col, col_ref=None):
     # Now we want to merge the aggregated data back with the unaggregated data without the grouped rows
     if col_ref is not None:
         # Keep other unique entries in the original data
-        other_data = data[~data[col_to_agregate].isin(temp_data[col_to_agregate])]
+        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
 
         # Concatenate the aggregated and the other data
-        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_ref, col_to_agregate])
+        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_ref, col_to_aggregate])
     else:
         # Keep other unique entries in the original data
-        other_data = data[~data[col_to_agregate].isin(temp_data[col_to_agregate])]
+        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
 
         # Concatenate the aggregated and the other data
-        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_to_agregate])
+        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_to_aggregate])
 
     return final_data.reset_index(drop=True)
 

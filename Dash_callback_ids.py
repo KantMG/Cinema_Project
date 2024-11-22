@@ -70,6 +70,19 @@ def get_component_ids(layout):
 
 
 def create_flowchart_from_dash_app(file_path, target_ids=None):
+
+    """
+    Goal: 
+    - Create a fig which is a flowchart of a dash app.
+    
+    Parameters:
+    - file_path: Path of the python program.
+    - target_ids: List of targets id to start the flowchart.
+    
+    Returns:
+    - The flowchart figure.
+    """    
+
     # Read the Python file
     with open(file_path, 'r') as file:
         code = file.read()
@@ -310,6 +323,18 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
    #============================================================================="""
 
 def create_flowchart_from_dash_app(file_path, target_ids=None):
+
+    """
+    Goal: 
+    - Create a fig which is a flowchart of a dash app.
+    
+    Parameters:
+    - file_path: Path of the python program.
+    - target_ids: List of targets id to start the flowchart.
+    
+    Returns:
+    - The flowchart figure.
+    """    
     
     target_ids = ["tabs-1", "tabs-2", "tabs-3"]
     
@@ -404,6 +429,15 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
 
 def build_hierarchy(flowchart_info):
     
+    """
+    Goal: Build a hierarchy by consolidating identical dropdown chains into a single notation.
+
+    Parameters:
+    - flowchart_info: The original nested dictionary structure.
+
+    Returns:
+    - final_hierarchy: The final version of the hierarchy.
+    """
     
     # Initialize the hierarchy dictionary
     hierarchy = {
@@ -483,9 +517,15 @@ def build_hierarchy(flowchart_info):
     return final_hierarchy
 
 
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def simplify_hierarchy(hierarchy):
+    
     """
-    Simplifies the hierarchy by consolidating identical dropdown chains into a single notation.
+    Goal: Simplifies the hierarchy by consolidating identical dropdown chains into a single notation.
 
     Parameters:
     - hierarchy (dict): The original nested dictionary structure.
@@ -493,6 +533,7 @@ def simplify_hierarchy(hierarchy):
     Returns:
     - dict: A simplified version of the hierarchy with repeated structures consolidated.
     """
+    
     simplified_hierarchy = {}
 
     for key, value in hierarchy.items():
@@ -548,8 +589,9 @@ def print_functions(functions, indent):
 
 
 def create_hierarchy_figure(hierarchy):
+    
     """
-    Create a Sunburst visualization of the hierarchical structure from a dictionary hierarchy.
+    Goal: Create a Sunburst visualization of the hierarchical structure from a dictionary hierarchy.
     
     Parameters:
     - hierarchy (dict): The nested dictionary representing the hierarchy structure.
@@ -557,6 +599,7 @@ def create_hierarchy_figure(hierarchy):
     Returns:
     - fig (go.Figure): A Plotly figure representing the hierarchy as a Sunburst chart.
     """
+    
     labels = []
     parents = []
     
@@ -604,8 +647,6 @@ def create_hierarchy_figure(hierarchy):
         height=1000,
     )
 
-
-    
     return fig
 
 
@@ -677,8 +718,16 @@ def create_detailed_flowchart(file_path, target_ids=None):
 
 def extract_io_ids(arg, variable_values):
     """
-    Extracts Input and Output component IDs and properties, handling lists, comprehensions, and concatenations.
+    Goal: Extracts Input and Output component IDs and properties, handling lists, comprehensions, and concatenations.
+
+    Parameters:
+    - arg: 
+    - variable_values: 
+    
+    Returns:
+    - ids: List of the ids
     """
+
     ids = []
     if isinstance(arg, ast.List):  # Regular list of Inputs or Outputs
         for item in arg.elts:
@@ -694,6 +743,7 @@ def extract_io_ids(arg, variable_values):
         # Recursively process the left and right parts of the concatenation
         ids.extend(extract_io_ids(arg.left, variable_values))
         ids.extend(extract_io_ids(arg.right, variable_values))
+        
     return ids
 
 
@@ -703,9 +753,18 @@ def extract_io_ids(arg, variable_values):
 
 
 def extract_comprehension_ids(arg, variable_values):
+    
     """
-    Extracts IDs from comprehensions by substituting values in variables like List_col_tab2.
+    Goal: Extracts IDs from comprehensions by substituting values in variables like List_col_tab2.
+    
+    Parameters:
+    - arg: 
+    - variable_values: 
+    
+    Returns:
+    - ids: List of the ids
     """
+    
     ids = []
     if isinstance(arg, ast.ListComp):  # List comprehension
         if isinstance(arg.elt, ast.Call) and isinstance(arg.elt.func, ast.Name):

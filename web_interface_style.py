@@ -185,9 +185,7 @@ def web_interface_style():
     
         # Content Div for Tabs
         html.Div(id='tabs-content'),
-    
-        # fds.tab2_initial_id(List_col_tab2, 'tab-2')
-    
+        
     ])
 
     return app, dark_dropdown_style, uniform_style

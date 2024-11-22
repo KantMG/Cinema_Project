@@ -115,7 +115,3 @@ def info_source(url,files=None, detail_file=None):
     print(colored("""########################################################""", "red"))
     print()
           
-
-
-
-

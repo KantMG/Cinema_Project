@@ -21,6 +21,7 @@ import time
 import pandas as pd
 import dask.dataframe as dd
 import re
+from termcolor import colored
 
 # Initialize a list to store execution times
 performance_logs = []
@@ -62,6 +63,14 @@ def log_performance(stage, start_time):
 
 
 def file_columns_dtype():
+
+    """
+    Goal: 
+    - Define the mapping of files to their columns and their types.
+    
+    Returns:
+    - The file column mapping.
+    """
         
     # Define the mapping of files to their columns and their types
     file_columns_mapping = {
@@ -157,8 +166,10 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     - df: DataFrame
     """
     
-    print("      ----- open_dataframe -----")
-    print(Project_path)
+    print()
+    print(colored("**************** Open dataframe ****************", "yellow"))
+    print()
+    
     start_time = time.time()  
         
     # Define the mapping of files to their columns and their types
@@ -219,8 +230,6 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
         print("  Columns:", info["columns"])
         print("  Filters:", info["filters"])
         print("  Types:", info["types"])
-
-    
 
     # Create DataFrames based on the files, columns, and filters
     dataframes = []
@@ -319,12 +328,11 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
     
     # Print the final merged DataFrame (head only, to avoid loading too much data)
     print("\nFinal Merged DataFrame:")
-    print(merged_df.head(100))
     print(merged_df)
     print()
     print("Time taken to merge all dataframe: {:.2f} seconds".format(time.time() - start_time))
     print()
-    print("      --- end open_dataframe ---")
+    print(colored("*************** Dataframe is open **************", "yellow"))
     print()
     log_performance("Complete open_data", start_time)
     
@@ -380,6 +388,11 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
     return df
 
 
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def update_dataframe(df, col, val, n_val):
     
     """
@@ -406,16 +419,6 @@ def update_dataframe(df, col, val, n_val):
     
     return df
 
-    
-    # # Iterate through each specified column
-    # for column in col:
-    #     # Check if the column exists in the DataFrame
-    #     if column in df.columns:
-    #         # Update cells that do not contain 'val'
-    #         df[column] = df[column].apply(lambda x: n_val if x != val else x)
-    
-    # return df    
-
 
 """#=============================================================================
    #=============================================================================
@@ -423,6 +426,7 @@ def update_dataframe(df, col, val, n_val):
 
 
 def apply_filter(df, filters):
+    
     """
     Goal: 
     - Apply the given filters to the DataFrame.
@@ -441,7 +445,9 @@ def apply_filter(df, filters):
         return df
     
     for col, filter_value in filters.items():
-        print(col, filter_value, type(filter_value))
+        
+        if filter_value is not None:
+            print("Apply on the column ", col, "the filter", filter_value)
         
         if filter_value is None or filter_value == 'All':
             continue  # Skip if filter_value is None or 'All'
@@ -455,7 +461,6 @@ def apply_filter(df, filters):
             df = df[df[col].str.contains(pattern, na=False)]
 
         else:
-            print("4")
             # Check for interval filtering like "<10" or "<=10" and ">10" or ">=10"
             if '>=' in filter_value or '>' in filter_value or '<=' in filter_value or '<' in filter_value:
                 if '>=' in filter_value:
@@ -491,8 +496,7 @@ def apply_filter(df, filters):
                 
             else:
                 df = df[df[col] == filter_value]
-
-    
+                
             print(f"Filtered df for {col}:")
             print(f"{df[col]}")
     
@@ -637,10 +641,5 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
         
     if Large_file_memory:
         df = df.compute()
-            
-    # Print the final merged DataFrame (head only, to avoid loading too much data)
-    # print("\nFinal Merged DataFrame:")
-    # print(df.head(100))
-    # print(merged_df.compute())
 
     return df
