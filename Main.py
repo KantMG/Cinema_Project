@@ -258,15 +258,21 @@ def tab2_content():
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style, Large_file_memory)
     dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style)
     
-    button_dropdown_function_tab2 = fds.button_dropdown_function("Function creation", "open-modal-function-"+tab, "input-function-name-"+tab, "input-function-"+tab, "submit-button-function-"+tab, "modal-function-"+tab, "output-div-function-"+tab, dark_dropdown_style, uniform_style)
+
+    button_dropdown_function_tab2 = fds.button_modal_double_input("function-"+tab,  "Function creation",
+                                                                  "Enter function name", "Enter operation (e.g., A + B)",
+                                                                  "Create Function", dark_dropdown_style, uniform_style)
 
 
-    button_dropdown_regression_tab2 = fds.button_dropdown_regression("Regression model", "open-modal-regression-"+tab, "dropdown-regression-"+tab, "order-regression-"+tab, "submit-button-regression-"+tab, "modal-regression-"+tab, "output-div-regression-"+tab, dark_dropdown_style, uniform_style)
+    button_dropdown_regression_tab2 = fds.button_modal_dropdown_input("regression-"+tab, "Regression model", 
+                                                                      ["Polynomial Regression", "Decision Tree", "k-NN"], "Enter an order if needed",
+                                                                     "Create regression", dark_dropdown_style, uniform_style)
 
 
-    button_dropdown_smoothing_tab2 = fds.button_dropdown_smoothing("Smoothing", "open-modal-smoothing-"+tab, "dropdown-smoothing-"+tab, "order-smoothing-"+tab, "submit-button-smoothing-"+tab, "modal-smoothing-"+tab, "output-div-smoothing-"+tab, dark_dropdown_style, uniform_style)
+    button_dropdown_smoothing_tab2 = fds.button_modal_dropdown_input("smoothing-"+tab,  "Smoothing", 
+                                                                     ["Savitzky-Golay Filter"], "Enter an order if needed",
+                                                                     "Select a smoothing function", dark_dropdown_style, uniform_style)
 
-    
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
@@ -306,7 +312,7 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
 @app.callback(
     Output('output-div-function-tab-2', 'children'),
     [Input('submit-button-function-tab-2', 'n_clicks')],
-    [State('input-function-name-tab-2', 'value'), State('input-function-tab-2', 'value')]
+    [State('input_1-function-tab-2', 'value'), State('input_2-function-tab-2', 'value')]
 )
 def update_output(n_clicks, func_name, input_value):
     print("Submit button clicks:", n_clicks)  # Check for clicks
@@ -337,7 +343,7 @@ def update_output(n_clicks, func_name, input_value):
 @app.callback(
     Output('x-dropdown-tab-2', 'options'),
     [Input('submit-button-function-tab-2', 'n_clicks')],
-    [State('input-function-name-tab-2', 'value'), State('input-function-tab-2', 'value')]
+    [State('input_1-function-tab-2', 'value'), State('input_2-function-tab-2', 'value')]
 )
 def update_dropdown_options(n_clicks, func_name, input_value):
     print(df1.columns)
@@ -520,10 +526,10 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input('Graph-dropdown-tab-2', 'value'),
      Input('Dim-dropdown-tab-2', 'value'),
      Input("dropdown-regression-tab-2", "value"),
-     Input("order-regression-tab-2", "value"),
+     Input("input-regression-tab-2", "value"),
      Input("submit-button-regression-tab-2", "n_clicks"),
      Input("dropdown-smoothing-tab-2", "value"),
-     Input("order-smoothing-tab-2", "value"),
+     Input("input-smoothing-tab-2", "value"),
      Input("submit-button-smoothing-tab-2", "n_clicks"),
      Input("hide-dropdowns-tab-2", "n_clicks")] +
     [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2],
@@ -541,10 +547,10 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     print("Triggered component:", triggered_id)
     print()
-    if triggered_id == "dropdown-regression-tab-2" or triggered_id == "order-regression-tab-2":
+    if triggered_id == "dropdown-regression-tab-2" or triggered_id == "input-regression-tab-2":
         return dash.no_update
     
-    if triggered_id == "dropdown-smoothing-tab-2" or triggered_id == "order-smoothing-tab-2":
+    if triggered_id == "dropdown-smoothing-tab-2" or triggered_id == "input-smoothing-tab-2":
         return dash.no_update
 
     if z_dropdown_value in df_col_string_tab2:
@@ -675,13 +681,21 @@ def update_ui(input_value):
             dropdowns_with_labels_for_fig_tab3 = fds.dropdown_figure(df2_filter, 'graph-df2', tab, dark_dropdown_style, uniform_style, Large_file_memory)
             dropdowns_with_labels_for_fig_filter_tab3 = fds.dropdown_figure_filter(df2_filter, 'graph-df2', tab, dark_dropdown_style, uniform_style)
 
-
-            button_dropdown_function_tab3 = fds.button_dropdown_function("Function creation", "open-modal-function-"+tab, "input-function-name-"+tab, "input-function-"+tab, "submit-button-function-"+tab, "modal-function-"+tab, "output-div-function-"+tab, dark_dropdown_style, uniform_style)
+            button_dropdown_function_tab3 = fds.button_modal_double_input("function-"+tab,  "Function creation",
+                                                                          "Enter function name", "Enter operation (e.g., A + B)",
+                                                                          "Create Function", dark_dropdown_style, uniform_style)
         
-            button_dropdown_regression_tab3 = fds.button_dropdown_regression("Regression model", "open-modal-regression-"+tab, "dropdown-regression-"+tab, "order-regression-"+tab, "submit-button-regression-"+tab, "modal-regression-"+tab, "output-div-regression-"+tab, dark_dropdown_style, uniform_style)
+        
+            button_dropdown_regression_tab3 = fds.button_modal_dropdown_input("regression-"+tab, "Regression model", 
+                                                                              ["Polynomial Regression", "Decision Tree", "k-NN"], "Enter an order if needed",
+                                                                             "Create regression", dark_dropdown_style, uniform_style)
+        
+        
+            button_dropdown_smoothing_tab3 = fds.button_modal_dropdown_input("smoothing-"+tab,  "Smoothing", 
+                                                                             ["Savitzky-Golay Filter"], "Enter an order if needed",
+                                                                             "Select a smoothing function", dark_dropdown_style, uniform_style)
 
-            button_dropdown_smoothing_tab3 = fds.button_dropdown_smoothing("Smoothing", "open-modal-smoothing-"+tab, "dropdown-smoothing-"+tab, "order-smoothing-"+tab, "submit-button-smoothing-"+tab, "modal-smoothing-"+tab, "output-div-smoothing-"+tab, dark_dropdown_style, uniform_style)
-            
+
             return html.Div([
                 html.P(f'The artist '+input_value+' is born in '+str(birthYear_value)+' and died in '+str(deathYear_value)+' during its career as '+', '.join(primaryProfession)+' he participated to the creation of the following productions.'),
                 html.Div(style={'display': 'flex', 'margin-top': '10px', 'flex-wrap': 'wrap'}, children=[

@@ -47,7 +47,6 @@ def get_max_width(col_data, col_name):
         return 0  # Return 0 or a default width if there are no values
     
     max_length = max(col_data.apply(lambda x: len(str(x))))
-    print(max_length,col_name)
     # Set a higher max width for 'title' column
     if col_name == 'title':
         return max(150, min(max_length * 10, 600))  # Minimum 150px, maximum 400px for 'title'
@@ -214,7 +213,6 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
 
         dropdowns_with_labels.append(dropdown_with_label)
 
-        
     return dropdowns_with_labels
 
 
@@ -294,7 +292,6 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
             )
     
         dropdowns_with_labels.append(dropdown_with_label)
-
     
     return dropdowns_with_labels
 
@@ -378,34 +375,60 @@ def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, un
    #============================================================================="""
 
 
-def button_dropdown_function(text_button, id_button, id_created_func_name, id_created_func, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
+def button_modal_double_input(id_subname, text_button, placeholder_input_1, placeholder_input_2,
+                              text_modal, dark_dropdown_style, uniform_style):
+
+    """
+    Goal: Create a button which give access to a modal.
+    The modal contains two inputs with a submit button.
+
+    Parameters:
+    - id_subname: Part of all the id name associated with this button modal.
+    - text_button: Text on the button.
+    - placeholder_input_1: Text inside the input 1 without content.
+    - placeholder_input_2: Text inside the input 2 without content.
+    - text_modal: Text at the Head of the modal.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+
+    Returns:
+    - The finalized dash button with its modal content.
+    - Creation of all the id:
+        - "open-modal-"+id_subname: id of the button.
+        - "input_1-"+id_subname: id of the first input inside the modal.
+        - "input_2-"+id_subname: id of the second input inside the modal.
+        - "submit-button-"+id_subname: id of the submit button inside the modal.
+        - "modal-"+id_subname: id of the modal.
+        - "output-div-"+id_subname: id of the dash output.
+        
+    """   
     
     dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
         
     return html.Div([
-    dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
+    dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
     dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle("  Create Function")),
+            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
             dbc.ModalBody(
                 [
-                    dcc.Input(id=id_created_func_name, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter function name"),
+                    dcc.Input(id="input_1-"+id_subname, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_1),
                     html.Span(":", style={'margin': '0 10px'}),
-                    dcc.Input(id=id_created_func, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter operation (e.g., A + B)"),
+                    dcc.Input(id="input_2-"+id_subname, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_2),
                 ]
             ),
             html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
-                dbc.Button("Submit", id=id_submit_button, n_clicks=0, className='button')
+                dbc.Button("Submit", id="submit-button-"+id_subname, n_clicks=0, className='button')
             ),
         ],
-        id=id_modal,
+        id="modal-"+id_subname,
         is_open=False,  # Initially closed
         className='top-modal',  # Apply the custom class here
         centered=True,
         size="lg",
     ),
-    html.Div(id=id_output_div)
+    html.Div(id="output-div-"+id_subname)
     ])
 
 
@@ -414,86 +437,70 @@ def button_dropdown_function(text_button, id_button, id_created_func_name, id_cr
    #============================================================================="""
 
 
-def button_dropdown_regression(text_button, id_button, id_dropdown, id_order_reg, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
+def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeholder_input,
+                               text_modal, dark_dropdown_style, uniform_style):
+
+    """
+    Goal: Create a button which give access to a modal.
+    The modal contains a dropdown and an input with a submit button.
+
+    Parameters:
+    - id_subname: Part of all the id name associated with this button modal.
+    - text_button: Text on the button.
+    - option_dropdown: options of the dropdown inside the modal.
+    - placeholder_input: Text inside the input without content.
+    - text_modal: Text at the Head of the modal.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+
+    Returns:
+    - The finalized dash button with its modal content. 
+    - Creation of all the id:
+        - "open-modal-"+id_subname: id of the button.
+        - "dropdown-"+id_subname: id of the dropdown inside the modal.
+        - "input-"+id_subname: id of the input inside the modal.
+        - "submit-button-"+id_subname: id of the submit button inside the modal.
+        - "modal-"+id_subname: id of the modal.
+        - "output-div-"+id_subname: id of the dash output.
+        
+    """       
 
     dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+
         
     return html.Div([
-    dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
+    dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
     dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle("  Create regression")),
+            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
             dbc.ModalBody(
                 [   
                     dcc.Dropdown(
-                        id=id_dropdown,
-                        options=["Polynomial Regression", "Decision Tree", "k-NN"],
+                        id="dropdown-"+id_subname,
+                        options=option_dropdown,
                         # value='Decision Tree',
                         clearable=True,
                         style=dropdown_style,
                         className='dash-dropdown'
                     ),
                     html.Span(":", style={'margin': '0 10px'}),
-                    dcc.Input(id=id_order_reg, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter an order if needed"),
+                    dcc.Input(id="input-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input),
                 ]
             ),
             html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
-                dbc.Button("Submit", id=id_submit_button, n_clicks=0, className='button')
+                dbc.Button("Submit", id="submit-button-"+id_subname, n_clicks=0, className='button')
             ),
         ],
-        id=id_modal,
+        id="modal-"+id_subname,
         is_open=False,  # Initially closed
         className='top-modal',  # Apply the custom class here
         centered=True,
         size="lg",
     ),
-    html.Div(id=id_output_div) 
+    html.Div(id="output-div-"+id_subname) 
     ])
 
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def button_dropdown_smoothing(text_button, id_button, id_dropdown, id_order_reg, id_submit_button, id_modal, id_output_div, dark_dropdown_style, uniform_style):
-
-    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
-        
-    return html.Div([
-    dbc.Button(text_button, id=id_button, n_clicks=0, className='button'),
-    dbc.Modal(
-        [
-            dbc.ModalHeader(dbc.ModalTitle("  Select a smoothing function")),
-            dbc.ModalBody(
-                [   
-                    dcc.Dropdown(
-                        id=id_dropdown,
-                        options=["Savitzky-Golay Filter"],
-                        # value='Decision Tree',
-                        clearable=True,
-                        style=dropdown_style,
-                        className='dash-dropdown'
-                    ),
-                    html.Span(":", style={'margin': '0 10px'}),
-                    dcc.Input(id=id_order_reg, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder="Enter an order if needed"),
-                ]
-            ),
-            html.Span("", style={'margin': '0 10px'}),
-            dbc.ModalFooter(
-                dbc.Button("Submit", id=id_submit_button, n_clicks=0, className='button')
-            ),
-        ],
-        id=id_modal,
-        is_open=False,  # Initially closed
-        className='top-modal',  # Apply the custom class here
-        centered=True,
-        size="lg",
-    ),
-    html.Div(id=id_output_div) 
-    ])
-    
 
 """#=============================================================================
    #=============================================================================
@@ -508,10 +515,14 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, dropdowns_
     Furthermore, A checkbox is on located on the left of all Input and dropdown.
 
     Parameters:
+    - tab: Name of the tab.
     - id_graph: id of the graphic.
     - dropdowns_with_labels_for_fig: The figue dropdowns.
     - dropdowns_with_labels_for_fig_filter: The figue dropdowns for extra filters (with or without checkbox).
-
+    - button_dropdown_function: The button that open the modal for function creation.
+    - button_dropdown_regression: The button that open the modal for regresison creation.
+    - button_dropdown_smoothing: The button that open the modal for smoothing.
+    
     Returns:
     - The finalized figure with all the dropdowns and checkboxes on dash. 
     """   
@@ -636,34 +647,3 @@ def get_dropdown_options(filtered_data, y_column):
         unique_values = filtered_data[y_column].dropna().unique().tolist()
         return unique_values
     
-
-
-def tab2_initial_id(columns, tab):
-
-    
-    # Placeholder dropdowns for tab-2, initially invisible
-    return html.Div([
-        dcc.Dropdown(id='x-dropdown-tab-2', value=None, style={'display': 'none'}),
-        dcc.Dropdown(id='y-dropdown-tab-2', value=None, style={'display': 'none'}),
-        dcc.Dropdown(id='z-dropdown-tab-2', value=None, style={'display': 'none'}),
-        
-        dcc.Dropdown(id='checkbox-startYear-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='checkbox-runtimeMinutes-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='checkbox-genres-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='checkbox-isAdult-tab-2', style={'display': 'none'}),
-        # dcc.Dropdown(id='checkbox-directors-tab-2', style={'display': 'none'}),
-        # dcc.Dropdown(id='checkbox-writers-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='checkbox-averageRating-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='checkbox-numVotes-tab-2', style={'display': 'none'}),
-
-        dcc.Dropdown(id='startYear-fig-dropdown-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='runtimeMinutes-fig-dropdown-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='genres-fig-dropdown-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='isAdult-fig-dropdown-tab-2', style={'display': 'none'}),
-        # dcc.Dropdown(id='directors-fig-dropdown-tab-2', style={'display': 'none'}),
-        # dcc.Dropdown(id='writers-fig-dropdown-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='averageRating-fig-dropdown-tab-2', style={'display': 'none'}),
-        dcc.Dropdown(id='numVotes-fig-dropdown-tab-2', style={'display': 'none'}),
-        
-        # Add other dropdowns as placeholders here as needed
-    ], style={'display': 'none'})
