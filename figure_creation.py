@@ -38,6 +38,7 @@ import matplotlib.pyplot as plt
 import plotly.tools as tls  # For converting Matplotlib to Plotly
 import plotly.graph_objects as go
 import plotly.express as px
+from plotly.subplots import make_subplots
 
 import Function_dataframe as fd
 import Function_errors as fe
@@ -762,6 +763,41 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     print(colored("=============================================================================", "green"))
     
     return fig_json_serializable, data_for_plot.to_dict(orient='records') 
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+def figure_add_subplot(fig_json_serializable, data_for_plot, 
+                       x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
+                       nb_subplots, nb_subplots_row, nb_subplots_col):
+
+    
+    plotly_fig = go.Figure(fig_json_serializable)
+    
+   
+    # Create a subplot figure
+    # For example, creating a 2x1 grid of subplots
+    fig_with_subplots = make_subplots(rows=nb_subplots_row, cols=nb_subplots_col)
+    
+    # Add a trace from your existing figure to the first subplot
+    for trace in plotly_fig.data:
+        fig_with_subplots.add_trace(trace, row=1, col=1)
+    
+    # Add a new trace to the second subplot
+    fig_with_subplots.add_trace(go.Bar(x=[1, 2, 3], y=[6, 2, 3]), row=nb_subplots_row, col=nb_subplots_col)
+
+    fig_with_subplots.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+    )
+
+    plt.close()    
+    
+    
+    return fig_with_subplots, data_for_plot
+
 
 """#=============================================================================
    #=============================================================================
