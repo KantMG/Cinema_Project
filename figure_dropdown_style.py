@@ -234,7 +234,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
     - uniform_style: Color style of the dropdown.
 
     Returns:
-    - dropdowns_with_labels: The finalized dropdowns figure. 
+    - dropdowns_inputs_list: The list of filter dropdowns/Inputs for the figure. 
     """    
 
     columns = df.columns
@@ -243,7 +243,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
     column_widths = {col: get_max_width(df[col], col) for col in columns}
     
     # Create dropdowns using calculated widths
-    dropdowns_with_labels = []
+    dropdowns_inputs_list = []
     for col in columns:
         dtype = df[col].dtype
         # dropdown_style = {**dark_dropdown_style, **uniform_style}  #, 'width': f'{column_widths[col]}px'
@@ -291,83 +291,82 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
                 ]
             )
     
-        dropdowns_with_labels.append(dropdown_with_label)
+        dropdowns_inputs_list.append(dropdown_with_label)
     
-    return dropdowns_with_labels
+    return dropdowns_inputs_list
+
+
+
 
 
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
-   
 
-def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style):
+
+def button_modal_dropdowns_inputs(id_subname, text_button, df, id_graph, tab,
+                               text_modal, dark_dropdown_style, uniform_style):
 
     """
-    Goal: Create the dropdown associated to a figure.
-    These dropdowns are extra filters and the axis are not necessary shown on the graphic.
-    Furthermore, A checkbox is on located on the left of all Input and dropdown.
+    Goal: Create a button which give access to a modal.
+    The modal contains a dropdown and an input with a submit button.
 
     Parameters:
+    - id_subname: Part of all the id name associated with this button modal.
+    - text_button: Text on the button.
     - df: dataframe.
     - id_graph: id of the graphic.
     - tab: name of the tab where the figure is located.
+    - text_modal: Text at the Head of the modal.
     - dark_dropdown_style: Color style of the dropdown.
     - uniform_style: Color style of the dropdown.
 
     Returns:
-    - dropdowns_with_labels_and_checkboxes: The finalized dropdowns and checkboxes figure. 
-    """   
-    
-    columns = df.columns
-    
-    # Calculate widths, ensuring 'title' is handled specifically
-    column_widths = {col: get_max_width(df[col], col) for col in columns}
-    
-    # Create dropdowns with checkboxes using calculated widths
-    dropdowns_with_labels_and_checkboxes = []
-    for col in columns:
-        dtype = df[col].dtype
-        dropdown_style = {**dark_dropdown_style, **uniform_style}
-        # Define whether to use dropdown or input based on the data type
-        if dtype == "float64":
-            input_component = dcc.Input(
-                id=f'fig-dropdown-{col}-'+tab,
-                type='text',
-                debounce=True,
-                style=dropdown_style
-            )
-        else:
-            # Collect all unique values, ensuring uniqueness
-            all_roles = set()
-            for value in df[col].dropna().unique():
-                roles = [role.strip() for role in str(value).split(',')]
-                all_roles.update(roles)
-            unique_values = sorted(all_roles)
-            
-            input_component = dcc.Dropdown(
-                id=f'fig-dropdown-{col}-'+tab,
-                options=[{'label': val, 'value': val} for val in unique_values],
-                style=dropdown_style,
-                className='dash-dropdown',
-                multi=True
-            )
+    - The finalized dash button with its modal content. 
+    - Creation of all the id:
+        - "open-modal-"+id_subname: id of the button.
+        - "fig-dropdown-{col}-tab: id of the dropdowns/inputs inside the modal.
+        - "submit-button-"+id_subname: id of the submit button inside the modal.
+        - "modal-"+id_subname: id of the modal.
+        - "output-div-"+id_subname: id of the dash output.
         
-        # Add a div that includes the checkbox and the label to the right
-        dropdown_with_checkbox = html.Div([
-            dcc.Checklist(
-                id=f'checkbox-{col}-'+tab,
-                options=[{'label': '', 'value': col}],
-                value=[],  # Empty by default
-                style={'display': 'inline-block', 'verticalAlign': 'middle'}
-            ),
-            html.Label(f'{col}', style={'marginLeft': '5px', 'marginRight': '10px'}),  # Label on the right of the checkbox
-            input_component
-        ], style={'display': 'flex', 'alignItems': 'center', 'width': f'{column_widths[col] + 60}px', 'padding': '0 5px'}) # Adjusted width for checkbox
-        
-        dropdowns_with_labels_and_checkboxes.append(dropdown_with_checkbox)
+    """       
 
-    return dropdowns_with_labels_and_checkboxes
+    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+
+        
+    return html.Div([
+    dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+            dbc.ModalBody(
+                [   
+                    
+                    html.Div(
+                        dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style),
+                        style={
+                            'display': 'flex',
+                            'flexWrap': 'wrap',  # Allow wrapping to new lines
+                            'justify-content': 'flex-start',
+                            'gap': '10px',  # Add spacing between dropdowns
+                        }
+                    )
+                ]
+            ),
+            html.Span("", style={'margin': '0 10px'}),
+            dbc.ModalFooter(
+                dbc.Button("Submit", id="submit-button-"+id_subname, n_clicks=0, className='button')
+            ),
+        ],
+        id="modal-"+id_subname,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    ),
+    html.Div(id="output-div-"+id_subname) 
+    ])
 
 
 """#=============================================================================
@@ -507,7 +506,81 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
    #============================================================================="""
 
 
-def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, dropdowns_with_labels_for_fig_filter, button_dropdown_function, button_dropdown_regression, button_dropdown_smoothing):
+def button_modal_subplot_creation(id_subname, text_button, placeholder_input, option_dropdown,
+                               text_modal, dark_dropdown_style, uniform_style):
+
+    """
+    Goal: Create a button which give access to a modal.
+    The modal contains a dropdown and an input with a submit button.
+
+    Parameters:
+    - id_subname: Part of all the id name associated with this button modal.
+    - text_button: Text on the button.
+    - placeholder_input: Text inside the input without content.
+    - option_dropdown: options of the dropdown inside the modal.
+    - text_modal: Text at the Head of the modal.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+
+    Returns:
+    - The finalized dash button with its modal content. 
+    - Creation of all the id:
+        - "open-modal-"+id_subname: id of the button.
+        - "dropdown-"+id_subname: id of the dropdown inside the modal.
+        - "input-"+id_subname: id of the input inside the modal.
+        - "submit-button-"+id_subname: id of the submit button inside the modal.
+        - "modal-"+id_subname: id of the modal.
+        - "output-div-"+id_subname: id of the dash output.
+        
+    """       
+
+    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+
+        
+    return html.Div([
+    dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+
+            dbc.ModalBody(
+                [   
+                    dcc.Input(id="input-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input),
+                    html.Span(":", style={'margin': '0 10px'}),
+                    dcc.Dropdown(
+                        id="dropdown-"+id_subname,
+                        options=option_dropdown,
+                        # value='Decision Tree',
+                        clearable=True,
+                        style=dropdown_style,
+                        className='dash-dropdown'
+                    ),
+                ]
+            ),
+            html.Span("", style={'margin': '0 10px'}),
+            dbc.ModalFooter(
+                dbc.Button("Submit", id="submit-button-"+id_subname, n_clicks=0, className='button')
+            ),
+
+        ],
+        id="modal-"+id_subname,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    ),
+    html.Div(id="output-div-"+id_subname) 
+    ])
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, 
+                         dropdowns_with_labels_for_fig_filter, button_dropdown_function, 
+                         button_dropdown_regression, button_dropdown_smoothing, button_subplot):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -522,6 +595,7 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, dropdowns_
     - button_dropdown_function: The button that open the modal for function creation.
     - button_dropdown_regression: The button that open the modal for regresison creation.
     - button_dropdown_smoothing: The button that open the modal for smoothing.
+    - button_subplot: The button that open the modal for subplot creation.
     
     Returns:
     - The finalized figure with all the dropdowns and checkboxes on dash. 
@@ -556,18 +630,16 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, dropdowns_
                         style={'margin-left': '20px', 'width': '30%'},  # Container for the heading and dropdowns
                         children=[
                             # Heading above dropdowns
-                            html.H2(
-                                'Select filters on the dataframe.',
-                                style={'margin-bottom': '10px'},  # Add some space below the heading
-                                className="text-light"
-                            ),
+                            # html.H2(
+                            #     'Select filters on the dataframe.',
+                            #     style={'margin-bottom': '10px'},  # Add some space below the heading
+                            #     className="text-light"
+                            # ),
                             # Dropdowns in a vertical column
                             html.Div(
                                 dropdowns_with_labels_for_fig_filter,
                                 style={
                                     'display': 'flex',
-                                    'flexWrap': 'wrap',  # Allow wrapping to new lines
-                                    # 'flex-direction': 'column',  # Arrange dropdowns vertically
                                     'justify-content': 'flex-start',
                                     'gap': '10px',  # Add spacing between dropdowns
                                 }
@@ -616,6 +688,17 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, dropdowns_
                                     'gap': '10px',  # Add spacing between dropdowns
                                 }
                             ),  
+
+                            html.Span("", style={'margin': '0 10px'}),
+                            
+                            html.Div(
+                                button_subplot,
+                                style={
+                                    'display': 'flex',
+                                    'justify-content': 'flex-start',
+                                    'gap': '10px',  # Add spacing between dropdowns
+                                }
+                            ), 
                         ]
                     )
                 ]

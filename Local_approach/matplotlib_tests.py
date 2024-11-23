@@ -250,3 +250,81 @@ if os.path.exists(folder_path):
 else:
     print(f"The folder {folder_path} does not exist.")
 
+
+
+
+
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+   
+
+def dropdown_checkboxes_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style):
+
+    """
+    Goal: Create the dropdown associated to a figure.
+    These dropdowns are extra filters and the axis are not necessary shown on the graphic.
+    Furthermore, A checkbox is on located on the left of all Input and dropdown.
+
+    Parameters:
+    - df: dataframe.
+    - id_graph: id of the graphic.
+    - tab: name of the tab where the figure is located.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+
+    Returns:
+    - dropdowns_with_labels_and_checkboxes: The finalized dropdowns and checkboxes figure. 
+    """   
+    
+    columns = df.columns
+    
+    # Calculate widths, ensuring 'title' is handled specifically
+    column_widths = {col: get_max_width(df[col], col) for col in columns}
+    
+    # Create dropdowns with checkboxes using calculated widths
+    dropdowns_with_labels_and_checkboxes = []
+    for col in columns:
+        dtype = df[col].dtype
+        dropdown_style = {**dark_dropdown_style, **uniform_style}
+        # Define whether to use dropdown or input based on the data type
+        if dtype == "float64":
+            input_component = dcc.Input(
+                id=f'fig-dropdown-{col}-'+tab,
+                type='text',
+                debounce=True,
+                style=dropdown_style
+            )
+        else:
+            # Collect all unique values, ensuring uniqueness
+            all_roles = set()
+            for value in df[col].dropna().unique():
+                roles = [role.strip() for role in str(value).split(',')]
+                all_roles.update(roles)
+            unique_values = sorted(all_roles)
+            
+            input_component = dcc.Dropdown(
+                id=f'fig-dropdown-{col}-'+tab,
+                options=[{'label': val, 'value': val} for val in unique_values],
+                style=dropdown_style,
+                className='dash-dropdown',
+                multi=True
+            )
+        
+        # Add a div that includes the checkbox and the label to the right
+        dropdown_with_checkbox = html.Div([
+            dcc.Checklist(
+                id=f'checkbox-{col}-'+tab,
+                options=[{'label': '', 'value': col}],
+                value=[],  # Empty by default
+                style={'display': 'inline-block', 'verticalAlign': 'middle'}
+            ),
+            html.Label(f'{col}', style={'marginLeft': '5px', 'marginRight': '10px'}),  # Label on the right of the checkbox
+            input_component
+        ], style={'display': 'flex', 'alignItems': 'center', 'width': f'{column_widths[col] + 60}px', 'padding': '0 5px'}) # Adjusted width for checkbox
+        
+        dropdowns_with_labels_and_checkboxes.append(dropdown_with_checkbox)
+
+    return dropdowns_with_labels_and_checkboxes

@@ -95,9 +95,6 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     - fig_json_serializable: The finalized plotly figure. 
     """
     
-    print(df["region"].unique())
-    print(df["language"].unique())
-    
     # =============================================================================
     print(colored("========================= Start figure creation =========================", "green"))
     # =============================================================================      

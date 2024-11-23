@@ -95,9 +95,9 @@ List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie",
 
 
 # Lists of columns that are relevants regarding the tab where where we are.
-List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "directors"] #, "region", "language"
+List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"] #, "region", "language"
 df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
-df_col_string_tab2 = ["genres", "directors"] #, "region", "language"
+df_col_string_tab2 = ["genres"] #, "region", "language"
 List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
 
 List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "title"]
@@ -235,7 +235,9 @@ def tab2_content():
 
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style, Large_file_memory)
 
-    dropdowns_with_labels_for_fig_filter_tab2 = fds.dropdown_figure_filter(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style)
+    dropdowns_with_labels_for_fig_filter_tab2 = fds.button_modal_dropdowns_inputs("filter-"+tab,  "Filter on data",
+                                                                  df_selected, 'graph-df1', tab,
+                                                                  "Select filters on the dataframe.", dark_dropdown_style, uniform_style)
     
     button_dropdown_function_tab2 = fds.button_modal_double_input("function-"+tab,  "Function creation",
                                                                   "Enter function name", "Enter operation (e.g., A + B)",
@@ -249,6 +251,10 @@ def tab2_content():
                                                                      ["Savitzky-Golay Filter"], "Enter an order if needed",
                                                                      "Select a smoothing function", dark_dropdown_style, uniform_style)
 
+    button_subplot_tab2 = fds.button_modal_subplot_creation("subplot-"+tab,  "Subplot creation", 
+                                                                     "Number of subplot", ["Horizontal", "Vertical"],
+                                                                     "Configuration of the subplot figure", dark_dropdown_style, uniform_style)
+
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
@@ -261,7 +267,8 @@ def tab2_content():
                                      dropdowns_with_labels_for_fig_filter_tab2,
                                      button_dropdown_function_tab2,
                                      button_dropdown_regression_tab2,
-                                     button_dropdown_smoothing_tab2
+                                     button_dropdown_smoothing_tab2,
+                                     button_subplot_tab2
                                      )
         ], style={'padding': '20px'}),
     ], style={'padding': '20px'})
@@ -342,6 +349,30 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
     Output("modal-smoothing-tab-2", "is_open"),
     [Input("open-modal-smoothing-tab-2", "n_clicks"), Input("submit-button-smoothing-tab-2", "n_clicks")],
     [State("modal-smoothing-tab-2", "is_open")]
+)
+def toggle_modal(open_clicks, submit_clicks, is_open):
+    if open_clicks or submit_clicks:
+        return not is_open
+    return is_open
+
+#  -----------------------------------------------------------------
+
+@app.callback(
+    Output("modal-filter-tab-2", "is_open"),
+    [Input("open-modal-filter-tab-2", "n_clicks"), Input("submit-button-filter-tab-2", "n_clicks")],
+    [State("modal-filter-tab-2", "is_open")]
+)
+def toggle_modal(open_clicks, submit_clicks, is_open):
+    if open_clicks or submit_clicks:
+        return not is_open
+    return is_open
+
+#  -----------------------------------------------------------------
+
+@app.callback(
+    Output("modal-subplot-tab-2", "is_open"),
+    [Input("open-modal-subplot-tab-2", "n_clicks"), Input("submit-button-subplot-tab-2", "n_clicks")],
+    [State("modal-subplot-tab-2", "is_open")]
 )
 def toggle_modal(open_clicks, submit_clicks, is_open):
     if open_clicks or submit_clicks:
@@ -494,12 +525,14 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input("dropdown-smoothing-tab-2", "value"),
      Input("input-smoothing-tab-2", "value"),
      Input("submit-button-smoothing-tab-2", "n_clicks"),
-     Input("hide-dropdowns-tab-2", "n_clicks")] +
+     Input("hide-dropdowns-tab-2", "n_clicks"),
+     Input("submit-button-filter-tab-2", "n_clicks")] +
     [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2],
     State('graph-output-tab-2', 'figure'),
     State('figure-store-tab-2', 'data')
     )
-def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, sub_bot_reg_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, hide_drop_fig, *args):
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value,
+                      reg_dropdown_value, reg_order_value, sub_bot_reg_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, hide_drop_fig, sub_bot_filter_value, *args):
     print()
     print(colored("------------ callback update_graph_tab2 ------------", "red"))
     current_fig = args[-2]
@@ -522,6 +555,9 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         return dash.no_update
 
     if graph_dropdown_value is None:
+        return dash.no_update
+    
+    if triggered_id in list([f'fig-dropdown-{col}-tab-2' for col in List_col_tab2]):
         return dash.no_update
 
     if triggered_id == "submit-button-regression-tab-2":
@@ -623,7 +659,12 @@ def update_ui(input_value):
 
             dropdowns_with_labels_for_fig_tab3 = fds.dropdown_figure(df2_filter, 'graph-df2', tab, dark_dropdown_style, uniform_style, Large_file_memory)
 
-            dropdowns_with_labels_for_fig_filter_tab3 = fds.dropdown_figure_filter(df2_filter, 'graph-df2', tab, dark_dropdown_style, uniform_style)
+
+            dropdowns_with_labels_for_fig_filter_tab3 = fds.button_modal_dropdowns_inputs("filter-"+tab,  "Filter on data",
+                                                                          df2_filter, 'graph-df2', tab,
+                                                                          "Select filters on the dataframe.", dark_dropdown_style, uniform_style)
+    
+
 
             button_dropdown_function_tab3 = fds.button_modal_double_input("function-"+tab,  "Function creation",
                                                                           "Enter function name", "Enter operation (e.g., A + B)",
