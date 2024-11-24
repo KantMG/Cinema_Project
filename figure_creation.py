@@ -775,14 +775,53 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
     
     plotly_fig = go.Figure(fig_json_serializable)
     
-   
     # Create a subplot figure
     # For example, creating a 2x1 grid of subplots
     fig_with_subplots = make_subplots(rows=nb_subplots_row, cols=nb_subplots_col)
-    
+        
     # Add a trace from your existing figure to the first subplot
     for trace in plotly_fig.data:
         fig_with_subplots.add_trace(trace, row=1, col=1)
+    
+    # Add a new trace to the second subplot
+    fig_with_subplots.add_trace(go.Bar(x=[1, 2, 3], y=[6, 2, 3]), row=nb_subplots_row, col=nb_subplots_col)
+
+    fig_with_subplots.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+    )
+
+    plt.close()    
+    
+    
+    return fig_with_subplots, data_for_plot
+
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+def figure_update_subplot(df, fig_json_serializable, data_for_plot, 
+                       x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
+                       index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col):
+
+    
+    fig_with_subplots = go.Figure(fig_json_serializable)
+
+    fig_with_subplots = make_subplots(
+        rows=nb_subplots_row, cols=nb_subplots_col  # Define the required number of rows and columns
+    )
+
+
+    for index, trace in enumerate(fig_json_serializable['data']):
+        # For illustration, you can distribute traces to different subplots
+        # You can change the logic here to decide where to place which trace
+        row = (index // 1) + 1  # Example to place each trace in the first column
+        col = (index % 1) + 1    # Change `1` to desired number of columns
+        fig_with_subplots.add_trace(go.Bar(x=trace['x'], y=trace['y']), row=row, col=col)
+
     
     # Add a new trace to the second subplot
     fig_with_subplots.add_trace(go.Bar(x=[1, 2, 3], y=[6, 2, 3]), row=nb_subplots_row, col=nb_subplots_col)

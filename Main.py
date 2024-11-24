@@ -34,6 +34,7 @@ import psutil
 import threading
 import requests
 import shutil
+import json
 
 import web_interface_style as wis
 import Dash_callback_ids as dci
@@ -100,9 +101,10 @@ df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes
 df_col_string_tab2 = ["genres"] #, "region", "language"
 List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
 
-Nb_subplot_fig_tab2 = 0
-
-
+# Global variable to hold previous clicks for subplot buttons
+previous_clicks = {}
+previous_reset_clicks = 0
+last_clicked_index = 0
 
 List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "title"]
 List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
@@ -236,7 +238,7 @@ def tab2_content():
     
     exclude_cols = ["tconst","directors","writers"]
     df_selected = df1[[col for col in df1.columns if col not in exclude_cols]]
-
+        
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style, Large_file_memory)
 
     dropdowns_with_labels_for_fig_filter_tab2 = fds.button_modal_dropdowns_inputs("filter-"+tab,  "Filter on data",
@@ -384,70 +386,56 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
     return is_open
 
 @app.callback(
-    [Output('output-div-subplot-tab-2', 'children'),
-     Output('reset-store', 'data')],  # Output to store reset state
+    Output('output-div-subplot-tab-2', 'children'),
     [Input('submit-reset-button-subplot-tab-2', 'n_clicks'), 
      Input('submit-button-subplot-tab-2', 'n_clicks')],
-    [State('input_1-subplot-tab-2', 'value'), State('input_2-subplot-tab-2', 'value'), State('input_3-subplot-tab-2', 'value'), State('reset-store', 'data')]
+    [State('input_1-subplot-tab-2', 'value'), State('input_2-subplot-tab-2', 'value'), State('input_3-subplot-tab-2', 'value')],
+    prevent_initial_call=True
 )
-def update_output(reset_click, n_clicks, input_1_value, input_2_value, input_3_value, reset_data):
+def update_output(reset_click, n_clicks, input_1_value, input_2_value, input_3_value):
+
+    print(colored("-------------- callback update_output --------------", "red"))
     print("Submit button clicks:", n_clicks)  # Check for clicks
     print("Inputs Name:", [input_1_value, input_2_value, input_3_value])  # Current function name
-    print("reset_data:",reset_data)
     
-    # # Reset button clicked
-    # if reset_click > 0:
-    #     return "", 0  # Clear buttons and reset store to 0
+    global previous_clicks, previous_reset_clicks
+    # Reset button clicked
+    if reset_click > previous_reset_clicks:
+        previous_reset_clicks = reset_click
+        previous_clicks = [[]]
+        return ""
     
     if n_clicks > 0:
         try:
             # Validate that func_name and input_value are provided
             if not input_1_value or not input_2_value or not input_3_value:
-                return dash.no_update, reset_data
+                return dash.no_update
                 # return "Error: Function name and input expression are required."
-                
+            
             # Create the buttons which will correspond to each subplot.
             buttons_subplot_tab2 = fds.buttons_subplots("Figure-"+tab+"-subplot-", "Subplot ",
                                                         input_1_value, input_2_value, input_3_value, dark_dropdown_style, uniform_style)
-
-            return buttons_subplot_tab2, reset_data
+            
+            previous_clicks = [0] * input_1_value
+            return buttons_subplot_tab2
         except Exception as e:
-            return f"Error: {str(e)}", reset_data
-    return "", reset_data
+            return f"Error: {str(e)}"
+    return ""
 
 
 
-@app.callback(
-    Output('buttons-subplot-content', 'children'),
-    Input({'type': 'subplot-button', 'index': ALL}, 'n_clicks'),
-    prevent_initial_call=True
-)
-def handle_dynamic_button_clicks(n_clicks):
-    ctx = dash.callback_context
-    if not ctx.triggered:
-        return dash.no_update
-
-    button_id = ctx.triggered[0]['prop_id'].split('.')[0]  # Get the ID of the button clicked
-    return f"You clicked: {button_id}"
-
-
-
-# # Callback to update Nb_subplot_fig_tab2 based on button clicks
 # @app.callback(
 #     Output('buttons-subplot-content', 'children'),
-#     [Input({'type': 'dynamic-button', 'index': dash.dependencies.ALL}, 'n_clicks')],
-#     state=[State({'type': 'dynamic-button', 'index': dash.dependencies.ALL}, 'id')]
+#     Input({'type': 'subplot-button', 'index': ALL}, 'n_clicks'),
+#     prevent_initial_call=True
 # )
-# def update_variable(n_clicks, button_ids):
-#     # Initialize the variable
-#     Nb_subplot_fig_tab2 = 0
+# def handle_dynamic_button_clicks(n_clicks):
+#     ctx = dash.callback_context
+#     if not ctx.triggered:
+#         return dash.no_update
 
-#     # Check which button was clicked
-#     for clicks, button in zip(n_clicks, button_ids):
-#         if clicks > 0:
-#             Nb_subplot_fig_tab2 = button['index']  # Get the button value
-
-#     return f'Nb_subplot_fig_tab2 is now set to: {Nb_subplot_fig_tab2}'
+#     button_id = ctx.triggered[0]['prop_id'].split('.')[0]  # Get the ID of the button clicked
+#     return f"You clicked: {button_id}"
 
 
 #  -----------------------------------------------------------------
@@ -613,23 +601,30 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
                       smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                       nb_subplots, nb_subplots_row, nb_subplots_col, sub_bot_sub_value,
                       hide_drop_fig, sub_bot_filter_value, *args):
+
+    global previous_clicks, last_clicked_index
+    
     print()
     print(colored("------------ callback update_graph_tab2 ------------", "red"))
     current_fig = args[-2]
     data_for_plot = args[-1]
+    filter_values = list(args[0:len(List_col_tab2)])
+    filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
+    subplot_button_clicks = list(args[len(List_col_tab2):-2])
+    # Now to get the flat list
+    if subplot_button_clicks and isinstance(subplot_button_clicks, list):
+        subplot_button_clicks = subplot_button_clicks[0]  # Access the first element
+        print("Subplot Button Clicks:", subplot_button_clicks)
+    else:
+        subplot_button_clicks = []  # Handle cases where subplot_button_clicks might be empty or wrongly structured
+        print("No subplot button clicks found.")
 
     ctx = dash.callback_context
     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
     print("Triggered component:", triggered_id)
     print()
     
-    if triggered_id == "dropdown-regression-tab-2" or triggered_id == "input-regression-tab-2":
-        return dash.no_update
-    
-    if triggered_id == "dropdown-smoothing-tab-2" or triggered_id == "input-smoothing-tab-2":
-        return dash.no_update
-
-    if triggered_id == "input_1-subplot-tab-2" or triggered_id == "input_2-subplot-tab-2" or triggered_id == "input_3-subplot-tab-2":
+    if triggered_id in ["dropdown-regression-tab-2", "input-regression-tab-2", "dropdown-smoothing-tab-2", "input-smoothing-tab-2", "input_1-subplot-tab-2", "input_2-subplot-tab-2", "input_3-subplot-tab-2"]:
         return dash.no_update
 
     if z_dropdown_value in df_col_string_tab2:
@@ -638,22 +633,18 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         return dash.no_update
 
     if graph_dropdown_value is None:
+        print("Please select a graphic type.")
         return dash.no_update
     
     if triggered_id in list([f'fig-dropdown-{col}-tab-2' for col in List_col_tab2]):
         return dash.no_update
 
     if triggered_id == "submit-button-regression-tab-2":
-        return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, reg_dropdown_value, reg_order_value, current_fig, data_for_plot)
-        
-    if triggered_id == "submit-button-subplot-tab-2":
-
-        return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value,
-                                    yfunc_dropdown_value, zfunc_dropdown_value,
-                                    graph_dropdown_value, dim_dropdown_value,
-                                    nb_subplots, nb_subplots_row, nb_subplots_col,
-                                    current_fig, data_for_plot)
-
+        return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value,
+                                                 yfunc_dropdown_value, zfunc_dropdown_value, 
+                                                 graph_dropdown_value, dim_dropdown_value,
+                                                 reg_dropdown_value, reg_order_value, 
+                                                 current_fig, data_for_plot)
 
     if  triggered_id == "hide-dropdowns-tab-2":
         fig_json_serializable = go.Figure(current_fig)
@@ -667,15 +658,65 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
-        
-    filter_values = list(args[0:len(List_col_tab2)])
-    filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
+
     df1_filtered = od.apply_filter(df1, filter_values)
     
-    subplot_value = list(args[len(List_col_tab2):-2])
     
-    print(filter_values)
-    print(subplot_value)
+    ###################### Subplot part ######################
+    
+    
+    if triggered_id == "submit-button-subplot-tab-2":
+        print(nb_subplots, nb_subplots_row, nb_subplots_col)
+        # previous_clicks = subplot_button_clicks
+        return update_graph_subplot_creation(x_dropdown_value, y_dropdown_value, z_dropdown_value,
+                                    yfunc_dropdown_value, zfunc_dropdown_value,
+                                    graph_dropdown_value, dim_dropdown_value,
+                                    nb_subplots, nb_subplots_row, nb_subplots_col,
+                                    current_fig, data_for_plot)    
+    
+    # Parse the triggered_id if it is a JSON string
+    try:
+        parsed_id = json.loads(triggered_id)
+    except json.JSONDecodeError:
+        print("Could not decode JSON.")
+        parsed_id = {}
+
+    # Check if the parsed_id corresponds to a subplot button
+    if parsed_id.get('type') == 'subplot-button':
+        return dash.no_update
+    
+    # Check whether subplot_button_clicks is valid and not empty
+    if not subplot_button_clicks or all(not clicks for clicks in subplot_button_clicks):
+        print("No subplot buttons have been clicked. The figure is unique.")
+
+    else:
+        print("subplot_button_clicks=",subplot_button_clicks)
+        # Compare previous clicks with current clicks to find the last clicked index
+        print(previous_clicks)
+        for index, (prev, curr) in enumerate(zip(previous_clicks, subplot_button_clicks)):
+            print(curr , prev)
+            if curr > prev:  # If current clicks > previous clicks, this button was clicked
+                last_clicked_index = index
+                print(f"Subplot button at index {index} was clicked.")
+
+                # Update the previous clicks
+                previous_clicks = subplot_button_clicks.copy()
+            
+                # Use last_clicked_index for any needed logic
+                if last_clicked_index is not None:
+                    print(f"Last clicked subplot button index: {last_clicked_index}")
+                    # Additional logic based on the last clicked button can go here
+
+        return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value,
+                                    yfunc_dropdown_value, zfunc_dropdown_value,
+                                    graph_dropdown_value, dim_dropdown_value,
+                                    last_clicked_index, nb_subplots, nb_subplots_row, nb_subplots_col,
+                                    df1_filtered, current_fig, data_for_plot)
+            
+            
+        
+
+
     
     return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, Large_file_memory)
 
@@ -988,15 +1029,24 @@ def update_graph_minor_change_utility(x_column, y_column, z_column, yfunc_column
     fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order)
     return fig, data_for_plot
 
-def update_graph_subplot(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
+def update_graph_subplot_creation(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
                             nb_subplots, nb_subplots_row, nb_subplots_col, current_fig, data_for_plot):
     """
     Utility function to update a graph based on the provided parameters.
     """
-    print("update_graph_subplot")
+    print("update_graph_subplot_creation")
     fig, data_for_plot = fc.figure_add_subplot(current_fig, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, nb_subplots, nb_subplots_row, nb_subplots_col)
+    
     return fig, data_for_plot
 
+def update_graph_subplot(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
+                            index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, df, current_fig, data_for_plot):
+    """
+    Utility function to update a graph based on the provided parameters.
+    """
+    print("update_graph_subplot")
+    fig, data_for_plot = fc.figure_update_subplot(df, current_fig, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col)
+    return fig, data_for_plot
 
 # =============================================================================
 # End Utility Function for Graphs

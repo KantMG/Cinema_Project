@@ -1,6 +1,12 @@
 
-I have the following function which create three inputs
 
+I create with the function
+
+button_subplot_tab2 = fds.button_modal_subplot_creation("subplot-"+tab,  "Subplot creation", 
+                                                                 "Number of subplot", "Number of rows", "Number of columns",
+                                                                 "Configuration of the subplot figure", dark_dropdown_style, uniform_style)
+
+some button like 
 def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, placeholder_input_2, placeholder_input_3,
                                text_modal, dark_dropdown_style, uniform_style):
 
@@ -71,18 +77,39 @@ def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, 
     ])
 
 
-based on the value of "input_1-"+id_subname
 
-I create some button 
+I use some callback
+
+
+@app.callback(
+    Output("modal-subplot-tab-2", "is_open"),
+    [Input("open-modal-subplot-tab-2", "n_clicks"), Input("submit-button-subplot-tab-2", "n_clicks")],
+    [State("modal-subplot-tab-2", "is_open")]
+)
+def toggle_modal(open_clicks, submit_clicks, is_open):
+    if open_clicks or submit_clicks:
+        return not is_open
+    return is_open
 
 @app.callback(
     Output('output-div-subplot-tab-2', 'children'),
-    [Input('submit-button-subplot-tab-2', 'n_clicks')],
-    [State('input_1-subplot-tab-2', 'value'), State('input_2-subplot-tab-2', 'value'), State('input_3-subplot-tab-2', 'value')]
+    [Input('submit-reset-button-subplot-tab-2', 'n_clicks'), 
+     Input('submit-button-subplot-tab-2', 'n_clicks')],
+    [State('input_1-subplot-tab-2', 'value'), State('input_2-subplot-tab-2', 'value'), State('input_3-subplot-tab-2', 'value')],
+    prevent_initial_call=True
 )
-def update_output(n_clicks, input_1_value, input_2_value, input_3_value):
+def update_output(reset_click, n_clicks, input_1_value, input_2_value, input_3_value):
+
+    print(colored("-------------- callback update_output --------------", "red"))
     print("Submit button clicks:", n_clicks)  # Check for clicks
     print("Inputs Name:", [input_1_value, input_2_value, input_3_value])  # Current function name
+    
+    global previous_clicks, previous_reset_clicks
+    # Reset button clicked
+    if reset_click > previous_reset_clicks:
+        previous_reset_clicks = reset_click
+        previous_clicks = [[]]
+        return ""
     
     if n_clicks > 0:
         try:
@@ -90,68 +117,87 @@ def update_output(n_clicks, input_1_value, input_2_value, input_3_value):
             if not input_1_value or not input_2_value or not input_3_value:
                 return dash.no_update
                 # return "Error: Function name and input expression are required."
-                
+            
             # Create the buttons which will correspond to each subplot.
-            buttons_subplot_tab2 = buttons_subplots("Figure-"+tab+"-subplot-", "Subplot ",
+            buttons_subplot_tab2 = fds.buttons_subplots("Figure-"+tab+"-subplot-", "Subplot ",
                                                         input_1_value, input_2_value, input_3_value, dark_dropdown_style, uniform_style)
-
+            
+            previous_clicks = [0] * input_1_value
             return buttons_subplot_tab2
         except Exception as e:
             return f"Error: {str(e)}"
     return ""
 
-with the functionbuttons_subplots is
 
-def buttons_subplots(id_subname, text_button, nb_buttons, nb_buttons_row, nb_buttons_column,
-                               dark_dropdown_style, uniform_style):
 
-    """
-    Goal: Create as many button as asked.
 
-    Parameters:
-    - id_subname: Part of all the id name associated with this button modal.
-    - text_buttons: Text on the button.
-    - nb_buttons: Number of buttons.
-    - nb_buttons_row: Number of buttons on a row.
-    - nb_buttons_column: Number of buttons on a column.
-    - dark_dropdown_style: Color style of the dropdown.
-    - uniform_style: Color style of the dropdown.
+@app.callback(
+    Output('graph-output-tab-2', 'figure'), Output('figure-store-tab-2', 'data'),
+    [Input('tabs', 'value'),
+     Input('x-dropdown-tab-2', 'value'),
+     Input('y-dropdown-tab-2', 'value'),
+     Input('z-dropdown-tab-2', 'value'),
+     Input('Func on y-dropdown-tab-2', 'value'),
+     Input('Func on z-dropdown-tab-2', 'value'),
+     Input('Graph-dropdown-tab-2', 'value'),
+     Input('Dim-dropdown-tab-2', 'value'),
+     Input("dropdown-regression-tab-2", "value"),
+     Input("input-regression-tab-2", "value"),
+     Input("submit-button-regression-tab-2", "n_clicks"),
+     Input("dropdown-smoothing-tab-2", "value"),
+     Input("input-smoothing-tab-2", "value"),
+     Input("submit-button-smoothing-tab-2", "n_clicks"),
+     Input("input_1-subplot-tab-2", "value"),
+     Input("input_2-subplot-tab-2", "value"),
+     Input("input_3-subplot-tab-2", "value"),
+     Input("submit-button-subplot-tab-2", "n_clicks"),
+     Input("hide-dropdowns-tab-2", "n_clicks"),
+     Input("submit-button-filter-tab-2", "n_clicks")] +
+    [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2] +
+    [Input({'type': 'subplot-button', 'index': ALL}, 'n_clicks')],
+    State('graph-output-tab-2', 'figure'),
+    State('figure-store-tab-2', 'data')
+    )
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value,
+                      yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value,
+                      reg_dropdown_value, reg_order_value, sub_bot_reg_value,
+                      smt_dropdown_value, smt_order_value, sub_bot_smt_value,
+                      nb_subplots, nb_subplots_row, nb_subplots_col, sub_bot_sub_value,
+                      hide_drop_fig, sub_bot_filter_value, *args):
 
-    Returns:
-    - The finalized dash button with its modal content. 
-    - Creation of all the id:
-        - "open-modal-"+id_subname: id of the button.
-        - "dropdown-"+id_subname: id of the dropdown inside the modal.
-        - "input-"+id_subname: id of the input inside the modal.
-        - "submit-button-"+id_subname: id of the submit button inside the modal.
-        - "modal-"+id_subname: id of the modal.
-        - "output-div-"+id_subname: id of the dash output.
-        
-    """       
-
-    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+    global previous_clicks, last_clicked_index
     
-    button_list = []
-        
-    for nb_button in range(1, nb_buttons+1):
-                
-        button = html.Div(dbc.Button(text_button+str(nb_button), id=id_subname+str(nb_button), value=id_subname+str(nb_button), n_clicks=0, className='dash-input dynamic-width'))
-
-        button_list.append(button)
-
-    return html.Div(children=[
-        html.Span("", style={'margin': '0 10px'}),
-        html.Div(button_list, style={
-                        'display': 'flex',
-                        # 'margin-left': '200px',
-                        'justify-content': 'flex-start',
-                        'gap': '5px',
-                        'margin-bottom': '20px'  # Add space below the dropdowns
-                    }
-                ), html.Div(id='buttons-subplot-content')
-        ])
+    print()
+    print(colored("------------ callback update_graph_tab2 ------------", "red"))
+    current_fig = args[-2]
+    data_for_plot = args[-1]
+    filter_values = list(args[0:len(List_col_tab2)])
+    filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}
+    subplot_button_clicks = list(args[len(List_col_tab2):-2])
+    # Now to get the flat list
+    if subplot_button_clicks and isinstance(subplot_button_clicks, list):
+        subplot_button_clicks = subplot_button_clicks[0]  # Access the first element
+        print("Subplot Button Clicks:", subplot_button_clicks)
+    else:
+        subplot_button_clicks = []  # Handle cases where subplot_button_clicks might be empty or wrongly structured
+        print("No subplot button clicks found.")
 
 
-Now I want to use in a callback the id of the buttons, however, they do not exist at first and there name and nuber is given by the value of "input_1-"+id_subname
+when I press the "submit-button-subplot-tab-2"
+it send the 
+
+-------------- callback update_output --------------
+Submit button clicks: 1
+Inputs Name: [2, 2, 1]
+
+------------ callback update_graph_tab2 ------------
+Subplot Button Clicks: []
+Triggered component: submit-button-subplot-tab-2
+
+------------ callback update_graph_tab2 ------------
+Subplot Button Clicks: [0, 0]
+Triggered component: {"index":"1","type":"subplot-button"}
+
+why does the Subplot Button Clicks = [] even if I created them in the callback update_output
 
 

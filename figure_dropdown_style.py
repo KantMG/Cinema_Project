@@ -572,7 +572,6 @@ def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, 
         centered=True,
         size="lg",
     ),
-    dcc.Store(id='reset-store', data=0),  # Hidden storage for reset tracking
     html.Div(id="output-div-"+id_subname) 
     ])
 
@@ -631,7 +630,7 @@ def buttons_subplots(id_subname, text_button, nb_buttons, nb_buttons_row, nb_but
                         'gap': '5px',
                         'margin-bottom': '20px'  # Add space below the dropdowns
                     }
-                ), html.Div(id='buttons-subplot-content')
+                ), 
         ])
 
 
