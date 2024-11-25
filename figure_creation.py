@@ -543,9 +543,9 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
         data_for_plot['original_index'] = data_for_plot.index
         
         if z_axis is None or z_axis not in df_col_string:
-            window_lenght = len(data_for_plot[x_axis])//5
+            window_length = len(data_for_plot[x_axis])//5
             data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
-                                   window_lenght, # window size used for filtering
+                                   window_length, # window size used for filtering
                                    smt_order_value)
             print("window_length=",window_length)
             print("Data updated by the smoothing")
@@ -774,7 +774,7 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
 
     
     plotly_fig = go.Figure(fig_json_serializable)
-    
+        
     # Create a subplot figure
     # For example, creating a 2x1 grid of subplots
     fig_with_subplots = make_subplots(rows=nb_subplots_row, cols=nb_subplots_col)
@@ -783,8 +783,6 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
     for trace in plotly_fig.data:
         fig_with_subplots.add_trace(trace, row=1, col=1)
     
-    # Add a new trace to the second subplot
-    fig_with_subplots.add_trace(go.Bar(x=[1, 2, 3], y=[6, 2, 3]), row=nb_subplots_row, col=nb_subplots_col)
 
     fig_with_subplots.update_layout(
         plot_bgcolor='#1e1e1e',  # Darker background for the plot area
@@ -792,11 +790,22 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
         font=dict(color='white'),  # White text color
     )
 
-    plt.close()    
-    
+    plt.close()       
     
     return fig_with_subplots, data_for_plot
 
+
+
+def get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col):
+    # Check if index_subplot is within the valid range
+    if index_subplot < 0 or index_subplot >= nb_subplots:
+        raise ValueError("index_subplot must be in the range [0, nb_subplots-1]")
+    
+    # Calculate the row and column positions
+    row = index_subplot // nb_subplots_col + 1     # add 1 to convert to 1-based index
+    col = index_subplot % nb_subplots_col + 1      # add 1 to convert to 1-based index
+    
+    return row, col 
 
 
 """#=============================================================================
@@ -804,36 +813,55 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
    #============================================================================="""
 
 def figure_update_subplot(df, fig_json_serializable, data_for_plot, 
-                       x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
-                       index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col):
+                       x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type,
+                       smt_dropdown_value, smt_order_value, sub_bot_smt_value,
+                       index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, Large_file_memory):
+
+    plotly_fig = go.Figure(fig_json_serializable)
+    
+    row_index, col_index = get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col)
+    print(f"Row: {row_index}, Column: {col_index}")    
+
+
+    plotly_fig.update_traces(visible=False)  # Hiding existing traces for simplicity; adjust this as necessary
+    
+    
+    print("Start add trace")
+    # Create the label of the figure
+    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, True)  
+    
+    if x_column is not None: 
+        print("Extract from data base the required column and prepare them for the figure.")
+        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, yf_column, zf_column, graph_type, Large_file_memory)
+        print("The data ready to be ploted is:")
+        print(data_for_plot)
+        print()
+        # Add the core of the figure
+        print("############## Core figure creation ##############")
+        figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel)       
+
+
+    # Extract the first trace from the generated figure
+    if len(figure_returned.data) > 0:  # Check if there is any trace
+        new_trace = figure_returned.data[0]  # Take the first trace
+    else:
+        print("No traces found in the figure returned.")
+        return plotly_fig, data_for_plot  # Nothing to add, return as is
+
+    print("Adding the trace to the plotly figure")
+    
+    # Ensure the new trace is of a valid type
+    if not isinstance(new_trace, go.BaseTraceType):
+        print("Invalid trace type returned, expected a trace, got:", type(new_trace))
+        return plotly_fig, data_for_plot  # Return as is, do not add invalid trace
 
     
-    fig_with_subplots = go.Figure(fig_json_serializable)
-
-    fig_with_subplots = make_subplots(
-        rows=nb_subplots_row, cols=nb_subplots_col  # Define the required number of rows and columns
-    )
-
-
-    for index, trace in enumerate(fig_json_serializable['data']):
-        # For illustration, you can distribute traces to different subplots
-        # You can change the logic here to decide where to place which trace
-        row = (index // 1) + 1  # Example to place each trace in the first column
-        col = (index % 1) + 1    # Change `1` to desired number of columns
-        fig_with_subplots.add_trace(go.Bar(x=trace['x'], y=trace['y']), row=row, col=col)
-
-    
-    # Add a new trace to the second subplot
-    fig_with_subplots.add_trace(go.Bar(x=[1, 2, 3], y=[6, 2, 3]), row=nb_subplots_row, col=nb_subplots_col)
-
-    fig_with_subplots.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-    )
+    print("Add the trace")
+    # Add the new trace to the specific subplot
+    plotly_fig.add_trace(new_trace, row=row_index, col=col_index)
 
     plt.close()    
-    
+    print("end")
     
     return fig_with_subplots, data_for_plot
 
