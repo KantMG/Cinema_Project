@@ -112,7 +112,7 @@ List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writ
 
 
 
-df_name_uptdate = 
+# df_name_uptdate = 
 
 
 
@@ -383,11 +383,11 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
 
 @app.callback(
     Output("modal-subplot-tab-2", "is_open"),
-    [Input("open-modal-subplot-tab-2", "n_clicks"), Input("submit-button-subplot-tab-2", "n_clicks")],
+    [Input("open-modal-subplot-tab-2", "n_clicks"), Input("submit-button-subplot-tab-2", "n_clicks"), Input("submit-reset-button-subplot-tab-2", "n_clicks")],
     [State("modal-subplot-tab-2", "is_open")]
 )
-def toggle_modal(open_clicks, submit_clicks, is_open):
-    if open_clicks or submit_clicks:
+def toggle_modal(open_clicks, submit_clicks, reset_click, is_open):
+    if open_clicks or submit_clicks or reset_click:
         return not is_open
     return is_open
 
@@ -414,7 +414,7 @@ def update_output(reset_click, n_clicks, input_1_value, input_2_value, input_3_v
     if reset_click > previous_reset_clicks:
         previous_reset_clicks = reset_click
         previous_clicks = [[]]
-        return ""
+        return [[]]
     
     if n_clicks > 0:
         try:
@@ -693,9 +693,17 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
             return dash.no_update
     
     # Check whether subplot_button_clicks is valid and not empty
-    if not subplot_button_clicks or all(not clicks for clicks in subplot_button_clicks):
-        print("No subplot buttons have been clicked. The figure is unique.")
-
+    if not subplot_button_clicks:
+        print("No subplot buttons have been clicked. The figure is unique.")  
+    elif all(x == 0 for x in subplot_button_clicks):
+        print(subplot_button_clicks)
+        print("Subplot buttons are all 0.")
+        return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value,
+                                    yfunc_dropdown_value, zfunc_dropdown_value,
+                                    graph_dropdown_value, dim_dropdown_value,
+                                    smt_dropdown_value, smt_order_value, sub_bot_smt_value,
+                                    0, nb_subplots, nb_subplots_row, nb_subplots_col,
+                                    df1_filtered, current_fig, data_for_plot, Large_file_memory)
     else:
         print("subplot_button_clicks=",subplot_button_clicks)
             

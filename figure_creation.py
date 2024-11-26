@@ -22,6 +22,7 @@ import dash
 from dash import dcc, html, Input, Output, dash_table, callback, callback_context
 import dash_bootstrap_components as dbc
 import pandas as pd
+import plotly.io as pio
 import numpy as np
 
 from sklearn.model_selection import train_test_split
@@ -124,6 +125,8 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     print(colored("=============================================================================", "green"))
     if x_column is None: 
         return fig_json_serializable, None
+    
+    print(fig_json_serializable)
     return fig_json_serializable, data_for_plot.to_dict(orient='records')
 
 
@@ -764,9 +767,11 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     
     return fig_json_serializable, data_for_plot.to_dict(orient='records') 
 
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
+
 
 def figure_add_subplot(fig_json_serializable, data_for_plot, 
                        x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
@@ -782,18 +787,39 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
     # Add a trace from your existing figure to the first subplot
     for trace in plotly_fig.data:
         fig_with_subplots.add_trace(trace, row=1, col=1)
+
+    # Add empty traces for each subplot cell except for (1, 1)
+    for row in range(1, nb_subplots_row + 1):
+        for col in range(1, nb_subplots_col + 1):
+            if (row, col) != (1, 1):  # Skip the first cell (1, 1)
+                # Create an empty trace
+                empty_trace = go.Scatter(x=[], y=[], mode='lines', showlegend=False)  # Example empty trace
+                fig_with_subplots.add_trace(empty_trace, row=row, col=col)    
+
     
-
+    # Update selected layout properties of fig_with_subplots from plotly_fig
     fig_with_subplots.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-    )
-
+        xaxis_title=plotly_fig.layout.xaxis.title.text if plotly_fig.layout.xaxis.title else 'X-Axis',
+        yaxis_title=plotly_fig.layout.yaxis.title.text if plotly_fig.layout.yaxis.title else 'Y-Axis',
+        plot_bgcolor=plotly_fig.layout.plot_bgcolor,
+        paper_bgcolor=plotly_fig.layout.paper_bgcolor,
+        font=plotly_fig.layout.font
+    )  
+    
+    # fig_with_subplots.update_layout(
+    #     plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+    #     paper_bgcolor='#101820',  # Dark gray for the paper
+    #     font=dict(color='white'),  # White text color
+    # )
+    
     plt.close()       
     
     return fig_with_subplots, data_for_plot
 
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
 
 
 def get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col):
@@ -812,21 +838,88 @@ def get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplot
    #=============================================================================
    #============================================================================="""
 
-def figure_update_subplot(df, fig_json_serializable, data_for_plot, 
+
+def clean_trace(fig_with_subplots, index_subplot):
+    
+    # Identify the corresponding xaxis and yaxis labels
+    if index_subplot == 0:
+        xaxis_to_remove = 'x'  # Use just 'x' for index 0
+        yaxis_to_remove = 'y'  # Use just 'y' for index 0
+    else:
+        xaxis_to_remove = f'x{index_subplot + 1}'  # e.g., 'x2' for index 1
+        yaxis_to_remove = f'y{index_subplot + 1}'  # e.g., 'y2' for index 1
+        
+    # Filter out traces that correspond to the specified subplot
+    fig_with_subplots['data'] = [
+        trace for trace in fig_with_subplots['data']
+        if trace.get('xaxis') != xaxis_to_remove and trace.get('yaxis') != yaxis_to_remove
+    ]
+    
+    return fig_with_subplots
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def transform_trace_to_format(trace, index_subplot):
+
+    # Generate axis labels based on index_subplot
+    xaxis_label = f'x{index_subplot + 1}'  # For example, x1, x2, etc.
+    yaxis_label = f'y{index_subplot + 1}'  # For example, y1, y2, etc.
+
+    new_trace = {
+        'type': trace.type,
+        'name': trace.name,
+        'hovertemplate': getattr(trace, 'hovertemplate', ''),
+        'marker': getattr(trace, 'marker', {}),
+        'showlegend': getattr(trace, 'showlegend', True),
+        'textposition': getattr(trace, 'textposition', ''),
+        'xaxis': xaxis_label,  # Use dynamic xaxis_label
+        'yaxis': yaxis_label,  # Use dynamic yaxis_label
+        'x': trace.x.tolist() if hasattr(trace, 'x') and isinstance(trace.x, np.ndarray) else trace.x,
+        'y': trace.y.tolist() if hasattr(trace, 'y') and isinstance(trace.y, np.ndarray) else trace.y
+    }
+
+    # If it's a bar trace, eliminate any unsupported properties
+    if trace.type == 'bar':
+        new_trace.pop('mode', None)  # Bar traces do not have a 'mode'
+        new_trace.pop('z', None)   # Bar does not use 'z'
+
+    # If it's a bar trace, eliminate any unsupported properties
+    elif trace.type == 'line':
+        new_trace.pop('mode', None)  # Bar traces do not have a 'mode'
+        new_trace.pop('z', None)   # Bar does not use 'z'
+
+    if trace.type == 'scatter':
+        new_trace.pop('mode', None)  # Bar traces do not have a 'mode'
+        # new_trace['size_max'] = getattr(trace, 'size_max', None)
+        # new_trace['fillcolor'] = getattr(trace, 'fillcolor', None)
+        # new_trace['animation_frame'] = getattr(trace, 'animation_frame', None)
+        new_trace.pop('z', None)   # Bar does not use 'z'
+    
+    if trace.type == 'heatmap':
+        new_trace.pop('marker', None)  # Bar traces do not have a 'mode'
+        new_trace.pop('textposition', None)  # Bar traces do not have a 'mode'
+    
+    return new_trace
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+def figure_update_subplot(df, fig_with_subplots, data_for_plot, 
                        x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type,
                        smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                        index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, Large_file_memory):
-
-    plotly_fig = go.Figure(fig_json_serializable)
     
+        
     row_index, col_index = get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col)
     print(f"Row: {row_index}, Column: {col_index}")    
 
-
-    plotly_fig.update_traces(visible=False)  # Hiding existing traces for simplicity; adjust this as necessary
-    
-    
-    print("Start add trace")
+    fig_json_serializable = go.Figure()
     # Create the label of the figure
     figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, True)  
     
@@ -839,31 +932,52 @@ def figure_update_subplot(df, fig_json_serializable, data_for_plot,
         # Add the core of the figure
         print("############## Core figure creation ##############")
         figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel)       
-
-
-    # Extract the first trace from the generated figure
-    if len(figure_returned.data) > 0:  # Check if there is any trace
-        new_trace = figure_returned.data[0]  # Take the first trace
-    else:
+        fig_update_layout(figure_returned,figname,xlabel,ylabel,zlabel,x_column,graph_type, dim_type)   
+        print()
+        
+    traces = figure_returned.data    
+    if len(traces) == 0:  # Check if there is any trace
         print("No traces found in the figure returned.")
-        return plotly_fig, data_for_plot  # Nothing to add, return as is
+        return fig_with_subplots, data_for_plot  # Nothing to add, return as is
 
-    print("Adding the trace to the plotly figure")
+    fig_with_subplots = clean_trace(fig_with_subplots, index_subplot)
+    for trace in traces:
+        modified_trace = transform_trace_to_format(trace, index_subplot)
     
-    # Ensure the new trace is of a valid type
-    if not isinstance(new_trace, go.BaseTraceType):
-        print("Invalid trace type returned, expected a trace, got:", type(new_trace))
-        return plotly_fig, data_for_plot  # Return as is, do not add invalid trace
+        # Add the modified trace to the figure's data
+        fig_with_subplots['data'].append(modified_trace)
+    
+    
+    # Now create the figure using the cleaned data
+    plotly_fig = go.Figure(fig_with_subplots)
 
-    
-    print("Add the trace")
-    # Add the new trace to the specific subplot
-    plotly_fig.add_trace(new_trace, row=row_index, col=col_index)
 
-    plt.close()    
-    print("end")
+    # Determine the specific xaxis and yaxis labels based on index_subplot
+    if index_subplot == 0:
+        xaxis_name = 'xaxis'
+        yaxis_name = 'yaxis'
+    else:
+        xaxis_name = f'xaxis{index_subplot}'
+        yaxis_name = f'yaxis{index_subplot}'
     
-    return fig_with_subplots, data_for_plot
+    # Update selected layout properties of fig_with_subplots from plotly_fig for the specified subplot
+    plotly_fig.update_layout(
+        **{
+            f'{xaxis_name}_title': figure_returned.layout['xaxis'].title.text,
+            f'{yaxis_name}_title': figure_returned.layout['yaxis'].title.text,
+            'plot_bgcolor': figure_returned.layout.plot_bgcolor,
+            'paper_bgcolor': figure_returned.layout.paper_bgcolor,
+            'font': figure_returned.layout.font
+        }
+    )
+    
+    print(plotly_fig)
+    
+    # Ensure data_for_plot is serializable
+    if isinstance(data_for_plot, pd.DataFrame):
+        data_for_plot = data_for_plot.to_dict(orient='records')  # Convert DataFrame to a dictionary
+        
+    return plotly_fig, data_for_plot
 
 
 """#=============================================================================
