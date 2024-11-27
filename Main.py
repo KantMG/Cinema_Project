@@ -74,7 +74,7 @@ if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
 
-selected_columns = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes", "averageRating", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle"
+selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
 selected_filter  = [None for i in selected_columns]
 df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
@@ -83,7 +83,7 @@ if "isOriginalTitle" in df1.columns:
     df1.reset_index(drop=True, inplace=True)
 
 # Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
-df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
+# df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
 
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
@@ -96,9 +96,9 @@ List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie",
 
 
 # Lists of columns that are relevants regarding the tab where where we are.
-List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "isAdult", "averageRating", "numVotes"] #, "region", "language"
-df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
-df_col_string_tab2 = ["genres"] #, "region", "language"
+List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
+df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes", "seasonNumber", "episodeNumber"]
+df_col_string_tab2 = ["genres", "titleType"] #, "region", "language"
 List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
 
 # Global variable to hold previous clicks for subplot buttons

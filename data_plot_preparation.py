@@ -52,7 +52,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, 
     """
 
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+    df_col_string = ["genres_split", "titleType_split", "directors_split", "writers_split", "category_split"]
 
     # print("Delete the rows with unknown value and split the column with multiple value per cell.")
     Para, df_temp, x_column, y_column, z_column = delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_file_memory)
@@ -165,7 +165,7 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_fi
     """
     
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres", "directors", "writers", "category"]
+    df_col_string = ["genres", "titleType", "directors", "writers", "category"]
 
     # Columns in the dataframe which are numerics.
     df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]

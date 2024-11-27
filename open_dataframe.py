@@ -110,6 +110,15 @@ def file_columns_dtype():
                 "writers": str
             }
         },
+        'title.episode.tsv': {
+            "columns": ["tconst", "parentTconst", "seasonNumber", "episodeNumber"],
+            "types": {
+                "tconst": str,
+                "parentTconst": str,
+                "seasonNumber": int,
+                "episodeNumber": int,
+            }
+        },
         'title.ratings.tsv': {
             "columns": ["tconst", "averageRating", "numVotes"],
             "types": {
@@ -276,7 +285,7 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
                 
         # # Log the time taken to apply filters
         log_performance(f"Read {file}", file_start_time)
-        print()
+        print(df)
         
         # Add the DataFrame to the list
         dataframes.append(df)
@@ -312,7 +321,10 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
             if Large_file_memory:
                 merged_df = dd.merge(merged_df, df, on='tconst', how='inner')
             else:
-                merged_df = pd.merge(merged_df, df, on='tconst', how='inner')
+                if "parentTconst" not in df.columns:
+                    merged_df = pd.merge(merged_df, df, on='tconst', how='outer')
+                else:
+                    merged_df = pd.merge(merged_df, df, on='tconst', how='outer')
                 
             print("Time taken to merge dataframe "+str(i)+": {:.2f} seconds".format(time.time() - start_time))
             print()

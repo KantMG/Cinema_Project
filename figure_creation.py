@@ -126,7 +126,6 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     if x_column is None: 
         return fig_json_serializable, None
     
-    print(fig_json_serializable)
     return fig_json_serializable, data_for_plot.to_dict(orient='records')
 
 
@@ -157,7 +156,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     """
 
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres", "directors", "writers", "category"]
+    df_col_string = ["genres", "directors", "writers", "category", "titleType"]
     
     if init == False:
         if x_column is not None: 
@@ -245,7 +244,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     """
     
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
     
     # Define a list of colors for the bars
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
@@ -295,10 +294,20 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
     if d_column=="1D": 
         
+        # Check if 'startYear' is in the DataFrame
+        if 'startYear' in data_for_plot.columns:
+            # Check if startYear 0 exists and drop it if it does
+            if 0 in data_for_plot['startYear'].values:
+                data_for_plot.drop(data_for_plot[data_for_plot['startYear'] == 0].index, inplace=True)
+            
+            # Resetting index if needed
+            data_for_plot.reset_index(drop=True, inplace=True)
+        
+        
         if str(y_column)=='None':
             
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
-                            
+            
             if g_column=="Histogram":
                 plotly_fig = px.bar(
                     data_for_plot, 
@@ -323,17 +332,19 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
         #Case where y_column is None and z_column is None
         elif str(y_column)!='None' and str(z_column)=='None':           
 
-            if x_column in df_col_string:
+            if x_column in df_col_string and "Movie" not in g_column:
                 # Grouping y_column values
                 n = 12  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, y_axis, x_axis, n)
 
-            if y_column in df_col_string:
+            if y_column in df_col_string and "Movie" not in g_column:
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
+
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
+
 
             if "Histogram" in g_column:
                 plotly_fig = px.bar(
@@ -537,7 +548,7 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
     """
 
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
     
     if sub_bot_smt_value % 2 == 1:
         
@@ -629,7 +640,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     plotly_fig = go.Figure(fig_json_serializable)
     
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
     
     # Define a list of colors for the bars
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2'] 
@@ -1014,7 +1025,7 @@ def group_small_values(data, col, count_column, n, col_ref=None):
     data[col] = data[col].where(data[col].isin(top_n), 'Other')
     
     result = aggregate_value(data, col, count_column, col_ref)
-    
+        
     return result
 
 
@@ -1106,7 +1117,7 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
     """
 
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split"]
+    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
 
     fig_json_serializable.update_layout(
         plot_bgcolor='#1e1e1e',  # Darker background for the plot area
