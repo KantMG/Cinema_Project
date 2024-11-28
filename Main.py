@@ -74,7 +74,7 @@ if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
 
-selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
+selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
 selected_filter  = [None for i in selected_columns]
 df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
@@ -82,8 +82,16 @@ if "isOriginalTitle" in df1.columns:
     df1 = df1.loc[df1["isOriginalTitle"] == 1]
     df1.reset_index(drop=True, inplace=True)
 
+
+if "titleType" in df1.columns:
+    exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
+    df1 = df1[~df1["titleType"].isin(exclude_type)]
+
 # Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
 # df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
+
+# Remove the value "Short" in the "genres" column since it is a value in "titleType"
+df1 = od.update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
 
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]

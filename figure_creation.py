@@ -160,17 +160,17 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     
     if init == False:
         if x_column is not None: 
-            figname = 'Movies over the ' + x_column
+            figname = 'Amount of production over the ' + x_column
     
             if x_column == 'count':
-                xlabel = 'Number of movies'
+                xlabel = 'Amount of productions'
             elif 'avg_' in x_column:
                 xlabel = 'Average '+x_column[4:]+' of the movies'
             else:
                 xlabel = x_column
             
             if y_column == 'count':
-                ylabel = 'Number of movies'
+                ylabel = 'Amount of productions'
             elif 'avg_' in y_column:
                 ylabel = 'Average '+y_column[4:]+' of the movies'              
             else:
@@ -178,7 +178,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
             
             if z_column is not None:
                 if z_column == 'count':
-                    zlabel = 'Number of movies'
+                    zlabel = 'Amount of productions'
                 elif 'avg_' in z_column:
                     zlabel = 'Average '+z_column[4:]+' of the movies'
                 else:
@@ -473,7 +473,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
             if x_column in df_col_string:
                 # Grouping y_column values
-                n = 7  # Number of top categories to keep
+                n = 24  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, x_column, 'count', n)
 
             # x_values,fig_x_value,y_values,fig_y_value=None,None,None,None

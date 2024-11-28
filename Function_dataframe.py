@@ -76,18 +76,24 @@ def explode_dataframe(df, Para):
     """
     
     df_temp = df.copy()
-    
+       
     # Step 1: Split the elements into lists of elements
     df_temp[Para+'_split'] = df_temp[Para].str.split(',')
     
     # Step 2: Explode the list of elements into individual rows
     df_temp = df_temp.explode(Para+'_split')
         
-    # Step 3: Replace empty cells with 'Unknown' 
-    df_temp[Para+'_split'] = df_temp[Para+'_split'].replace('', 'Unknown')
+    # Step 3: Clean up the split elements by stripping whitespace
+    df_temp[Para + '_split'] = df_temp[Para + '_split'].str.strip()    
     
-    # Step 3: Count the occurrences of each element
-    element_counts = df_temp[Para+'_split'].str.strip().value_counts()
+    # Step 4: Replace empty cells with 'Unknown' 
+    df_temp[Para + '_split'].replace({'': 'Unknown', r'\\N': 'Unknown'}, regex=True, inplace=True)
+
+    # Step 5: Fill NaN values with 'Unknown'
+    df_temp[Para + '_split'].fillna('Unknown', inplace=True)
+
+    # Step 6: Count the occurrences of each element
+    element_counts = df_temp[Para + '_split'].value_counts()   
     
     # Display the result
     print("Dataframe have been explode base on parameter "+Para)
