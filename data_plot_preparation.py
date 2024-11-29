@@ -90,7 +90,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, 
     #Case where z_column is not None
     else:
         # Calculate average z_column and count for each (x_column, y_column) combination
-        if yf_column != "Avg" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
+        if not yf_column and "Avg" in zf_column:
                         
             data_for_plot = df_temp.groupby([x_column, y_column]).agg(
                 avg_z_column=('{}'.format(z_column), 'mean'),
@@ -99,7 +99,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, 
             avg_col_name = 'avg_' + z_column
             data_for_plot.rename(columns={'avg_z_column': avg_col_name}, inplace=True)
 
-        elif yf_column == "Avg" and zf_column == "Avg":
+        elif "Avg" in yf_column and zf_column == "Avg":
             
             data_for_plot = df_temp.groupby([x_column]).agg(
                 avg_y_column=('{}'.format(y_column), 'mean'),
@@ -113,28 +113,32 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, 
                 'avg_z_column': 'avg_' + z_column
             }, inplace=True)
            
-        elif yf_column == "Avg" and zf_column == "Weight on y":
+        elif "Avg" in yf_column and zf_column == "Weight on y":
 
             data_for_plot = df_temp.groupby([x_column]).agg(
                 avg_y_column=('{}'.format(y_column), 'mean'),
                 sum_z_column=('{}'.format(z_column), 'sum'),
                 count=('{}'.format(z_column), 'size')
             ).reset_index()
+
+            # We'll use sum_numVotes as the number of observations for each startYear
+            data_for_plot['sum_z_column'] = data_for_plot['avg_y_column'] / np.sqrt(data_for_plot['sum_z_column'])
                         
             # Renaming the columns
             data_for_plot.rename(columns={
                 'avg_y_column': 'avg_' + y_column,
-                'sum_z_column': 'sum_' + z_column,
-                'count': 'standard_error'
+                'sum_z_column': 'standard_error',
             }, inplace=True)        
 
-            # We'll use sum_numVotes as the number of observations for each startYear
-            data_for_plot['standard_error'] = data_for_plot['avg_' + y_column] / np.sqrt(data_for_plot['sum_' + z_column])
+            # # We'll use sum_numVotes as the number of observations for each startYear
+            # data_for_plot['standard_error'] = data_for_plot['avg_' + y_column] / np.sqrt(data_for_plot['sum_' + z_column])
             
     
     if x_column in df_col_string:
         data_for_plot = data_for_plot.sort_values(by='count', ascending=False)
 
+    # Remove rows with any NaN values
+    data_for_plot = data_for_plot.dropna()
     
     return Para, data_for_plot, x_column, y_column, z_column
 

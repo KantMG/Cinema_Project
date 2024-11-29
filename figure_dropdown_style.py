@@ -506,6 +506,79 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
    #============================================================================="""
 
 
+def button_modal_dropdown_and_double_input(id_subname, text_button, option_dropdown, placeholder_input_1,
+                               placeholder_input_2, text_modal, dark_dropdown_style, uniform_style):
+
+    """
+    Goal: Create a button which give access to a modal.
+    The modal contains a dropdown and an input with a submit button.
+
+    Parameters:
+    - id_subname: Part of all the id name associated with this button modal.
+    - text_button: Text on the button.
+    - option_dropdown: options of the dropdown inside the modal.
+    - placeholder_input_1: Text inside the first input without content.
+    - placeholder_input_2: Text inside the second input without content.
+    - text_modal: Text at the Head of the modal.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+
+    Returns:
+    - The finalized dash button with its modal content. 
+    - Creation of all the id:
+        - "open-modal-"+id_subname: id of the button.
+        - "dropdown-"+id_subname: id of the dropdown inside the modal.
+        - "input-"+id_subname: id of the input inside the modal.
+        - "submit-button-"+id_subname: id of the submit button inside the modal.
+        - "modal-"+id_subname: id of the modal.
+        - "output-div-"+id_subname: id of the dash output.
+        
+    """       
+
+    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+
+        
+    return html.Div([
+    dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+            dbc.ModalBody(
+                [   
+                    dcc.Dropdown(
+                        id="dropdown-"+id_subname,
+                        options=option_dropdown,
+                        # value='Decision Tree',
+                        clearable=True,
+                        style=dropdown_style,
+                        className='dash-dropdown'
+                    ),
+                    html.Span(":", style={'margin': '0 10px'}),
+                    dcc.Input(id="input_1-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_1),
+                    html.Span(":", style={'margin': '0 10px'}),
+                    dcc.Input(id="input_2-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_2),
+                ]
+            ),
+            html.Span("", style={'margin': '0 10px'}),
+            dbc.ModalFooter(
+                dbc.Button("Submit", id="submit-button-"+id_subname, n_clicks=0, className='button')
+            ),
+        ],
+        id="modal-"+id_subname,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    ),
+    html.Div(id="output-div-"+id_subname) 
+    ])
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, placeholder_input_2, placeholder_input_3,
                                text_modal, dark_dropdown_style, uniform_style):
 

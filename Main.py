@@ -263,9 +263,9 @@ def tab2_content():
                                                                   "Enter function name", "Enter operation (e.g., A + B)",
                                                                   "Create Function", dark_dropdown_style, uniform_style)
 
-    button_dropdown_regression_tab2 = fds.button_modal_dropdown_input("regression-"+tab, "Regression model", 
-                                                                      ["Polynomial Regression", "Decision Tree", "k-NN"], "Enter an order if needed",
-                                                                     "Create regression", dark_dropdown_style, uniform_style)
+    button_dropdown_regression_tab2 = fds.button_modal_dropdown_and_double_input("regression-"+tab, "Regression model", 
+                                                                                 ["Polynomial Regression", "Decision Tree", "k-NN"], "Enter an order if needed", 
+                                                                                 "Enter a test size ratio (0-1)", "Create regression", dark_dropdown_style, uniform_style)
 
     button_dropdown_smoothing_tab2 = fds.button_modal_dropdown_input("smoothing-"+tab,  "Smoothing", 
                                                                      ["Savitzky-Golay Filter"], "Enter an order if needed",
@@ -583,7 +583,8 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input('Graph-dropdown-tab-2', 'value'),
      Input('Dim-dropdown-tab-2', 'value'),
      Input("dropdown-regression-tab-2", "value"),
-     Input("input-regression-tab-2", "value"),
+     Input("input_1-regression-tab-2", "value"),
+     Input("input_2-regression-tab-2", "value"),
      Input("submit-button-regression-tab-2", "n_clicks"),
      Input("dropdown-smoothing-tab-2", "value"),
      Input("input-smoothing-tab-2", "value"),
@@ -601,7 +602,7 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
     )
 def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value,
                       yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value,
-                      reg_dropdown_value, reg_order_value, sub_bot_reg_value,
+                      reg_dropdown_value, reg_order_value, test_size_value, sub_bot_reg_value,
                       smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                       nb_subplots, nb_subplots_row, nb_subplots_col,
                       hide_drop_fig, sub_bot_filter_value, *args):
@@ -648,7 +649,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value,
                                                  yfunc_dropdown_value, zfunc_dropdown_value, 
                                                  graph_dropdown_value, dim_dropdown_value,
-                                                 reg_dropdown_value, reg_order_value, 
+                                                 reg_dropdown_value, reg_order_value, test_size_value,
                                                  current_fig, data_for_plot)
 
     if  triggered_id == "hide-dropdowns-tab-2":
@@ -1040,14 +1041,15 @@ def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_colum
         # Create a copy of the DataFrame to avoid modifying the original stored data
         filtered_data_graph = df.copy()
     # Create the figure based on filtered data
+
     fig, data_for_plot = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
     return fig, data_for_plot
 
-def update_graph_minor_change_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, fig_json_serializable, data_for_plot):
+def update_graph_minor_change_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val, fig_json_serializable, data_for_plot):
     """
     Utility function to update a graph based on the provided parameters.
     """
-    fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order)
+    fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val)
     return fig, data_for_plot
 
 def update_graph_subplot_creation(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,

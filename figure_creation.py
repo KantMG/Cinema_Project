@@ -27,9 +27,9 @@ import numpy as np
 
 from sklearn.model_selection import train_test_split
 from sklearn import linear_model as lm, tree, neighbors
-from sklearn.preprocessing import PolynomialFeatures
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error, r2_score
 from scipy import signal
 
@@ -102,7 +102,7 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     # =============================================================================      
     # Create a Dash compatible Plotly graph figure
     fig_json_serializable = go.Figure()  # This figure can now be used with dcc.Graph in Dash
-
+    
     # Create the label of the figure
     figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, True)  
     
@@ -157,7 +157,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
 
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
     df_col_string = ["genres", "directors", "writers", "category", "titleType"]
-    
+    print(x_column, y_column, z_column)
     if init == False:
         if x_column is not None: 
             figname = 'Amount of production over the ' + x_column
@@ -165,14 +165,14 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
             if x_column == 'count':
                 xlabel = 'Amount of productions'
             elif 'avg_' in x_column:
-                xlabel = 'Average '+x_column[4:]+' of the movies'
+                xlabel = 'Average '+x_column[4:]#+' of the movies'
             else:
                 xlabel = x_column
             
             if y_column == 'count':
                 ylabel = 'Amount of productions'
             elif 'avg_' in y_column:
-                ylabel = 'Average '+y_column[4:]+' of the movies'              
+                ylabel = 'Average '+y_column[4:]#+' of the movies'              
             else:
                 ylabel = y_column
             
@@ -180,16 +180,17 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
                 if z_column == 'count':
                     zlabel = 'Amount of productions'
                 elif 'avg_' in z_column:
-                    zlabel = 'Average '+z_column[4:]+' of the movies'
+                    zlabel = 'Average '+z_column[4:]#+' of the movies'
                 else:
                     zlabel = z_column
-                    
-                if zf_column == 'Weight on y':
-                    ylabel = 'Average '+z_column[4:]+' of the movies'
+                
+                if yf_column == 'Avg' and zf_column == 'Weight on y':
+                    ylabel = 'Amount of productions'
+                if yf_column == 'Avg on the ordinate' and zf_column == 'Weight on y':
+                    ylabel = 'Average '+y_column[4:]#+' of the movies'
                     
             else:
                 zlabel = None
-
 
             if d_column == "2D":
                 if g_column == 'Colormesh':
@@ -278,8 +279,15 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
         y_axis = 'avg_' + z_column
         t_axis = 'count'
     if z_column is not None and zf_column == "Weight on y":
-        y_axis = 'sum_' + z_column
+        # y_axis = 'sum_' + z_column
         t_axis = 'standard_error'         
+
+    if d_column=="2D" and g_column=="Colormesh":    
+        x_axis = x_column
+        y_axis = y_column
+        z_axis = 'count'
+        if z_column is not None:
+            z_axis = 'avg_' + z_column
 
     print("x_axis=", x_axis)
     print("y_axis=", y_axis)
@@ -291,7 +299,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
     # Rename the label of the figure
     figname, xlabel, ylabel, zlabel = label_fig(x_axis, y_axis, z_axis, yf_column, zf_column, g_column, d_column, False)  
-
+    
+    
     if d_column=="1D": 
         
         # Check if 'startYear' is in the DataFrame
@@ -431,41 +440,45 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     animation_frame=z_axis if "Movie" in g_column else None,
                     line_group=g_column if "Movie" in g_column else None
                     )
-            elif g_column=="Scatter" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
+            elif g_column=="Scatter" and (zf_column == "Avg" or zf_column == "Avg on the ordinate" or zf_column == "Weight on y"):
+                
+                
+                print(x_axis,y_axis,z_axis,t_axis)
+                
                 plotly_fig = px.scatter(
                     data_for_plot,
                     x=x_axis,
                     y=y_axis,
-                    size=t_axis if zf_column == "Avg" else None,
+                    size=t_axis if zf_column == "Avg" or zf_column == "Weight on y" else None,
                     size_max=60,
                     color=z_axis if "Movie" not in g_column else None,
                     animation_frame=z_axis if "Movie" in g_column else None
                 )
 
-            elif g_column=="Histogram" and zf_column == "Weight on y":
-                plotly_fig = px.bar(
-                    data_for_plot,
-                    x=x_axis,
-                    y=z_axis,
-                    # title='Weighted Average'+y_column+'Over the'+x_axis,
-                    error_y='standard_error'
-                )
-            elif g_column=="Curve" and zf_column == "Weight on y":
-                plotly_fig = px.line(
-                    data_for_plot,
-                    x=x_axis,
-                    y=z_axis,
-                    # title='Weighted Average'+y_column+'Over the'+x_axis,
-                    error_y='standard_error'
-                )
-            elif g_column=="Scatter" and zf_column == "Weight on y":
-                plotly_fig = px.scatter(
-                    data_for_plot,
-                    x=x_axis,
-                    y=z_axis,
-                    # title='Weighted Average'+y_column+'Over the'+x_axis,
-                    error_y='standard_error'
-                )
+            # elif g_column=="Histogram" and zf_column == "Weight on y":
+            #     plotly_fig = px.bar(
+            #         data_for_plot,
+            #         x=x_axis,
+            #         y=z_axis,
+            #         # title='Weighted Average'+y_column+'Over the'+x_axis,
+            #         error_y='standard_error'
+            #     )
+            # elif g_column=="Curve" and zf_column == "Weight on y":
+            #     plotly_fig = px.line(
+            #         data_for_plot,
+            #         x=x_axis,
+            #         y=z_axis,
+            #         # title='Weighted Average'+y_column+'Over the'+x_axis,
+            #         error_y='standard_error'
+            #     )
+            # elif g_column=="Scatter" and zf_column == "Weight on y":
+            #     plotly_fig = px.scatter(
+            #         data_for_plot,
+            #         x=x_axis,
+            #         y=z_axis,
+            #         # title='Weighted Average'+y_column+'Over the'+x_axis,
+            #         error_y='standard_error'
+            #     )
 
 
 
@@ -487,10 +500,10 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
         
         px_fig = px.density_heatmap(
             data_for_plot, 
-            x=x_column, 
-            y=y_column, 
+            x=x_axis, 
+            y=y_axis, 
             # nbinsx=100, nbinsy=100, 
-            z='count',
+            z=z_axis,
             color_continuous_scale="Viridis")
 
         # Get the z data from the px figure
@@ -613,7 +626,7 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
    #============================================================================="""
 
 
-def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, reg_type, reg_order):
+def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, reg_type, reg_order, test_size_val=0.2):
 
     """
     Goal: Add a trace inside the figure regarding the inputs.
@@ -630,6 +643,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     - dim_type: Graphyque dimension for the figure.
     - reg_type: Type of regression for the data.
     - reg_order: Order of the regression for the data.
+    - test_size_val: The ratio of testing value for the fit.
 
     Returns:
     - fig_json_serializable: Dash figure updated with the trace.
@@ -673,7 +687,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
         y_axis = 'avg_' + z_column
         t_axis = 'count'
     if z_column is not None and zf_column == "Weight on y":
-        y_axis = 'sum_' + z_column
+        # y_axis = 'sum_' + z_column
         t_axis = 'standard_error'        
 
     print("x_axis=", x_axis)
@@ -697,29 +711,36 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
 
     
     # x, y = data_for_plot[x_axis].values.reshape(-1, 1), data_for_plot[y_axis].values.reshape(-1, 1)
-    if z_column is not None and zf_column == "Weight on y":
-        y = data_for_plot[z_axis].values.reshape(-1, 1)
+    if z_column is not None and (zf_column == "Weight on y" or zf_column == "Avg"):
+        if yf_column == "Avg":
+            y = data_for_plot[z_axis].values.reshape(-1, 1)
+        elif yf_column == "Avg on the ordinate":
+            y = data_for_plot[y_axis].values.reshape(-1, 1)
         weights = data_for_plot[t_axis].values.reshape(-1, 1).flatten()
-    
+        
     # Split the data
     if t_axis is not None:
         if t_axis == 'standard_error':
-            x_train, x_test, y_train, y_test, weights_train, weights_test = train_test_split(x, y, weights, test_size=0.2, random_state=0)
+            x_train, x_test, y_train, y_test, weights_train, weights_test = train_test_split(x, y, weights, test_size=test_size_val, random_state=0)
+            # Invert weights (take care with zero values)
+            epsilon = 1e-8  # Small constant to avoid division by zero
+            weights_train = 1 / (weights_train + epsilon)
+            weights_test = 1 / (weights_test + epsilon)
     else:
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
+        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size_val, random_state=0)
 
     Dict_regression_models = {
         'Linear Regression': lm.LinearRegression,
         'Decision Tree': tree.DecisionTreeRegressor,
         'k-NN': neighbors.KNeighborsRegressor,
-        'Polynomial Regression': lambda: make_pipeline(PolynomialFeatures(degree=reg_order), lm.LinearRegression())  # Use a lambda to return a new instance
+        'Polynomial Regression': lambda: make_pipeline(StandardScaler(), PolynomialFeatures(degree=reg_order), lm.LinearRegression())  # Use a lambda to return a new instance
         }        
 
     # Instantiate the model
     model = Dict_regression_models[reg_type]()
     
     # Fit the model
-    if t_axis == 'standard_error':
+    if t_axis == 'standard_error' and reg_type == 'Polynomial Regression':
         model.fit(x_train, y_train, linearregression__sample_weight=weights_train)
     else:
         model.fit(x_train, y_train)
@@ -816,12 +837,6 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
         paper_bgcolor=plotly_fig.layout.paper_bgcolor,
         font=plotly_fig.layout.font
     )  
-    
-    # fig_with_subplots.update_layout(
-    #     plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-    #     paper_bgcolor='#101820',  # Dark gray for the paper
-    #     font=dict(color='white'),  # White text color
-    # )
     
     plt.close()       
     

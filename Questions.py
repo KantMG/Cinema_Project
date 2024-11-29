@@ -1,55 +1,34 @@
-I have the function 
 
-def explode_dataframe(df, Para):
-    
-    """
-    Goal: 
-    - Count individual elements when multiple elements are stored in a single cell
-    - Explode the Dataframe where cells with muliple elements are counted multiple time.
+Full
 
-    Parameters:
-    - df: Dataframe
-    - Para: List of column in the df for which the table should explode the cells with multiple elements.
-
-    Returns:
-    - Dataframe which have been explode and the new counts of each elements.
-    
-    Warning:
-    - Can create very large array if many cells contain many elements.
-    """
-    
-    df_temp = df.copy()
-    
-    # Step 1: Split the elements into lists of elements
-    df_temp[Para+'_split'] = df_temp[Para].str.split(',')
-    
-    # Step 2: Explode the list of elements into individual rows
-    df_temp = df_temp.explode(Para+'_split')
-        
-    # Step 3: Clean up the split elements by stripping whitespace
-    df_temp[Para + '_split'] = df_temp[Para + '_split'].str.strip()    
-    
-    # Step 4: Replace empty cells with 'Unknown' 
-    df_temp[Para + '_split'].replace({'': 'Unknown', r'\\N': 'Unknown'}, regex=True, inplace=True)
-
-    # Step 5: Fill NaN values with 'Unknown'
-    df_temp[Para + '_split'].fillna('Unknown', inplace=True)
-
-    # Step 6: Count the occurrences of each element
-    element_counts = df_temp[Para + '_split'].value_counts()    
-    
-    # Display the result
-    print("Dataframe have been explode base on parameter "+Para)
-    print("The new counts of each elements is:")
-    print(element_counts)
-    print()
-    
-    return df_temp, element_counts
+y = 2.65096375 + -1.06807791 * x^1 + 4.57076063 * x^2 + 1.43186148 * x^3 + -14.14460873 * x^4 + 5.45885076 * x^5 + 13.2527651 * x^6 + -7.2226005 * x^7 + -4.9991222 * x^8 + 2.97510761 * x^9 + 0.66023489 * x^10 + -0.40310576 * x^11
+Mean Squared Error: 0.4331040223678386
+R^2 Score: 0.5332701689626427
 
 
-which is suppose to explode the dataframe.
-however it seems that for instance some element has some space , which create two split from the same element
-like:
+
+
+
+
+Documentary
+
+y = 1.36672407 + 0.8536908 * x^1 + 0.08903799 * x^2 + 0.22531178 * x^3 + 0.06025535 * x^4 + -0.13971596 * x^5
+Mean Squared Error: 0.3183814447012446
+R^2 Score: 0.4644223041142699
+
+
+
+
 Drama
- Drama
-How can I correct that
+
+y = 3.4864038 + -0.5981419 * x^1 + 1.87221372 * x^2 + 2.10749623 * x^3 + -2.47975345 * x^4 + -0.63653739 * x^5 + 0.62807281 * x^6
+Mean Squared Error: 0.055743995163486285
+R^2 Score: 0.9557922722203074
+
+
+
+Comedy 
+
+y = 3.48117908 + -0.82705018 * x^1 + 3.15015362 * x^2 + 1.73580896 * x^3 + -3.21395272 * x^4 + -0.42468406 * x^5 + 0.69875272 * x^6
+Mean Squared Error: 0.06080570320537952
+R^2 Score: 0.9522315373337668
