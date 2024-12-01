@@ -169,6 +169,10 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
     df_col_string = ["genres", "directors", "writers", "category", "titleType"]
+
+    # df_col_string = data_for_plot.select_dtypes(exclude=['int64', 'float64']).columns.tolist()
+    # print(df_col_string)
+
     print(x_column, y_column, z_column)
     if init == False:
         if x_column is not None: 
@@ -573,7 +577,9 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
     """
 
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
+    # df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
+    df_col_string = data_for_plot.select_dtypes(exclude=['int64', 'float64']).columns.tolist()
+    print(df_col_string)
     
     if sub_bot_smt_value % 2 == 1:
         
@@ -667,6 +673,10 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
     df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
+    
+    # print(data_for_plot)
+    # df_col_string = data_for_plot.select_dtypes(exclude=['int64', 'float64']).columns.tolist()
+    # print(df_col_string)
     
     # Define a list of colors for the bars
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2'] 
