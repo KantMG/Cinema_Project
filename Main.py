@@ -70,7 +70,7 @@ start_time = time.time()
 Large_file_memory = False
 Get_file_sys_mem = False
 desired_number_of_partitions = 10
-Test_data = False
+Test_data = True
 if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
@@ -117,7 +117,9 @@ else:
         quotechar='"'
     )
 
-List_col_exclude_tab2 = [] #, "isOriginalTitle"
+List_col_exclude_tab2 = ["directors"] #, "isOriginalTitle"
+df1 = df1.drop(columns=List_col_exclude_tab2, errors='ignore')
+List_col_tab2 = df1.columns
 
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
@@ -274,7 +276,7 @@ def tab2_content():
     # Display dropdowns without loading data initially
     
     exclude_cols = ["tconst","directors","writers"]
-    exclude_cols = []
+    exclude_cols = ["directors"]
     df_selected = df1[[col for col in df1.columns if col not in exclude_cols]]
         
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style, Large_file_memory)
