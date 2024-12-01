@@ -154,23 +154,35 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     - ylabel: The ylabel of the axis (can be None).
     - zlabel: The zlabel of the axis (can be None).
     """
+    
 
+    # columns = [x_column, y_column, z_column]
+    
+    # # Replace 'tconst' with 'productions' in each element of the list, if it's not None
+    # columns = [col.replace('tconst', 'productions') if col is not None else col for col in columns]
+    
+    # # Unpack results back to original variables if needed
+    # x_column, y_column, z_column = columns
+    
+    
+    name_to_work_on = "directors" #  production, directors, writers
+    
     # Columns in the dataframe which are strings and where the cell can contain multiple values.
     df_col_string = ["genres", "directors", "writers", "category", "titleType"]
     print(x_column, y_column, z_column)
     if init == False:
         if x_column is not None: 
-            figname = 'Amount of production over the ' + x_column
+            figname = 'Amount of '+name_to_work_on+' over the ' + x_column
     
             if x_column == 'count':
-                xlabel = 'Amount of productions'
+                xlabel = 'Amount of '+name_to_work_on
             elif 'avg_' in x_column:
                 xlabel = 'Average '+x_column[4:]#+' of the movies'
             else:
                 xlabel = x_column
             
             if y_column == 'count':
-                ylabel = 'Amount of productions'
+                ylabel = 'Amount of '+name_to_work_on
             elif 'avg_' in y_column:
                 ylabel = 'Average '+y_column[4:]#+' of the movies'              
             else:
@@ -178,14 +190,14 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
             
             if z_column is not None:
                 if z_column == 'count':
-                    zlabel = 'Amount of productions'
+                    zlabel = 'Amount of '+name_to_work_on
                 elif 'avg_' in z_column:
                     zlabel = 'Average '+z_column[4:]#+' of the movies'
                 else:
                     zlabel = z_column
                 
                 if yf_column == 'Avg' and zf_column == 'Weight on y':
-                    ylabel = 'Amount of productions'
+                    ylabel = 'Amount of '+name_to_work_on
                 if yf_column == 'Avg on the ordinate' and zf_column == 'Weight on y':
                     ylabel = 'Average '+y_column[4:]#+' of the movies'
                     

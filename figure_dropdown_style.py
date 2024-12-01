@@ -251,7 +251,7 @@ def dropdown_figure_filter(df, id_graph, tab, dark_dropdown_style, uniform_style
         
         dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'margin': '2px 0'}  # Vertical alignment and spacing
         
-        if dtype == "float64":
+        if dtype == "float64" or dtype == "int64":
             dropdown_with_label = html.Div(
                 style=dropdown_container_style,
                 children=[

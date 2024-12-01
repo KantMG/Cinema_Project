@@ -25,6 +25,7 @@ import pandas as pd
 import dask.dataframe as dd
 import plotly.graph_objects as go
 from termcolor import colored
+import numpy as np
 
 import os
 import time
@@ -74,7 +75,7 @@ if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
 
-selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
+selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
 selected_filter  = [None for i in selected_columns]
 df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
@@ -118,10 +119,18 @@ List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers"
 List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
 
 
+print(df1)
+
+df1, List_col_tab2 = od.create_data_specific(df1, 'directors', df_name, ["primaryName"])
+df_col_numeric_tab2 = List_col_tab2
+df_col_string_tab2 = [] #, "region", "language"
+List_col_exclude_tab2 = [] #, "isOriginalTitle"
 
 
-# df_name_uptdate = 
+print(df1)
+print(List_col_tab2)
 
+###############################################################################
 
 
 # Initialize the Dash app with suppress_callback_exceptions set to True
@@ -243,6 +252,7 @@ def tab1_content():
 # =============================================================================
 """
 
+
 def tab2_content():
     print()
     print("Time computation=", time.time()-start_time)
@@ -251,6 +261,7 @@ def tab2_content():
     # Display dropdowns without loading data initially
     
     exclude_cols = ["tconst","directors","writers"]
+    exclude_cols = []
     df_selected = df1[[col for col in df1.columns if col not in exclude_cols]]
         
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style, Large_file_memory)

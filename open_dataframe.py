@@ -267,17 +267,17 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
        # Convert columns to the specified types
         for col, expected_type in info["types"].items():
             print(col, expected_type)
-            if expected_type in [float, "float64"]:
-                if Large_file_memory:
-                    df[col] = dd.to_numeric(df[col], errors='coerce')
-                    # Handle NA values
-                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary  
-                else:
-                    df[col] = pd.to_numeric(df[col], errors='coerce')
-                    # Handle NA values
-                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary     
+            # if expected_type in [float, "float64"]:
+            #     if Large_file_memory:
+            #         df[col] = dd.to_numeric(df[col], errors='coerce')
+            #         # Handle NA values
+            #         df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary  
+            #     else:
+            #         df[col] = pd.to_numeric(df[col], errors='coerce')
+            #         # Handle NA values
+            #         df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary     
                    
-            elif expected_type == str:
+            if expected_type == str:
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
         
         # Get the infos on the DataFrame
@@ -684,3 +684,106 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
         df = df.compute()
 
     return df
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def create_data_specific(df1, df1_col_groupby, df_name, exclude_col):
+    
+    df1 = df1.copy()
+    
+    df1 = df1[df1[df1_col_groupby].notnull() & (df1[df1_col_groupby] != '')]
+    
+    # Step 1: Split `directors` into multiple rows
+    df1[df1_col_groupby] = df1[df1_col_groupby].str.split(',')
+    df1_exploded = df1.explode(df1_col_groupby)
+
+    # Step 2: Merge to get birthYear and deathYear
+    merged_df = df1_exploded.merge(df_name, left_on=df1_col_groupby, right_on='nconst', how='left')
+    
+    exclude_col = ["primaryName"]
+    merged_df = merged_df.drop(columns=exclude_col)
+    
+    # Step 3: Group by 'directors'
+    group_columns = merged_df.columns.difference([df1_col_groupby, 'birthYear', 'deathYear', 'nconst'])
+    final_df = merged_df.groupby(df1_col_groupby).agg({
+        **{col: lambda x: ','.join(map(str, x)) for col in group_columns},  # Dynamically concatenate other columns
+        'birthYear': 'first',  # Take the first birthYear
+        'deathYear': 'first',   # Take the first deathYear
+    }).reset_index()
+        
+    # df_test = final_df.loc[final_df['directors'] == 'nm0005690']
+    
+    df_test = final_df    
+
+    # Apply the calculation to each row
+    df_test['NewRating'] = df_test.apply(lambda row: calculate_weighted_average(row['averageRating'], row['numVotes']), axis=1)
+    
+    # Step 1: Replace `averageRating`, `numVotes`, `runtimeMinutes`, `isAdult` with their averages
+    df_test.loc[:, 'averageRating'] = df_test['averageRating'].apply(average_of_string_values)
+    df_test.loc[:, 'numVotes'] = df_test['numVotes'].apply(average_of_string_values)
+    df_test.loc[:, 'runtimeMinutes'] = df_test['runtimeMinutes'].apply(average_of_string_values)
+    df_test.loc[:, 'isAdult'] = df_test['isAdult'].apply(average_of_string_values)
+    
+    
+    df_test.loc[:, 'numGenres'] = df_test['genres'].apply(lambda x: len(set([genre for genre in x.split(',') if genre])))
+    df_test.loc[:, 'numtitleType'] = df_test['titleType'].apply(lambda x: len(set([genre for genre in x.split(',') if genre])))
+    
+    # Calculate first year (minimum) and last year (maximum) from startYear
+    df_test.loc[:, 'firstYear'] = df_test['startYear'].apply(lambda x: min(map(float, x.split(','))) if x else None)
+    df_test.loc[:, 'lastYear'] = df_test['startYear'].apply(lambda x: max(map(float, x.split(','))) if x else None)
+    
+    # Step 4: Replace tconst by the number of values in tconst
+    # df_test.loc[:, 'tconst'] = df_test['tconst'].apply(lambda x: len(x.split(',')))
+    df_test['numProductions'] = df_test['tconst'].apply(lambda x: len(x.split(',')))
+    
+    # Step 5: Drop startYear
+    df_test.drop('genres', axis=1, inplace=True)
+    df_test.drop('titleType', axis=1, inplace=True)
+    df_test.drop('startYear', axis=1, inplace=True)
+    df_test.drop('tconst', axis=1, inplace=True)
+
+
+    # Convert specific columns to float64
+    float_columns = ['averageRating', 'numVotes', 'runtimeMinutes', 'isAdult',
+                     'NewRating', 'numGenres', 'numtitleType', 'firstYear', 
+                     'lastYear', 'numProductions']
+    for col in float_columns:
+        df_test[col] = pd.to_numeric(df_test[col], errors='coerce')  # Ensure conversion to float
+    
+    
+    print(df_test.dtypes)
+    
+    return df_test, df_test.columns.tolist()
+    
+# Function to average numerical values in a string of comma-separated numbers
+def average_of_string_values(s):
+    # Split the string and filter out 'nan', empty values, and non-convertible strings
+    values = [float(x) for x in s.split(',') if x != 'nan' and x]   # Filter out 'nan'
+    try:
+        if values:  # Check if there are any valid values
+            return sum(values) / len(values)  # Calculate average
+        else:
+            return 0  # Return 0 if no valid values
+    except ZeroDivisionError:
+        return 0  # Prevent division by zero
+
+
+# Function to calculate the weighted average rating
+def calculate_weighted_average(ratings_str, votes_str):
+    # Convert the comma-separated strings into lists of floats
+    # Filter out 'nan' and empty values in both ratings and votes
+    ratings = [float(x) for x in ratings_str.split(',') if x != 'nan' and x]
+    votes = [float(x) for x in votes_str.split(',') if x != 'nan' and x]
+
+    # Ensuring that both ratings and votes lists are non-empty and have the same length
+    if len(ratings) != len(votes) or not votes:
+        return 0  # Return 0 if there are mismatched lengths or no valid votes
+
+    total_weighted_sum = sum(rating * vote for rating, vote in zip(ratings, votes))
+    total_votes = sum(votes)
+
+    return total_weighted_sum / total_votes if total_votes > 0 else 0
