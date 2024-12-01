@@ -728,14 +728,24 @@ def create_data_specific(df1, df1_col_groupby, df_name, exclude_col):
     df_test.loc[:, 'runtimeMinutes'] = df_test['runtimeMinutes'].apply(average_of_string_values)
     df_test.loc[:, 'isAdult'] = df_test['isAdult'].apply(average_of_string_values)
     
-    
     df_test.loc[:, 'numGenres'] = df_test['genres'].apply(lambda x: len(set([genre for genre in x.split(',') if genre])))
     df_test.loc[:, 'numtitleType'] = df_test['titleType'].apply(lambda x: len(set([genre for genre in x.split(',') if genre])))
     
     # Calculate first year (minimum) and last year (maximum) from startYear
-    df_test.loc[:, 'firstYear'] = df_test['startYear'].apply(lambda x: min(map(float, x.split(','))) if x else None)
-    df_test.loc[:, 'lastYear'] = df_test['startYear'].apply(lambda x: max(map(float, x.split(','))) if x else None)
+    df_test.loc[:, 'firstYear'] = df_test['startYear'].apply(
+        lambda x: min(
+            (float(v) for v in x.split(',') if v not in ['nan', '', '\\N']),
+            default=None  # Use default to avoid min() with empty sequence
+        ) if x else None
+    )
     
+    df_test.loc[:, 'lastYear'] = df_test['startYear'].apply(
+        lambda x: max(
+            (float(v) for v in x.split(',') if v not in ['nan', '', '\\N']),
+            default=None  # Use default to avoid max() with empty sequence
+        ) if x else None
+    )
+
     # Step 4: Replace tconst by the number of values in tconst
     # df_test.loc[:, 'tconst'] = df_test['tconst'].apply(lambda x: len(x.split(',')))
     df_test['numProductions'] = df_test['tconst'].apply(lambda x: len(x.split(',')))
@@ -757,27 +767,45 @@ def create_data_specific(df1, df1_col_groupby, df_name, exclude_col):
     
     print(df_test.dtypes)
     
+    
     return df_test, df_test.columns.tolist()
     
 # Function to average numerical values in a string of comma-separated numbers
 def average_of_string_values(s):
-    # Split the string and filter out 'nan', empty values, and non-convertible strings
-    values = [float(x) for x in s.split(',') if x != 'nan' and x]   # Filter out 'nan'
-    try:
-        if values:  # Check if there are any valid values
-            return sum(values) / len(values)  # Calculate average
-        else:
-            return 0  # Return 0 if no valid values
-    except ZeroDivisionError:
-        return 0  # Prevent division by zero
+    # Split the string and filter out 'nan', empty values, '\\N', and non-convertible strings
+    values = []
+    for x in s.split(','):
+        if x not in ['nan', '', '\\N']:  # Filter out 'nan', empty strings, and '\\N'
+            try:
+                values.append(float(x))  # Attempt to convert to float
+            except ValueError:
+                continue  # Skip non-convertible values
+
+    if values:  # Check if there are any valid values
+        return sum(values) / len(values)  # Calculate and return average
+    else:
+        return 0  # Return 0 if no valid values
 
 
-# Function to calculate the weighted average rating
 def calculate_weighted_average(ratings_str, votes_str):
     # Convert the comma-separated strings into lists of floats
-    # Filter out 'nan' and empty values in both ratings and votes
-    ratings = [float(x) for x in ratings_str.split(',') if x != 'nan' and x]
-    votes = [float(x) for x in votes_str.split(',') if x != 'nan' and x]
+    # Filter out 'nan', empty values, and '\\N' in both ratings and votes
+    ratings = []
+    votes = []
+
+    for x in ratings_str.split(','):
+        if x not in ['nan', '', '\\N']:  # Filter out 'nan', empty strings, and '\\N'
+            try:
+                ratings.append(float(x))  # Attempt to convert to float
+            except ValueError:
+                continue  # Skip non-convertible values
+
+    for x in votes_str.split(','):
+        if x not in ['nan', '', '\\N']:  # Filter out 'nan', empty strings, and '\\N'
+            try:
+                votes.append(float(x))  # Attempt to convert to float
+            except ValueError:
+                continue  # Skip non-convertible values
 
     # Ensuring that both ratings and votes lists are non-empty and have the same length
     if len(ratings) != len(votes) or not votes:

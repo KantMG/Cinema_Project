@@ -70,45 +70,62 @@ start_time = time.time()
 Large_file_memory = False
 Get_file_sys_mem = False
 desired_number_of_partitions = 10
-Test_data = True
+Test_data = False
 if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
 
-selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
-selected_filter  = [None for i in selected_columns]
-df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+df1_col_groupby = 'directors'
+if os.path.exists(Project_path+'Made_data/groupby_'+df1_col_groupby):
+    df1 = od.read_and_rename(
+        Project_path+'Made_data/groupby_'+df1_col_groupby,
+        rename_map=None,
+        large_file=Large_file_memory
+    )
+    List_col_tab2 = df1.columns
+        
+else:
+    selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
+    selected_filter  = [None for i in selected_columns]
+    df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+    
+    if "isOriginalTitle" in df1.columns:
+        df1 = df1.loc[df1["isOriginalTitle"] == 1]
+        df1.reset_index(drop=True, inplace=True)
+    
+    
+    if "titleType" in df1.columns:
+        exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
+        df1 = df1[~df1["titleType"].isin(exclude_type)]
+    
+    # Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
+    # df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
+    
+    # Remove the value "Short" in the "genres" column since it is a value in "titleType"
+    df1 = od.update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
+    
+    # Lists of columns that are relevants regarding the tab where where we are.
+    List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
+    List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
 
-if "isOriginalTitle" in df1.columns:
-    df1 = df1.loc[df1["isOriginalTitle"] == 1]
-    df1.reset_index(drop=True, inplace=True)
+    df1, List_col_tab2 = od.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
+    df1.to_csv(
+        Project_path+'Made_data/groupby_'+df1_col_groupby,
+        sep='\t',
+        index=False,
+        encoding='utf-8',
+        quotechar='"'
+    )
 
-
-if "titleType" in df1.columns:
-    exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
-    df1 = df1[~df1["titleType"].isin(exclude_type)]
-
-# Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
-# df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
-
-# Remove the value "Short" in the "genres" column since it is a value in "titleType"
-df1 = od.update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
+List_col_exclude_tab2 = [] #, "isOriginalTitle"
 
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
 List_filter = [None, None, None, None]
 df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
-
 List_dim = ["1D", "2D", "3D"]
 List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
-
-
-# Lists of columns that are relevants regarding the tab where where we are.
-List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
-df_col_numeric_tab2 = ["startYear", "runtimeMinutes", "averageRating", "numVotes", "seasonNumber", "episodeNumber"]
-df_col_string_tab2 = ["genres", "titleType"] #, "region", "language"
-List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
 
 # Global variable to hold previous clicks for subplot buttons
 previous_clicks = {}
@@ -119,16 +136,12 @@ List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers"
 List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
 
 
-print(df1)
-
-df1, List_col_tab2 = od.create_data_specific(df1, 'directors', df_name, ["primaryName"])
-df_col_numeric_tab2 = List_col_tab2
-df_col_string_tab2 = [] #, "region", "language"
-List_col_exclude_tab2 = [] #, "isOriginalTitle"
-
 
 print(df1)
 print(List_col_tab2)
+
+
+print(colored("***************** Start dash ****************", "yellow"))
 
 ###############################################################################
 
@@ -521,7 +534,7 @@ def update_yfunc_dropdown_tab2(selected_y, selected_tab):
         
         function_on_y = ["Avg", "Avg on the ordinate"]
         
-        return update_func_dropdown_utility(selected_y, function_on_y, df_col_numeric_tab2, None)
+        return update_func_dropdown_utility(selected_y, function_on_y, None)
     return dash.no_update, dash.no_update
 
 @app.callback(
@@ -544,7 +557,7 @@ def update_zfunc_dropdown_tab2(selected_z, selected_tab):
         
         function_on_z = ["Avg", "Avg on the ordinate", "Weight on y"]
         
-        return update_func_dropdown_utility(selected_z, function_on_z, df_col_numeric_tab2, 'Avg')
+        return update_func_dropdown_utility(selected_z, function_on_z, 'Avg')
     return dash.no_update, dash.no_update
 
 @app.callback(
@@ -644,7 +657,8 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     if triggered_id in ["dropdown-regression-tab-2", "input-regression-tab-2", "dropdown-smoothing-tab-2", "input-smoothing-tab-2", "input_1-subplot-tab-2", "input_2-subplot-tab-2", "input_3-subplot-tab-2"]:
         return dash.no_update
 
-    if z_dropdown_value in df_col_string_tab2:
+    df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    if z_dropdown_value is not None and z_dropdown_value not in df_col_numeric:
         print("z-dropdown-tab-2 is "+z_dropdown_value+" which is a string column.")
         print("Please select a numeric column for z-dropdown-tab-2")
         return dash.no_update
@@ -951,7 +965,7 @@ def update_yfunc_dropdown_tab3(selected_y, selected_tab):
         
         function_on_y = ["Avg", "Avg on the ordinate"]
         
-        return update_func_dropdown_utility(selected_y, function_on_y, df_col_numeric_tab2, None)
+        return update_func_dropdown_utility(selected_y, function_on_y, None)
     return dash.no_update, dash.no_update
 
 
@@ -975,7 +989,7 @@ def update_zfunc_dropdown_tab3(selected_z, selected_tab):
         
         function_on_z = ["Avg", "Avg on the ordinate", "Weight on y"]
         
-        return update_func_dropdown_utility(selected_z, function_on_z, df_col_numeric_tab2, 'Avg')
+        return update_func_dropdown_utility(selected_z, function_on_z, 'Avg')
     return dash.no_update, dash.no_update
 
 
@@ -1031,10 +1045,12 @@ def update_z_dropdown_utility(selected_x, selected_y, List_cols, exclude_cols):
     return [{'label': col, 'value': col} for col in List_cols 
                     if col not in (selected_x, selected_y) and col not in exclude_cols]
 
-def update_func_dropdown_utility(selected_y, function_on_axi, df_col_numeric, initial_value=None):
+def update_func_dropdown_utility(selected_y, function_on_axi, initial_value=None):
     """
     Utility function to generate dropdown options for the function based on the selected y-axis column.
     """
+    
+    df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
     
     if selected_y not in df_col_numeric:  # Check if y column is not numeric
         return [], None
