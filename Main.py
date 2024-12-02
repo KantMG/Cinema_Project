@@ -75,15 +75,66 @@ if Test_data == True:
     Project_path=Project_path+'Test_data/'
 
 
+
+# Define how to present the data: It can be Movie, directors, writers
 df1_col_groupby = 'directors'
-if os.path.exists(Project_path+'Made_data/groupby_'+df1_col_groupby):
-    df1 = od.read_and_rename(
-        Project_path+'Made_data/groupby_'+df1_col_groupby,
-        rename_map=None,
-        large_file=Large_file_memory
-    )
-    List_col_tab2 = df1.columns
+if df1_col_groupby == 'directors':
+
+    if os.path.exists(Project_path+'Made_data/groupby_'+df1_col_groupby):
+        df1 = od.read_and_rename(
+            Project_path+'Made_data/groupby_'+df1_col_groupby,
+            rename_map=None,
+            large_file=Large_file_memory
+        )
+        List_col_tab2 = df1.columns
+            
+    else:
+        selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
+        selected_filter  = [None for i in selected_columns]
+        df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
         
+        if "isOriginalTitle" in df1.columns:
+            df1 = df1.loc[df1["isOriginalTitle"] == 1]
+            df1.reset_index(drop=True, inplace=True)
+        
+        
+        if "titleType" in df1.columns:
+            exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
+            df1 = df1[~df1["titleType"].isin(exclude_type)]
+        
+        # Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
+        # df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
+        
+        # Remove the value "Short" in the "genres" column since it is a value in "titleType"
+        df1 = od.update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
+        
+        # Lists of columns that are relevants regarding the tab where where we are.
+        List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
+        List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
+    
+        df1, List_col_tab2 = od.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
+        df1.to_csv(
+            Project_path+'Made_data/groupby_'+df1_col_groupby,
+            sep='\t',
+            index=False,
+            encoding='utf-8',
+            quotechar='"'
+        )
+    
+    List_col_exclude_tab2 = [] #, "isOriginalTitle"
+    # Function to convert 'directors' column to int
+    def convert_directors(director):
+        if director == '\\N':
+            return None  # Handling the \N value explicitly
+        elif director.startswith('nm'):
+            return int(director[2:])  # Convert to int by slicing off 'nm'
+        else:
+            return int(director)  # In case it's a number
+    
+    # Apply the function to the 'directors' column
+    df1['directors'] = df1['directors'].apply(convert_directors)
+    print(df1)
+    print(df1.dtypes)
 else:
     selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
     selected_filter  = [None for i in selected_columns]
@@ -107,24 +158,18 @@ else:
     # Lists of columns that are relevants regarding the tab where where we are.
     List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
     List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
+    
 
-    df1, List_col_tab2 = od.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
-    df1.to_csv(
-        Project_path+'Made_data/groupby_'+df1_col_groupby,
-        sep='\t',
-        index=False,
-        encoding='utf-8',
-        quotechar='"'
-    )
 
-List_col_exclude_tab2 = ["directors"] #, "isOriginalTitle"
-df1 = df1.drop(columns=List_col_exclude_tab2, errors='ignore')
-List_col_tab2 = df1.columns
+List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "title"]
+List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
 
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
 List_filter = [None, None, None, None]
 df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+
+
 
 List_dim = ["1D", "2D", "3D"]
 List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
@@ -134,8 +179,6 @@ previous_clicks = {}
 previous_reset_clicks = 0
 last_clicked_index = 0
 
-List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "title"]
-List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
 
 
 
@@ -275,8 +318,8 @@ def tab2_content():
     tab = 'tab-2'
     # Display dropdowns without loading data initially
     
-    exclude_cols = ["tconst","directors","writers"]
-    exclude_cols = ["directors"]
+    exclude_cols = List_col_exclude_tab2
+
     df_selected = df1[[col for col in df1.columns if col not in exclude_cols]]
         
     dropdowns_with_labels_for_fig_tab2 = fds.dropdown_figure(df_selected, 'graph-df1', tab, dark_dropdown_style, uniform_style, Large_file_memory)
@@ -534,7 +577,7 @@ def update_yfunc_dropdown_tab2(selected_y, selected_tab):
             return [], []
         print(f"Selected Y: {selected_y}")  # Additional debugging
         
-        function_on_y = ["Avg", "Avg on the ordinate"]
+        function_on_y = ["Avg", "Avg on the ordinate", "Avg on the ordinate"]
         
         return update_func_dropdown_utility(selected_y, function_on_y, None)
     return dash.no_update, dash.no_update
@@ -660,6 +703,9 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         return dash.no_update
 
     df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    df_col_all = df1.columns.tolist()
+    df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
+    
     if z_dropdown_value is not None and z_dropdown_value not in df_col_numeric:
         print("z-dropdown-tab-2 is "+z_dropdown_value+" which is a string column.")
         print("Please select a numeric column for z-dropdown-tab-2")
@@ -677,7 +723,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
                                                  yfunc_dropdown_value, zfunc_dropdown_value, 
                                                  graph_dropdown_value, dim_dropdown_value,
                                                  reg_dropdown_value, reg_order_value, test_size_value,
-                                                 current_fig, data_for_plot)
+                                                 current_fig, data_for_plot, df_col_string)
 
     if  triggered_id == "hide-dropdowns-tab-2":
         fig_json_serializable = go.Figure(current_fig)
@@ -739,7 +785,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
                                     graph_dropdown_value, dim_dropdown_value,
                                     smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                                     0, nb_subplots, nb_subplots_row, nb_subplots_col,
-                                    df1_filtered, current_fig, data_for_plot, Large_file_memory)
+                                    df1_filtered, df_col_string, current_fig, data_for_plot, Large_file_memory)
     else:
         print("subplot_button_clicks=",subplot_button_clicks)
             
@@ -753,11 +799,11 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
                                     graph_dropdown_value, dim_dropdown_value,
                                     smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                                     last_clicked_index, nb_subplots, nb_subplots_row, nb_subplots_col,
-                                    df1_filtered, current_fig, data_for_plot, Large_file_memory)
+                                    df1_filtered, df_col_string, current_fig, data_for_plot, Large_file_memory)
             
             
     
-    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, Large_file_memory)
+    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, df_col_string, Large_file_memory)
 
 
 """
@@ -1059,11 +1105,12 @@ def update_func_dropdown_utility(selected_y, function_on_axi, initial_value=None
     else:
         return [{'label': col, 'value': col} for col in function_on_axi], initial_value
 
-def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df, large_file_memory):
+def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df, df_col_string, large_file_memory):
 
     """
     Utility function to generate a graph based on the provided parameters.
-    """
+    """  
+    
     if df is None:  # Check if stored_df is None or empty
         filtered_data_graph = None
     else:
@@ -1071,14 +1118,14 @@ def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_colum
         filtered_data_graph = df.copy()
     # Create the figure based on filtered data
 
-    fig, data_for_plot = fc.create_figure(filtered_data_graph, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
+    fig, data_for_plot = fc.create_figure(filtered_data_graph, df_col_string, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
     return fig, data_for_plot
 
-def update_graph_minor_change_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val, fig_json_serializable, data_for_plot):
+def update_graph_minor_change_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val, fig_json_serializable, data_for_plot, df_col_string):
     """
     Utility function to update a graph based on the provided parameters.
     """
-    fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val)
+    fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val)
     return fig, data_for_plot
 
 def update_graph_subplot_creation(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
@@ -1092,12 +1139,12 @@ def update_graph_subplot_creation(x_column, y_column, z_column, yfunc_column, zf
 
 def update_graph_subplot(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
                          smt_dropdown_value, smt_order_value, sub_bot_smt_value,
-                         index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, df, current_fig, data_for_plot, large_file_memory):
+                         index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, df, df_col_string, current_fig, data_for_plot, large_file_memory):
     """
     Utility function to update a graph based on the provided parameters.
     """
     print("update_graph_subplot")
-    fig, data_for_plot = fc.figure_update_subplot(df, current_fig, data_for_plot, x_column, y_column, z_column,
+    fig, data_for_plot = fc.figure_update_subplot(df, df_col_string, current_fig, data_for_plot, x_column, y_column, z_column,
                                                   yfunc_column, zfunc_column, graph_type, dim_type, 
                                                   smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                                                   index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, large_file_memory)

@@ -74,7 +74,7 @@ cmaps = [('Perceptually Uniform Sequential', [
    #============================================================================="""
 
 
-def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, Large_file_memory):
+def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -104,22 +104,21 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
     fig_json_serializable = go.Figure()  # This figure can now be used with dcc.Graph in Dash
     
     # Create the label of the figure
-    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, True)  
+    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, True, df_col_string)  
     
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
-        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory)
+        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory)
         print("The data ready to be ploted is:")
         print(data_for_plot)
         print()
         # Add the core of the figure
         print("############## Core figure creation ##############")
-        fig_json_serializable, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel)
+        fig_json_serializable, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string)
     
     # Update the figure layout
     print("############## Update figure layout ##############")
-    fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column)       
-    
+    fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column,df_col_string)       
     plt.close()
     # =============================================================================
     print(colored("=============================================================================", "green"))
@@ -134,7 +133,7 @@ def create_figure(df, x_column, y_column, z_column, yf_column, zf_column, g_colu
    #============================================================================="""
 
 
-def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, init):
+def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, init, df_col_string):
 
     """
     Goal: Create the figure labels.
@@ -167,13 +166,8 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     
     name_to_work_on = "directors" #  production, directors, writers
     
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres", "directors", "writers", "category", "titleType"]
+    df_col_string = [col[:-6] if col.endswith('_split') else col for col in df_col_string]
 
-    # df_col_string = data_for_plot.select_dtypes(exclude=['int64', 'float64']).columns.tolist()
-    # print(df_col_string)
-
-    print(x_column, y_column, z_column)
     if init == False:
         if x_column is not None: 
             figname = 'Amount of '+name_to_work_on+' over the ' + x_column
@@ -237,7 +231,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
    #============================================================================="""
 
 
-def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel):
+def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string):
 
     """
     Goal: Create the plot inside the figure regarding the inputs.
@@ -255,14 +249,17 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     - smt_dropdown_value: Type of smoothing for the data.
     - smt_dropdown_value: Order of the smoothing for the data.
     - data_for_plot: Data to plot.
+    - xlabel: The xlabel of the axis (can be None).
+    - ylabel: The ylabel of the axis (can be None).
+    - zlabel: The zlabel of the axis (can be None).
+    - df_col_string: List of columns in the DataFrame that are of object type.
 
     Returns:
     - plotly_fig: The core figure.
     """
     
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
-    
+    df_col_string = [col + '_split' for col in df_col_string]
+
     # Define a list of colors for the bars
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
     
@@ -314,7 +311,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
 
     # Rename the label of the figure
-    figname, xlabel, ylabel, zlabel = label_fig(x_axis, y_axis, z_axis, yf_column, zf_column, g_column, d_column, False)  
+    figname, xlabel, ylabel, zlabel = label_fig(x_axis, y_axis, z_axis, yf_column, zf_column, g_column, d_column, False, df_col_string)  
     
     
     if d_column=="1D": 
@@ -331,7 +328,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
         
         if str(y_column)=='None':
             
-            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
+            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
             
             if g_column=="Histogram":
                 plotly_fig = px.bar(
@@ -368,7 +365,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                 data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
 
-            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
+            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
 
 
             if "Histogram" in g_column:
@@ -424,7 +421,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                 elif zf_column == "Weight on y":
                     data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
-            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis)
+            data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
                         
             # y_values = data_for_plot[y_column].unique()
             if g_column=="Histogram" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
@@ -558,7 +555,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
    #============================================================================="""
 
 
-def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis):
+def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string):
 
     """
     Goal: Apply a filter on the data.
@@ -571,15 +568,11 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
     - x_axis: Column in the dataframe.
     - y_axis: Column in the dataframe.
     - z_axis: Column in the dataframe.
+    - df_col_string: List of columns in the DataFrame that are of object type.
 
     Returns:
     - data_for_plot: Dataframe updated.
     """
-
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    # df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
-    df_col_string = data_for_plot.select_dtypes(exclude=['int64', 'float64']).columns.tolist()
-    print(df_col_string)
     
     if sub_bot_smt_value % 2 == 1:
         
@@ -644,7 +637,7 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
    #============================================================================="""
 
 
-def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, reg_type, reg_order, test_size_val=0.2):
+def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, reg_type, reg_order, test_size_val=0.2):
 
     """
     Goal: Add a trace inside the figure regarding the inputs.
@@ -652,6 +645,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     Parameters:
     - fig_json_serializable: Dash figure.
     - data_for_plot: Dataframe which has been use to create the figure that is re-opened in this function.
+    - df_col_string: List of columns in the DataFrame that are of object type.
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
@@ -670,13 +664,8 @@ def figure_add_trace(fig_json_serializable, data_for_plot, x_column, y_column, z
     
     
     plotly_fig = go.Figure(fig_json_serializable)
-    
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
-    
-    # print(data_for_plot)
-    # df_col_string = data_for_plot.select_dtypes(exclude=['int64', 'float64']).columns.tolist()
-    # print(df_col_string)
+
+    df_col_string = [col + '_split' for col in df_col_string]
     
     # Define a list of colors for the bars
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2'] 
@@ -831,6 +820,27 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
                        x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
                        nb_subplots, nb_subplots_row, nb_subplots_col):
 
+    """
+    Goal: Create a subplot figure where the original figure, fig_json_serializable, is included as the first subplot.
+
+    Parameters:
+    - fig_json_serializable: Dash figure.
+    - data_for_plot: Data to plot.
+    - x_column: Column in the dataframe
+    - y_column: Column in the dataframe (can be None)
+    - z_column: Column in the dataframe (can be None)
+    - yf_column: Function to operate on y_column with the rest of the dataframe
+    - zf_column: Function to operate on z_column with the rest of the dataframe
+    - graph_type: Type of Graphyque for the figure.
+    - dim_type: Graphyque dimension for the figure.
+    - nb_subplots: Amount of subplots in the figure.
+    - nb_subplots_row: Amount of subplots per row.
+    - nb_subplots_col: Amount of subplots per coulumn.
+    
+    Returns:
+    - plotly_fig: The core figure with subplot updated.
+    - data_for_plot: Data to plot updated.
+    """
     
     plotly_fig = go.Figure(fig_json_serializable)
         
@@ -871,6 +881,21 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
 
 
 def get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col):
+
+    """
+    Goal: Determine the row and column position of the subplot corresponding to the index index_subplot.
+
+    Parameters:
+    - index_subplot: Index of the subplot been updated.
+    - nb_subplots: Amount of subplots in the figure.
+    - nb_subplots_row: Amount of subplots per row.
+    - nb_subplots_col: Amount of subplots per coulumn.
+    
+    Returns:
+    - row: The row position of subplot index_subplot.
+    - col: The column position of subplot index_subplot.
+    """    
+
     # Check if index_subplot is within the valid range
     if index_subplot < 0 or index_subplot >= nb_subplots:
         raise ValueError("index_subplot must be in the range [0, nb_subplots-1]")
@@ -888,7 +913,18 @@ def get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplot
 
 
 def clean_trace(fig_with_subplots, index_subplot):
+
+    """
+    Goal: Clean the subplot from the previous trace.
+        
+    Parameters:
+    - fig_with_subplots: The dash subplot figure.
+    - index_subplot: Index of the subplot been updated.
     
+    Returns:
+    - fig_with_subplots: The cleaned dash subplot figure.
+    """        
+
     # Identify the corresponding xaxis and yaxis labels
     if index_subplot == 0:
         xaxis_to_remove = 'x'  # Use just 'x' for index 0
@@ -912,6 +948,17 @@ def clean_trace(fig_with_subplots, index_subplot):
 
 
 def transform_trace_to_format(trace, index_subplot):
+
+    """
+    Goal: Convert different trace types into a uniform structure that is compatible with subplot configurations.
+        
+    Parameters:
+    - trace: The subplot trace.
+    - index_subplot: Index of the subplot been updated.
+    
+    Returns:
+    - new_trace: The subplot updated trace.
+    """    
 
     # Generate axis labels based on index_subplot
     xaxis_label = f'x{index_subplot + 1}'  # For example, x1, x2, etc.
@@ -958,29 +1005,56 @@ def transform_trace_to_format(trace, index_subplot):
    #=============================================================================
    #============================================================================="""
 
-def figure_update_subplot(df, fig_with_subplots, data_for_plot, 
+def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot, 
                        x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type,
                        smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                        index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, Large_file_memory):
     
+    """
+    Goal: Update one subplot inside the figure regarding the inputs.
+
+    Parameters:
+    - df: dataframe.
+    - df_col_string: List of columns in the DataFrame that are of object type.
+    - fig_with_subplots: Dash figure with subplots.
+    - data_for_plot: Data to plot.
+    - x_column: Column in the dataframe
+    - y_column: Column in the dataframe (can be None)
+    - z_column: Column in the dataframe (can be None)
+    - yf_column: Function to operate on y_column with the rest of the dataframe
+    - zf_column: Function to operate on z_column with the rest of the dataframe
+    - graph_type: Type of Graphyque for the figure.
+    - dim_type: Graphyque dimension for the figure.
+    - sub_bot_smt_value: Button to apply the smoothing.
+    - smt_dropdown_value: Type of smoothing for the data.
+    - smt_dropdown_value: Order of the smoothing for the data.
+    - index_subplot: Index of the subplot been updated.
+    - nb_subplots: Amount of subplots in the figure.
+    - nb_subplots_row: Amount of subplots per row.
+    - nb_subplots_col: Amount of subplots per coulumn.
+    
+    Returns:
+    - plotly_fig: The core figure updated.
+    - data_for_plot: Data to plot updated.
+    """
         
     row_index, col_index = get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col)
     print(f"Row: {row_index}, Column: {col_index}")    
 
     fig_json_serializable = go.Figure()
     # Create the label of the figure
-    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, True)  
+    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, True, df_col_string)  
     
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
-        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df , x_column, y_column, z_column, yf_column, zf_column, graph_type, Large_file_memory)
+        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, yf_column, zf_column, graph_type, Large_file_memory)
         print("The data ready to be ploted is:")
         print(data_for_plot)
         print()
         # Add the core of the figure
         print("############## Core figure creation ##############")
-        figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel)       
-        fig_update_layout(figure_returned,figname,xlabel,ylabel,zlabel,x_column,graph_type, dim_type)   
+        figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string)       
+        fig_update_layout(figure_returned,figname,xlabel,ylabel,zlabel,x_column,graph_type, dim_type,df_col_string)   
         print()
         
     traces = figure_returned.data    
@@ -1134,7 +1208,7 @@ def aggregate_value(data, col_to_aggregate, count_col, col_ref=None):
    #============================================================================="""
 
 
-def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column):
+def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column, df_col_string):
 
     """
     Goal: Update the layout of the dash figure.
@@ -1148,13 +1222,21 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
     - x_column: Column in the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
+    - df_col_string: List of columns in the DataFrame that are of object type.
 
     Returns:
     - fig_json_serializable: Dash figure updated.
     """
-
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "directors_split", "writers_split", "category_split", "titleType_split"]
+    
+    
+    modified_xlabel = xlabel.replace(' ', '_') if xlabel is not None else None
+    modified_ylabel = ylabel.replace(' ', '_') if ylabel is not None else None
+    modified_zlabel = zlabel.replace(' ', '_') if zlabel is not None else None
+    modified_glabel = g_column.replace(' ', '_') if g_column is not None else None
+    
+    print("figpath = ", 'x_'+str(modified_xlabel)+'_y_'+str(modified_ylabel)+'_z_'+str(modified_zlabel)+'_g_'+str(modified_glabel)+'_d_'+str(d_column))
+    
+    df_col_string = [col + '_split' for col in df_col_string]
 
     fig_json_serializable.update_layout(
         plot_bgcolor='#1e1e1e',  # Darker background for the plot area

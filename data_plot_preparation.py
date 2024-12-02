@@ -27,7 +27,7 @@ import numpy as np
    #============================================================================="""
 
 
-def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory):
+def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory):
 
     """
     Goal: Get the pivot of the Count table of the dataframe.
@@ -35,6 +35,7 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, 
 
     Parameters:
     - df_temp: dataframe which has been created temporary
+    - df_col_string: List of columns in the DataFrame that are of object type.
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
@@ -51,9 +52,8 @@ def data_preparation_for_plot(df_temp, x_column, y_column, z_column, yf_column, 
     - z_column: Column in the dataframe (it could have change)
     """
 
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres_split", "titleType_split", "directors_split", "writers_split", "category_split"]
-
+    df_col_string = [col + '_split' for col in df_col_string]
+        
     # print("Delete the rows with unknown value and split the column with multiple value per cell.")
     Para, df_temp, x_column, y_column, z_column = delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_file_memory)
 
@@ -168,18 +168,16 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_fi
     - z_column: Column in the dataframe (it could have change)
     """
     
-    # Columns in the dataframe which are strings and where the cell can contain multiple values.
-    df_col_string = ["genres", "titleType", "directors", "writers", "category"]
+    df_col_numeric = df_temp.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    df_col_all = df_temp.columns.tolist()
+    df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
 
-    # Columns in the dataframe which are numerics.
-    df_col_numeric = ["startYear", "runtimeMinutes", "averageRating", "numVotes"]
-
-    if str(x_column) in df_col_numeric:
-        df_temp[x_column] = df_temp[x_column].replace('', '0').fillna('0').astype(int)
-    if str(y_column) in df_col_numeric:
-        df_temp[y_column] = df_temp[y_column].replace('', '0').fillna('0').astype(int)
-    if str(z_column) in df_col_numeric:
-        df_temp[z_column] = df_temp[z_column].replace('', '0').fillna('0').astype(int)
+    # if str(x_column) in df_col_numeric:
+    #     df_temp[x_column] = df_temp[x_column].replace('', '0').fillna('0').astype(int)
+    # if str(y_column) in df_col_numeric:
+    #     df_temp[y_column] = df_temp[y_column].replace('', '0').fillna('0').astype(int)
+    # if str(z_column) in df_col_numeric:
+    #     df_temp[z_column] = df_temp[z_column].replace('', '0').fillna('0').astype(int)
         
     if str(x_column) in df_col_string:
         df_temp[x_column] = df_temp[x_column].replace('', 'Unknown').astype(str)
