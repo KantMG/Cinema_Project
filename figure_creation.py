@@ -96,7 +96,8 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
     Returns:
     - fig_json_serializable: The finalized plotly figure. 
     """
-    
+    # print((df[x_column] == -1).sum())
+    # print((df[x_column] == -1).sum())
     # =============================================================================
     print(colored("========================= Start figure creation =========================", "green"))
     # =============================================================================      
@@ -105,7 +106,7 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
     
     # Create the label of the figure
     figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, True, df_col_string)  
-    
+    data_for_plot = []
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
         Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory)
@@ -118,7 +119,7 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
     
     # Update the figure layout
     print("############## Update figure layout ##############")
-    fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column,df_col_string)       
+    fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column,df_col_string)       
     plt.close()
     # =============================================================================
     print(colored("=============================================================================", "green"))
@@ -268,7 +269,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     x_axis = x_column
     y_axis = 'count'
     z_axis = None
-    if str(y_column)!='None':
+    t_axis = None
+    if str(y_column)!='None' and yf_column != "Value in x_y interval":
         z_axis = y_column
     if x_column in df_col_string:
         x_axis = 'count'
@@ -285,15 +287,21 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
             x_axis = 'avg_' + y_column
             y_axis = x_column
             z_axis = 'count'
-    
-    if z_column is not None and zf_column == "Avg":
+        
+    if z_column is not None and zf_column == "Avg" and yf_column != "Value in x_y interval":
         t_axis = 'avg_' + z_column
-    if z_column is not None and zf_column == "Avg on the ordinate":
+    if z_column is not None and zf_column == "Avg" and yf_column == "Value in x_y interval":
+        z_axis = 'avg_' + z_column
+    if z_column is not None and zf_column == "Avg on the ordinate" and yf_column != "Value in x_y interval":
         y_axis = 'avg_' + z_column
         t_axis = 'count'
+    if z_column is not None and zf_column == "Avg on the ordinate" and yf_column == "Value in x_y interval":
+        y_axis = 'avg_' + z_column
+        z_axis = 'count'
+        
     if z_column is not None and zf_column == "Weight on y":
         # y_axis = 'sum_' + z_column
-        t_axis = 'standard_error'         
+        t_axis = 'standard_error'   
 
     if d_column=="2D" and g_column=="Colormesh":    
         x_axis = x_column
@@ -1054,7 +1062,7 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
         # Add the core of the figure
         print("############## Core figure creation ##############")
         figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string)       
-        fig_update_layout(figure_returned,figname,xlabel,ylabel,zlabel,x_column,graph_type, dim_type,df_col_string)   
+        fig_update_layout(figure_returned, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,graph_type, dim_type,df_col_string)   
         print()
         
     traces = figure_returned.data    
@@ -1208,7 +1216,7 @@ def aggregate_value(data, col_to_aggregate, count_col, col_ref=None):
    #============================================================================="""
 
 
-def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_column,g_column,d_column, df_col_string):
+def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column, df_col_string):
 
     """
     Goal: Update the layout of the dash figure.
@@ -1273,6 +1281,38 @@ def fig_update_layout(fig_json_serializable,figname,xlabel,ylabel,zlabel,x_colum
             )
             
         )
+        # if y_column is not None:
+        #     fig_json_serializable.update_layout(
+        #         updatemenus=[
+        #             dict(
+        #                 buttons=list([
+        #                     dict(
+        #                         args=[{"marker.colorscale": "Viridis", "coloraxis.colorbar.title": y_column}],
+        #                         label="Linear Scale",
+        #                         method="restyle"
+        #                     ),
+        #                     dict(
+        #                         args=[{"marker.colorscale": "Viridis", "marker.colors": data_for_plot[y_column].apply(lambda x: max(x, 1e-10)), "coloraxis.colorbar.title": y_column}],
+        #                         label="Log Scale",
+        #                         method="restyle"
+        #                     )
+        #                 ]),
+        #                 direction="down",
+        #                 pad={"r": 10, "t": 10},
+        #                 showactive=True,
+        #                 x=0.1,           # position of the dropdown
+        #                 xanchor="left",
+        #                 y=1.1,           # position of the dropdown
+        #                 yanchor="top"
+        #             ),
+        #         ],
+        #         coloraxis_colorbar=dict(title=y_column)  # Add the color bar title
+        #     )
+        
+        
+        
+        
+        
     elif x_column is not None and d_column =="3D":
         fig_json_serializable.update_layout(
             plot_bgcolor='#1e1e1e',  # Darker background for the plot area

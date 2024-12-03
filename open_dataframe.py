@@ -21,6 +21,7 @@ import time
 import pandas as pd
 import dask.dataframe as dd
 import re
+import os
 from termcolor import colored
 
 # Initialize a list to store execution times
@@ -267,15 +268,15 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
        # Convert columns to the specified types
         for col, expected_type in info["types"].items():
             print(col, expected_type)
-            # if expected_type in [float, "float64"]:
-            #     if Large_file_memory:
-            #         df[col] = dd.to_numeric(df[col], errors='coerce')
-            #         # Handle NA values
-            #         df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary  
-            #     else:
-            #         df[col] = pd.to_numeric(df[col], errors='coerce')
-            #         # Handle NA values
-            #         df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary     
+            if expected_type in [float, "float64"]:
+                if Large_file_memory:
+                    df[col] = dd.to_numeric(df[col], errors='coerce')
+                    # Handle NA values
+                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary  
+                else:
+                    df[col] = pd.to_numeric(df[col], errors='coerce')
+                    # Handle NA values
+                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary     
                    
             if expected_type == str:
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns
@@ -375,7 +376,7 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
             sep='\t',
             usecols=usecols,
             encoding='utf-8',
-            na_values='\\N',
+            na_values=['\\N'],
             on_bad_lines='skip',
             quotechar='"',
             dtype=dtype_mapping
@@ -706,6 +707,9 @@ def create_data_specific(df1, df1_col_groupby, df_name, exclude_col):
     
     exclude_col = ["primaryName"]
     merged_df = merged_df.drop(columns=exclude_col)
+
+    print(df_name["birthYear"].isna().sum())
+    print(df_name["deathYear"].isna().sum())
     
     # Step 3: Group by 'directors'
     group_columns = merged_df.columns.difference([df1_col_groupby, 'birthYear', 'deathYear', 'nconst'])
@@ -765,9 +769,12 @@ def create_data_specific(df1, df1_col_groupby, df_name, exclude_col):
         df_test[col] = pd.to_numeric(df_test[col], errors='coerce')  # Ensure conversion to float
     
     
+    print(df_test[[df1_col_groupby, "birthYear", "deathYear"]])
+    print(df_test["birthYear"].isna().sum())
+    print(df_test["deathYear"].isna().sum())
+    
     print(df_test.dtypes)
-    
-    
+        
     return df_test, df_test.columns.tolist()
     
 # Function to average numerical values in a string of comma-separated numbers
@@ -815,3 +822,64 @@ def calculate_weighted_average(ratings_str, votes_str):
     total_votes = sum(votes)
 
     return total_weighted_sum / total_votes if total_votes > 0 else 0
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def test_data_creation(Project_path, test_directory, Files=None, Rows_to_keep=None, Large_file_memory=True):
+
+    # Check if the directory does not exist and create it
+    if not os.path.exists(Project_path+test_directory):
+        os.makedirs(Project_path+test_directory)
+        print(f"Directory '{test_directory}' created.")
+    else:
+        print(f"Directory '{test_directory}' already exists.")
+    
+    file_mapping = file_columns_dtype()
+        
+    for data in Files:
+
+        # Fetch the appropriate column and dtype mapping for each file
+        columns_info = file_mapping.get(data, {})
+        usecols = columns_info.get("columns")
+        dtype_mapping = columns_info.get("types")
+        rename_map = columns_info.get("rename", None)
+       
+        print(data)
+        #Create class 'pandas.core.frame.DataFrame'
+        df = read_and_rename(
+            Project_path + data,
+            usecols=usecols,
+            dtype_mapping=dtype_mapping,
+            rename_map=rename_map,
+            large_file=Large_file_memory,
+        )
+        print(df)
+        print()
+
+        # Replace specific problematic strings with NaN
+        for column, dtype in dtype_mapping.items():
+            if dtype == 'float64':  # Only apply to columns expecting float
+                # Example: replacing non-convertible 'Talk-Show' with NaN
+                df[column] = pd.to_numeric(df[column], errors='coerce')
+
+        
+        # Keep only the first "Rows_to_keep" rows
+        # df_cut = df.head(Rows_to_keep)
+        df_cut = df.tail(Rows_to_keep)
+        print(df_cut)
+        print()   
+        
+        # Save the new data set into the Test_data directory
+        # df_cut.to_csv(Project_path+'Test_data/'+data, index=False, sep='\t', encoding='utf-8', quotechar='"')
+
+        df_cut.to_csv(
+            Project_path+test_directory+'/'+data,
+            sep='\t',
+            index=False,
+            encoding='utf-8',
+            quotechar='"'
+        )

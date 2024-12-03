@@ -67,18 +67,21 @@ current_file_path = os.getcwd()+'/Main.py'
 
 start_time = time.time()
 
+# od.test_data_creation(Project_path, "Test_data_tail", ['title.akas.tsv','title.basics.tsv', 'title.crew.tsv', 'title.episode.tsv', 'title.principals.tsv', 'title.ratings.tsv', 'name.basics.tsv'], 10**4, True)
+
 Large_file_memory = False
 Get_file_sys_mem = False
 desired_number_of_partitions = 10
-Test_data = True
+Test_data = False
 if Test_data == True:
-    Project_path=Project_path+'Test_data/'
+    Project_path=Project_path+'Test_data_tail/'
+
 
 
 
 # Define how to present the data: It can be Movie, directors, writers
 df1_col_groupby = 'directors'
-if df1_col_groupby == 'directors':
+if df1_col_groupby != 'Movie':
 
     if os.path.exists(Project_path+'Made_data/groupby_'+df1_col_groupby):
         df1 = od.read_and_rename(
@@ -89,7 +92,7 @@ if df1_col_groupby == 'directors':
         List_col_tab2 = df1.columns
             
     else:
-        selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
+        selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", df1_col_groupby] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
         selected_filter  = [None for i in selected_columns]
         df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
         
@@ -111,8 +114,18 @@ if df1_col_groupby == 'directors':
         # Lists of columns that are relevants regarding the tab where where we are.
         List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
         List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
-    
+
+        List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
+        List_filter = [None, None, None, None]
+        df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+
         df1, List_col_tab2 = od.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
+        # Check if the directory does not exist and create it
+        if not os.path.exists(Project_path+'Made_data'):
+            os.makedirs(Project_path+'Made_data')
+            print(f"Directory Made_data created.")
+        else:
+            print(f"Directory Made_data already exists.")
         df1.to_csv(
             Project_path+'Made_data/groupby_'+df1_col_groupby,
             sep='\t',
@@ -131,14 +144,14 @@ if df1_col_groupby == 'directors':
         else:
             return int(director)  # In case it's a number
     
-    # Apply the function to the 'directors' column
-    df1['directors'] = df1['directors'].apply(convert_directors)
+    df1[df1_col_groupby] = df1[df1_col_groupby].apply(convert_directors)
     print(df1)
     print(df1.dtypes)
 else:
     selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
     selected_filter  = [None for i in selected_columns]
     df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+    
     
     if "isOriginalTitle" in df1.columns:
         df1 = df1.loc[df1["isOriginalTitle"] == 1]
@@ -167,7 +180,7 @@ List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writ
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
 List_filter = [None, None, None, None]
-df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+df_name = od.open_data_name(List_col, List_filter, Project_path+'Test_data/', Large_file_memory, Get_file_sys_mem)
 
 
 
@@ -577,7 +590,7 @@ def update_yfunc_dropdown_tab2(selected_y, selected_tab):
             return [], []
         print(f"Selected Y: {selected_y}")  # Additional debugging
         
-        function_on_y = ["Avg", "Avg on the ordinate", "Avg on the ordinate"]
+        function_on_y = ["Avg", "Avg on the ordinate", "Value in x_y interval"]
         
         return update_func_dropdown_utility(selected_y, function_on_y, None)
     return dash.no_update, dash.no_update
@@ -1011,7 +1024,7 @@ def update_yfunc_dropdown_tab3(selected_y, selected_tab):
         # Proceed to get options based on selected_x and stored_df1...
         print(f"Selected Y: {selected_y}")  # Additional debugging
         
-        function_on_y = ["Avg", "Avg on the ordinate"]
+        function_on_y = ["Avg", "Avg on the ordinate", "Value in x_y interval"]
         
         return update_func_dropdown_utility(selected_y, function_on_y, None)
     return dash.no_update, dash.no_update

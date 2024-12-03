@@ -30,7 +30,14 @@ import open_dataframe as od
 # Rows_to_keep=None           :   The amount of rows to keep for the new data set
 # Large_file_memory=False     :   Option to open with dask.dataframe if source file is too large
 
-def test_data_creation(Project_path, Files=None, Rows_to_keep=None, Large_file_memory=True):
+def test_data_creation(Project_path, test_directory, Files=None, Rows_to_keep=None, Large_file_memory=True):
+
+    # Check if the directory does not exist and create it
+    if not os.path.exists(test_directory):
+        os.makedirs(test_directory)
+        print(f"Directory '{test_directory}' created.")
+    else:
+        print(f"Directory '{test_directory}' already exists.")
     
     file_mapping = od.file_columns_dtype()
         
@@ -55,7 +62,8 @@ def test_data_creation(Project_path, Files=None, Rows_to_keep=None, Large_file_m
         print()
         
         # Keep only the first "Rows_to_keep" rows
-        df_cut = df.head(Rows_to_keep)
+        # df_cut = df.head(Rows_to_keep)
+        df_cut = df.tail(Rows_to_keep)
         print(df_cut)
         print()   
         
@@ -63,7 +71,7 @@ def test_data_creation(Project_path, Files=None, Rows_to_keep=None, Large_file_m
         # df_cut.to_csv(Project_path+'Test_data/'+data, index=False, sep='\t', encoding='utf-8', quotechar='"')
 
         df_cut.to_csv(
-            Project_path+'Test_data/'+data,
+            Project_path+test_directory+'/'+data,
             sep='\t',
             index=False,
             encoding='utf-8',

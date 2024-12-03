@@ -51,12 +51,17 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
     - y_column: Column in the dataframe (it could have change)
     - z_column: Column in the dataframe (it could have change)
     """
-
-    df_col_string = [col + '_split' for col in df_col_string]
         
+    df_col_string = [col + '_split' for col in df_col_string]
+    
     # print("Delete the rows with unknown value and split the column with multiple value per cell.")
     Para, df_temp, x_column, y_column, z_column = delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_file_memory)
 
+    if yf_column == "Value in x_y interval":
+        data_for_plot, x_column, y_column, z_column = count_alive_directors(df_temp, x_column, y_column, z_column)
+        return Para, data_for_plot, x_column, y_column, z_column
+    
+    
     if x_column not in df_col_string:
         df_temp = df_temp[df_temp[x_column] >= 0]
     if str(y_column)!='None':
@@ -168,6 +173,7 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_fi
     - z_column: Column in the dataframe (it could have change)
     """
     
+    
     df_col_numeric = df_temp.select_dtypes(include=['float64', 'int64']).columns.tolist()
     df_col_all = df_temp.columns.tolist()
     df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
@@ -222,3 +228,101 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_fi
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
+
+
+# def count_alive_directors(df, x_column, y_column, z_column):
+#     # Create a range for the years from the minimum birthYear to maximum deathYear
+#     min_x_column = int(df[x_column].min())
+#     max_y_column = int(df[y_column].max())
+#     New_x_column = range(min_x_column, max_y_column + 1)
+    
+#     alive_counts = []
+#     avg_new_z_column = []
+
+#     for i_x_col in New_x_column:
+#         count = df[(df[x_column] <= i_x_col) & (df[y_column] >= i_x_col)].shape[0]
+#         alive_counts.append({'Year': i_x_col, 'count': count})
+        
+#         if z_column is not None:
+#             # Calculate the average NewRating for alive directors
+#             new_z_column = df[(df[x_column] <= i_x_col) & (df[y_column] >= i_x_col)][z_column]
+#             avg_z_column = new_z_column.mean() if not new_z_column.empty else 0
+#             avg_new_z_column.append(avg_z_column)
+
+#     # Convert to DataFrame
+#     alive_df = pd.DataFrame(alive_counts)
+#     if z_column is not None:
+#         alive_df['avg_'+z_column] = avg_new_z_column  # Add average NewRating
+
+#     # Count NaN values in birthYear
+#     nan_birth = df[x_column].isna().sum()
+#     nan_death = (df[y_column] == -1).sum()
+
+#     # Count those alive (NaN in deathYear) with a valid birthYear
+#     alive_count_na = df[(df[y_column] == -1) & (df[x_column].notna())].shape[0]
+
+#     # Collect New_x_column for individuals that are alive (with NaN in deathYear)
+#     for index, row in df[(df[y_column] == -1) & (df[x_column].notna())].iterrows():
+#         birth_year = int(row[x_column])  # Get the birth year of the director
+#         # Increment count for all New_x_column from birth_year to max_year
+#         for year in range(birth_year, max_y_column + 1):
+#             if year in alive_df['Year'].values:
+#                 alive_df.loc[alive_df['Year'] == year, 'count'] += 1
+    
+#     print("nan_birth= ",nan_birth)
+#     print("nan_death= ",nan_death)
+#     print("alive_count_na= ", alive_count_na)
+#     x_column, y_column = 'Year', 'count'
+#     return alive_df, x_column, y_column, z_column
+
+def count_alive_directors(df, x_column, y_column, z_column):
+    # Determine the range for years based on birthYear and deathYear
+    min_x_column = int(df[x_column].min())
+    max_y_column = int(df[y_column].max())
+    New_x_column = range(min_x_column, max_y_column + 1)
+    
+    # Initialize arrays to store results
+    alive_counts = []
+    avg_new_z_column = []
+
+    # Create a DataFrame for all years
+    for year in New_x_column:
+        # Count alive directors: those whose birthYear is less than or equal to the year
+        # and either deathYear is greater than or equal to the year OR deathYear is -1
+        alive_condition = (df[x_column] <= year) & ((df[y_column] >= year) | (df[y_column] == -1))
+        count_alive = alive_condition.sum()  # Count how many are alive
+        alive_counts.append({'Year': year, 'count': count_alive})
+
+        if z_column is not None:
+            # Calculate average NewRating for those alive
+            avg_rating = df.loc[alive_condition, z_column].mean()
+            avg_new_z_column.append(avg_rating)
+        else:
+            avg_new_z_column.append(0)  # Append 0 if z_column is None
+
+    # Create the resulting DataFrame
+    alive_df = pd.DataFrame(alive_counts)
+    if z_column is not None:
+        alive_df['avg_' + z_column] = avg_new_z_column  # Add average NewRating
+
+    # Count NaN values in birthYear and count -1 in deathYear in a vectorized manner
+    nan_birth = df[x_column].isna().sum()
+    nan_death = (df[y_column] == -1).sum()
+    
+    # Count alive directors with deathYear as -1 and valid birthYear
+    alive_count_na = ((df[y_column] == -1) & (df[x_column].notna())).sum()
+
+    # Print results for diagnostics
+    print("nan_birth= ", nan_birth)
+    print("nan_death= ", nan_death)
+    print("alive_count_na= ", alive_count_na)
+
+    return alive_df, 'Year', 'count', z_column
+
+
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
