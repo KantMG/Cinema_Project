@@ -272,11 +272,11 @@ def open_dataframe(requested_columns, requested_filters, Project_path, Large_fil
                 if Large_file_memory:
                     df[col] = dd.to_numeric(df[col], errors='coerce')
                     # Handle NA values
-                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary  
+                    # df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary  
                 else:
                     df[col] = pd.to_numeric(df[col], errors='coerce')
                     # Handle NA values
-                    df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary     
+                    # df[col] = df[col].fillna(-1)  # Fill with -1 or another value as necessary     
                    
             if expected_type == str:
                 df[col] = df[col].fillna('')  # Fill NaN with empty string for string columns

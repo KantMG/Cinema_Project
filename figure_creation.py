@@ -96,8 +96,8 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
     Returns:
     - fig_json_serializable: The finalized plotly figure. 
     """
-    # print((df[x_column] == -1).sum())
-    # print((df[x_column] == -1).sum())
+
+
     # =============================================================================
     print(colored("========================= Start figure creation =========================", "green"))
     # =============================================================================      
@@ -165,7 +165,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     # x_column, y_column, z_column = columns
     
     
-    name_to_work_on = "directors" #  production, directors, writers
+    name_to_work_on = "production" #  production, directors, writers
     
     df_col_string = [col[:-6] if col.endswith('_split') else col for col in df_col_string]
 
@@ -364,7 +364,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
             if x_column in df_col_string and "Movie" not in g_column:
                 # Grouping y_column values
-                n = 12  # Number of top categories to keep
+                n = 10  # Number of top categories to keep
                 data_for_plot = group_small_values(data_for_plot, y_axis, x_axis, n)
 
             if y_column in df_col_string and "Movie" not in g_column:
@@ -375,15 +375,36 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
 
-
             if "Histogram" in g_column:
+                if "Movie" in g_column:    
+                    # First, create a new DataFrame to calculate cumulative sums
+                    cumulative_data = data_for_plot.groupby([y_axis, z_axis])[x_axis].sum().reset_index()
+                    # Sort the DataFrame by year (z_axis) for cumulative calculation
+                    cumulative_data = cumulative_data.sort_values(by=[y_axis, z_axis])
+                    # Calculate the cumulative sum for each genre (x_axis)
+                    cumulative_data['count'] = cumulative_data.groupby(y_axis)[x_axis].cumsum()
+                    # Use cumulative_data for the plot
+                    data_for_plot = cumulative_data
+
+                    # Create the animation frames by grouping your data by the z_axis
+                    frames = data_for_plot.groupby(z_axis)
+                    # For each frame, sort the data based on the y values or any other criteria you choose
+                    sorted_frames = {}
+                    for name, group in frames:
+                        sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
+                        sorted_frames[name] = sorted_group
+                    # Concatenate sorted frames back into a single DataFrame
+                    data_for_plot = pd.concat(sorted_frames.values())
+
                 plotly_fig = px.bar(
-                    data_for_plot, 
-                    x=x_axis, 
-                    y=y_axis,
-                    color=z_axis if "Movie" not in g_column else None,
-                    animation_frame=z_axis if "Movie" in g_column else None
-                    )
+                   data_for_plot, 
+                   x=x_axis, 
+                   y=y_axis,
+                   color=z_axis if "Movie" not in g_column else None,
+                   animation_frame=z_axis if "Movie" in g_column else None,
+                   range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if "Movie" in g_column else None
+                   )
+                plotly_fig.write_html(x_axis+'_'+y_axis+'_'+z_axis+"_animation_plot.html")
             if "Curve" in g_column:
                 plotly_fig = px.line(
                     data_for_plot, 
@@ -433,12 +454,28 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                         
             # y_values = data_for_plot[y_column].unique()
             if g_column=="Histogram" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
-               plotly_fig = px.bar(
+ 
+                if "Movie" in g_column:    
+                    # Create the animation frames by grouping your data by the z_axis
+                    frames = data_for_plot.groupby(z_axis)
+                    
+                    # For each frame, sort the data based on the y values or any other criteria you choose
+                    sorted_frames = {}
+                    for name, group in frames:
+                        sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
+                        sorted_frames[name] = sorted_group
+                    
+                    # Concatenate sorted frames back into a single DataFrame
+                    data_for_plot = pd.concat(sorted_frames.values())
+    
+ 
+                plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_axis, 
                    y=y_axis,
                    color=z_axis if "Movie" not in g_column else None,
-                   animation_frame=z_axis if "Movie" in g_column else None
+                   animation_frame=z_axis if "Movie" in g_column else None,
+                   range_y=[sorted_data_for_plot[y_axis].min(), sorted_data_for_plot[y_axis].max()] if "Movie" in g_column else None
                    )
             elif g_column=="Curve" and (zf_column == "Avg"):
                 plotly_fig = go.Figure()
@@ -462,10 +499,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     line_group=g_column if "Movie" in g_column else None
                     )
             elif g_column=="Scatter" and (zf_column == "Avg" or zf_column == "Avg on the ordinate" or zf_column == "Weight on y"):
-                
-                
-                print(x_axis,y_axis,z_axis,t_axis)
-                
                 plotly_fig = px.scatter(
                     data_for_plot,
                     x=x_axis,

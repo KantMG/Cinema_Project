@@ -72,15 +72,15 @@ start_time = time.time()
 Large_file_memory = False
 Get_file_sys_mem = False
 desired_number_of_partitions = 10
-Test_data = False
+Test_data = True
 if Test_data == True:
-    Project_path=Project_path+'Test_data_tail/'
+    Project_path=Project_path+'Test_data/'
 
 
 
 
 # Define how to present the data: It can be Movie, directors, writers
-df1_col_groupby = 'directors'
+df1_col_groupby = 'Movie'
 if df1_col_groupby != 'Movie':
 
     if os.path.exists(Project_path+'Made_data/groupby_'+df1_col_groupby):
@@ -148,7 +148,7 @@ if df1_col_groupby != 'Movie':
     print(df1)
     print(df1.dtypes)
 else:
-    selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", "directors"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
+    selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
     selected_filter  = [None for i in selected_columns]
     df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
     
@@ -180,7 +180,7 @@ List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writ
 
 List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
 List_filter = [None, None, None, None]
-df_name = od.open_data_name(List_col, List_filter, Project_path+'Test_data/', Large_file_memory, Get_file_sys_mem)
+df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
 
 
