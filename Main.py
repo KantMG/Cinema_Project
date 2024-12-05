@@ -193,8 +193,6 @@ last_clicked_index = 0
 
 print(colored("***************** Start dash ****************", "yellow"))
 
-###############################################################################
-
 
 # Initialize the Dash app with suppress_callback_exceptions set to True
 app, dark_dropdown_style, uniform_style = wis.web_interface_style()
@@ -250,13 +248,14 @@ def tab1_content():
 )    
     Text5 = f"It corresponds to a multiple variety of tab-separated-values (TSV) formatted files in the UTF-8 character set. "
     
-    Text7 = f"In addition to the 🏠 Home tab, the interface possess two other tabs that we will depict below."
+    Text7 = f"The interface possess three tabs:"
     
-    Text8 = f"🏠 Home"
+    Text8 = f"🏠 Home: This is the homepage."
     
-    Text9 = f"📈 Analytics"
+    Text9 = f"📈 Analytics: Provides an analysis of the overall dataframe using Plotly for visualization."
+    Text91 = f"It offers various functions, including data filtration, machine learning regressions, smoothing with the Savitzky-Golay filter, variable creation, and dynamic subplot modification."
     
-    Text10 = f"🎥 Movies & Artists"
+    Text10 = f"🎥 Movies & Artists: Allows analysis based on requests for specific artist names."
 
     
     # Print all ids
@@ -291,7 +290,13 @@ def tab1_content():
                 html.Span(children='The IMDb Non-Commercial Datasets, the open source can be find '),
                 html.A('here', href='https://developer.imdb.com/non-commercial-datasets/', target='_blank', style={"color": "#FFD700"})
             ]),
-            html.P(Text5)
+            html.P(Text5),
+            html.H2("Dash tool:", style={"color": "#FFD700"}, className="text-light"),
+            html.P(Text8),
+            html.P(Text9),
+            html.P(Text91),
+            html.P(Text10),
+            
         ])   
         # html.Div([
         #     html.H2("Overview:", style={"color": "#FFD700"}, className="text-light"),
@@ -349,7 +354,6 @@ def tab2_content():
                                                                      "Number of subplot", "Number of rows", "Number of columns",
                                                                      "Configuration of the subplot figure", dark_dropdown_style, uniform_style)
 
-    # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
     print(colored("==================== End Tab2_content ========================", "yellow"))
@@ -666,7 +670,6 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input("input_1-subplot-tab-2", "value"),
      Input("input_2-subplot-tab-2", "value"),
      Input("input_3-subplot-tab-2", "value"),
-     # Input("submit-button-subplot-tab-2", "n_clicks"),
      Input("hide-dropdowns-tab-2", "n_clicks"),
      Input("submit-button-filter-tab-2", "n_clicks")] +
     [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2] +
@@ -1071,12 +1074,17 @@ def update_graph_tab3(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     df2 = pd.DataFrame(stored_df2)
     # Create a copy of the DataFrame to avoid modifying the original stored data
     filtered_data_table = df2.copy()   
+
+    df_col_numeric = df2.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    df_col_all = df2.columns.tolist()
+    df_col_string = [col for col in df_col_all if col not in df_col_numeric]  
         
     print("Active Tab:", selected_tab)
     print(filtered_data_table)
     if selected_tab == 'tab-3' and stored_df2 is not None:  # Only execute if in the correct tab
             print(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value)
-            return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, filtered_data_table, False)
+            return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, filtered_data_table, df_col_string, False)
+
 
 
 

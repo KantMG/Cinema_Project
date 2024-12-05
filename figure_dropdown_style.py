@@ -694,17 +694,35 @@ def buttons_subplots(id_subname, text_button, nb_buttons, nb_buttons_row, nb_but
 
         button_list.append(button)
 
+
+    # Create rows
+    rows = []
+    for i in range(0, len(button_list), nb_buttons_row):
+        row_buttons = button_list[i:i + nb_buttons_row]
+        rows.append(html.Div(row_buttons, style={
+            'display': 'flex',
+            'justify-content': 'flex-start',
+            'gap': '5px',
+            'margin-bottom': '20px'  # Space below each row of buttons
+        }))
+    
     return html.Div(children=[
         html.Span("", style={'margin': '0 10px'}),
-        html.Div(button_list, style={
-                        'display': 'flex',
-                        # 'margin-left': '200px',
-                        'justify-content': 'flex-start',
-                        'gap': '5px',
-                        'margin-bottom': '20px'  # Add space below the dropdowns
-                    }
-                ), 
-        ])
+        *rows   # Unpack the rows list to include each row of buttons
+    ])
+
+
+    # return html.Div(children=[
+    #     html.Span("", style={'margin': '0 10px'}),
+    #     html.Div(button_list, style={
+    #                     'display': 'flex',
+    #                     # 'margin-left': '200px',
+    #                     'justify-content': 'flex-start',
+    #                     'gap': '5px',
+    #                     'margin-bottom': '20px'  # Add space below the dropdowns
+    #                 }
+    #             ), 
+    #     ])
 
 
 """#=============================================================================
