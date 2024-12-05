@@ -586,6 +586,10 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
             }
         }
     }
+
+    print()
+    print(colored("**************** Open dataframe ****************", "yellow"))
+    print()
     
     # Create a dictionary to map each requested column to its filter
     column_filter_mapping = dict(zip(requested_columns, requested_filters))
@@ -683,6 +687,10 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
         
     if Large_file_memory:
         df = df.compute()
+
+    print()
+    print(colored("*************** Dataframe is open **************", "yellow"))
+    print()
 
     return df
 

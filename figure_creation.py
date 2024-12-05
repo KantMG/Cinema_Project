@@ -394,7 +394,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                         sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
                         sorted_frames[name] = sorted_group
                     # Concatenate sorted frames back into a single DataFrame
-                    data_for_plot = pd.concat(sorted_frames.values())
+                    data_for_plot = pd.concat(sorted_frames.values(), ignore_index=True)
 
                 plotly_fig = px.bar(
                    data_for_plot, 
@@ -404,7 +404,10 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                    animation_frame=z_axis if "Movie" in g_column else None,
                    range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if "Movie" in g_column else None
                    )
-                plotly_fig.write_html(x_axis+'_'+y_axis+'_'+z_axis+"_animation_plot.html")
+                
+                if "Movie" in g_column:    
+                    # fd.make_movie(plotly_fig)
+                    plotly_fig.write_html(x_axis+'_'+y_axis+'_'+z_axis+"_animation_plot.html")
             if "Curve" in g_column:
                 plotly_fig = px.line(
                     data_for_plot, 

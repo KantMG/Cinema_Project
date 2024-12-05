@@ -21,6 +21,8 @@ Created on Wed Sep  4 16:22:46 2024
 import pandas as pd
 import pylab as pl
 import Levenshtein
+import imageio
+import os
 
 import Function_errors as fe
 
@@ -352,3 +354,30 @@ def are_names_close_with_inversion(name1, name2, max_distance):
     except AttributeError:
         return 'None'
 
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def make_movie(plotly_fig):
+
+    # Set the output path of your images
+    image_paths = []
+    
+    # Loop through animation frames if they're defined
+    for frame in plotly_fig.frames:
+        print(frame)
+        plotly_fig.update(frames=[frame])
+        image_path = f"frame_{frame.name}.png"
+        plotly_fig.write_image(image_path)
+        image_paths.append(image_path)    
+
+
+    # Create a video from images
+    with imageio.get_writer('output_video.mp4', fps=10) as writer:
+        for image_path in image_paths:
+            image = imageio.imread(image_path)
+            writer.append_data(image)
+    
+    print("Video created successfully: output_video.mp4")

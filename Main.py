@@ -71,12 +71,10 @@ start_time = time.time()
 
 Large_file_memory = False
 Get_file_sys_mem = False
-desired_number_of_partitions = 10
 Test_data = True
-if Test_data == True:
-    Project_path=Project_path+'Test_data/'
 
 
+Project_path=Project_path+'Test_data/' if Test_data == True else None
 
 
 # Define how to present the data: It can be Movie, directors, writers
@@ -191,12 +189,6 @@ List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie",
 previous_clicks = {}
 previous_reset_clicks = 0
 last_clicked_index = 0
-
-
-
-
-print(df1)
-print(List_col_tab2)
 
 
 print(colored("***************** Start dash ****************", "yellow"))
