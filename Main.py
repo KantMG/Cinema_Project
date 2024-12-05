@@ -67,7 +67,7 @@ current_file_path = os.getcwd()+'/Main.py'
 
 start_time = time.time()
 
-# od.test_data_creation(Project_path, "Test_data_tail", ['title.akas.tsv','title.basics.tsv', 'title.crew.tsv', 'title.episode.tsv', 'title.principals.tsv', 'title.ratings.tsv', 'name.basics.tsv'], 10**4, True)
+# dc.test_data_creation(Project_path, "Test_data_tail", ['title.akas.tsv','title.basics.tsv', 'title.crew.tsv', 'title.episode.tsv', 'title.principals.tsv', 'title.ratings.tsv', 'name.basics.tsv'], 10**4, True)
 
 Large_file_memory = False
 Get_file_sys_mem = False
@@ -117,7 +117,7 @@ if df1_col_groupby != 'Movie':
         List_filter = [None, None, None, None]
         df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
 
-        df1, List_col_tab2 = od.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
+        df1, List_col_tab2 = dc.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
         # Check if the directory does not exist and create it
         if not os.path.exists(Project_path+'Made_data'):
             os.makedirs(Project_path+'Made_data')

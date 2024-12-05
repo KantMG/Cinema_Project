@@ -287,8 +287,7 @@ def avg_column_value_index(Pivot_table):
 def name_check(df,Job,Name):
     
     """
-    Goal: Get the list of names which represent the same person
-    to overpass the bad names writing by the user.
+    Goal: Get the list of names which represent the same person to overpass the bad names writing by the user.
 
     Parameters:
     - df: dataframe
@@ -361,6 +360,16 @@ def are_names_close_with_inversion(name1, name2, max_distance):
 
 
 def make_movie(plotly_fig):
+
+    """
+    Goal: Create a movie from an animated Plotly figure.
+    
+    Parameters:
+    - plotly_fig: The Plotly figure to be animated.
+    
+    Returns:
+    - The generated movie.
+    """    
 
     # Set the output path of your images
     image_paths = []

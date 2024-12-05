@@ -457,21 +457,16 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                         
             # y_values = data_for_plot[y_column].unique()
             if g_column=="Histogram" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
- 
                 if "Movie" in g_column:    
                     # Create the animation frames by grouping your data by the z_axis
                     frames = data_for_plot.groupby(z_axis)
-                    
                     # For each frame, sort the data based on the y values or any other criteria you choose
                     sorted_frames = {}
                     for name, group in frames:
                         sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
                         sorted_frames[name] = sorted_group
-                    
                     # Concatenate sorted frames back into a single DataFrame
                     data_for_plot = pd.concat(sorted_frames.values())
-    
- 
                 plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_axis, 
@@ -511,33 +506,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     color=z_axis if "Movie" not in g_column else None,
                     animation_frame=z_axis if "Movie" in g_column else None
                 )
-
-            # elif g_column=="Histogram" and zf_column == "Weight on y":
-            #     plotly_fig = px.bar(
-            #         data_for_plot,
-            #         x=x_axis,
-            #         y=z_axis,
-            #         # title='Weighted Average'+y_column+'Over the'+x_axis,
-            #         error_y='standard_error'
-            #     )
-            # elif g_column=="Curve" and zf_column == "Weight on y":
-            #     plotly_fig = px.line(
-            #         data_for_plot,
-            #         x=x_axis,
-            #         y=z_axis,
-            #         # title='Weighted Average'+y_column+'Over the'+x_axis,
-            #         error_y='standard_error'
-            #     )
-            # elif g_column=="Scatter" and zf_column == "Weight on y":
-            #     plotly_fig = px.scatter(
-            #         data_for_plot,
-            #         x=x_axis,
-            #         y=z_axis,
-            #         # title='Weighted Average'+y_column+'Over the'+x_axis,
-            #         error_y='standard_error'
-            #     )
-
-
 
     if g_column=="Pie": #d_column=="2D" and 
 
@@ -1344,10 +1312,6 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
         #         ],
         #         coloraxis_colorbar=dict(title=y_column)  # Add the color bar title
         #     )
-        
-        
-        
-        
         
     elif x_column is not None and d_column =="3D":
         fig_json_serializable.update_layout(

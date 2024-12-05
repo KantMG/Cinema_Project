@@ -58,9 +58,8 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
     Para, df_temp, x_column, y_column, z_column = delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_file_memory)
 
     if yf_column == "Value in x_y interval":
-        data_for_plot, x_column, y_column, z_column = count_alive_directors(df_temp, x_column, y_column, z_column)
+        data_for_plot, x_column, y_column, z_column = count_value_x_y_interval(df_temp, x_column, y_column, z_column)
         return Para, data_for_plot, x_column, y_column, z_column
-    
     
     if x_column not in df_col_string:
         df_temp = df_temp[df_temp[x_column] >= 0]
@@ -91,7 +90,6 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
         else:
             data_for_plot = df_temp.groupby([x_column, y_column]).size().reset_index(name='count')
             
-        
     #Case where z_column is not None
     else:
         # Calculate average z_column and count for each (x_column, y_column) combination
@@ -135,10 +133,6 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
                 'sum_z_column': 'standard_error',
             }, inplace=True)        
 
-            # # We'll use sum_numVotes as the number of observations for each startYear
-            # data_for_plot['standard_error'] = data_for_plot['avg_' + y_column] / np.sqrt(data_for_plot['sum_' + z_column])
-            
-    
     if x_column in df_col_string:
         data_for_plot = data_for_plot.sort_values(by='count', ascending=False)
 
@@ -230,7 +224,26 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, Large_fi
    #============================================================================="""
 
 
-def count_alive_directors(df, x_column, y_column, z_column):
+def count_value_x_y_interval(df, x_column, y_column, z_column):
+    
+    """
+    Goal: Analyze a dataset to count entities based on specified criteria over a defined range and calculate the average of a given attribute. 
+    The function processes temporary data to provide updated metrics and insights.
+
+    Parameters:
+    - df_temp: dataframe which has been created temporary.
+    - x_column: Column in the dataframe.
+    - y_column: Column in the dataframe (can be None).
+    - z_column: Column in the dataframe (can be None).
+    
+    Returns:
+    - df_temp: dataframe which has been updated.
+    - x_column: Column in the dataframe (it could have change)
+    - y_column: Column in the dataframe (it could have change)
+    - z_column: Column in the dataframe (it could have change)
+    """    
+    
+    
     # Determine the range for years based on birthYear and deathYear
     min_x_column = int(df[x_column].min())
     max_y_column = int(df[y_column].max())
@@ -241,15 +254,15 @@ def count_alive_directors(df, x_column, y_column, z_column):
     avg_new_z_column = []
 
     # Create a DataFrame for all years
-    for year in New_x_column:
-        # Count alive directors: those whose birthYear is less than or equal to the year
-        # and either deathYear is greater than or equal to the year OR deathYear is -1
-        alive_condition = (df[x_column] <= year) & ((df[y_column] >= year) | (df[y_column] == -1))
+    for new_x_value in New_x_column:
+        # Count alive directors: those whose x_column is less than or equal to the new_x_value
+        # and either y_column is greater than or equal to the new_x_value OR y_column is -1
+        alive_condition = (df[x_column] <= new_x_value) & ((df[y_column] >= new_x_value) | (df[y_column] == -1))
         count_alive = alive_condition.sum()  # Count how many are alive
-        alive_counts.append({'Year': year, 'count': count_alive})
+        alive_counts.append({'Year': new_x_value, 'count': count_alive})
 
         if z_column is not None:
-            # Calculate average NewRating for those alive
+            # Calculate average z_column for those in count
             avg_rating = df.loc[alive_condition, z_column].mean()
             avg_new_z_column.append(avg_rating)
         else:
@@ -260,11 +273,11 @@ def count_alive_directors(df, x_column, y_column, z_column):
     if z_column is not None:
         alive_df['avg_' + z_column] = avg_new_z_column  # Add average NewRating
 
-    # Count NaN values in birthYear and count -1 in deathYear in a vectorized manner
+    # Count NaN values in x_column and count -1 in y_column in a vectorized manner
     nan_birth = df[x_column].isna().sum()
     nan_death = (df[y_column] == -1).sum()
     
-    # Count alive directors with deathYear as -1 and valid birthYear
+    # Count alive directors with y_column as -1 and valid x_column
     alive_count_na = ((df[y_column] == -1) & (df[x_column].notna())).sum()
 
     # Print results for diagnostics
@@ -273,8 +286,6 @@ def count_alive_directors(df, x_column, y_column, z_column):
     print("alive_count_na= ", alive_count_na)
 
     return alive_df, 'Year', 'count', z_column
-
-
 
 
 """#=============================================================================
