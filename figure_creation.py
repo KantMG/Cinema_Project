@@ -1085,14 +1085,14 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
     # Now create the figure using the cleaned data
     plotly_fig = go.Figure(fig_with_subplots)
 
-
+    
     # Determine the specific xaxis and yaxis labels based on index_subplot
     if index_subplot == 0:
         xaxis_name = 'xaxis'
         yaxis_name = 'yaxis'
     else:
-        xaxis_name = f'xaxis{index_subplot}'
-        yaxis_name = f'yaxis{index_subplot}'
+        xaxis_name = f'xaxis{index_subplot+1}'
+        yaxis_name = f'yaxis{index_subplot+1}'
     
     # Update selected layout properties of fig_with_subplots from plotly_fig for the specified subplot
     plotly_fig.update_layout(

@@ -67,108 +67,47 @@ current_file_path = os.getcwd()+'/Main.py'
 
 start_time = time.time()
 
-# dc.test_data_creation(Project_path, "Test_data_tail", ['title.akas.tsv','title.basics.tsv', 'title.crew.tsv', 'title.episode.tsv', 'title.principals.tsv', 'title.ratings.tsv', 'name.basics.tsv'], 10**4, True)
 
 Large_file_memory = False
 Get_file_sys_mem = False
 Test_data = True
 
-
-Project_path=Project_path+'Test_data/' if Test_data == True else None
+if Test_data == True :
+    Test_directory_name = "Test_data"
+    if not os.path.exists(Project_path+Test_directory_name):
+        dc.test_data_creation(Project_path, Test_directory_name, ['title.akas.tsv','title.basics.tsv', 'title.crew.tsv', 'title.episode.tsv', 'title.principals.tsv', 'title.ratings.tsv', 'name.basics.tsv'], 10**4, True)
+    Project_path=Project_path+Test_directory_name+'/'
 
 
 # Define how to present the data: It can be Movie, directors, writers
 df1_col_groupby = 'Movie'
-if df1_col_groupby != 'Movie':
+if df1_col_groupby == 'Movie':
 
-    if os.path.exists(Project_path+'Made_data/groupby_'+df1_col_groupby):
-        df1 = od.read_and_rename(
-            Project_path+'Made_data/groupby_'+df1_col_groupby,
-            rename_map=None,
-            large_file=Large_file_memory
-        )
-        List_col_tab2 = df1.columns
-            
-    else:
-        selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", df1_col_groupby] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
-        selected_filter  = [None for i in selected_columns]
-        df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-        
-        if "isOriginalTitle" in df1.columns:
-            df1 = df1.loc[df1["isOriginalTitle"] == 1]
-            df1.reset_index(drop=True, inplace=True)
-        
-        
-        if "titleType" in df1.columns:
-            exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
-            df1 = df1[~df1["titleType"].isin(exclude_type)]
-        
-        # Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
-        # df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
-        
-        # Remove the value "Short" in the "genres" column since it is a value in "titleType"
-        df1 = od.update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
-        
-        # Lists of columns that are relevants regarding the tab where where we are.
-        List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
-        List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
-
-        List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
-        List_filter = [None, None, None, None]
-        df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-
-        df1, List_col_tab2 = dc.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
-        # Check if the directory does not exist and create it
-        if not os.path.exists(Project_path+'Made_data'):
-            os.makedirs(Project_path+'Made_data')
-            print(f"Directory Made_data created.")
-        else:
-            print(f"Directory Made_data already exists.")
-        df1.to_csv(
-            Project_path+'Made_data/groupby_'+df1_col_groupby,
-            sep='\t',
-            index=False,
-            encoding='utf-8',
-            quotechar='"'
-        )
-    
-    List_col_exclude_tab2 = [] #, "isOriginalTitle"
-    # Function to convert 'directors' column to int
-    def convert_directors(director):
-        if director == '\\N':
-            return None  # Handling the \N value explicitly
-        elif director.startswith('nm'):
-            return int(director[2:])  # Convert to int by slicing off 'nm'
-        else:
-            return int(director)  # In case it's a number
-    
-    df1[df1_col_groupby] = df1[df1_col_groupby].apply(convert_directors)
-    print(df1)
-    print(df1.dtypes)
-else:
     selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
     selected_filter  = [None for i in selected_columns]
     df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
     
-    
+    # Only remain in the dataframe the Original Title
     if "isOriginalTitle" in df1.columns:
         df1 = df1.loc[df1["isOriginalTitle"] == 1]
         df1.reset_index(drop=True, inplace=True)
     
-    
     if "titleType" in df1.columns:
         exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
         df1 = df1[~df1["titleType"].isin(exclude_type)]
-    
-    # Add to the column genre the value "Long" in each cell that doesnt contain "Short" 
-    # df1 = od.update_dataframe(df1, ["genres"], "Short", "Long")
-    
+        
     # Remove the value "Short" in the "genres" column since it is a value in "titleType"
     df1 = od.update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
     
     # Lists of columns that are relevants regarding the tab where where we are.
     List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
-    List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
+    List_col_exclude_tab2 = ["tconst"]   
+
+else:
+    
+    df1, List_col_tab2 = od.open_made_dataframe(Project_path, df1_col_groupby, Large_file_memory, Get_file_sys_mem)
+    List_col_exclude_tab2 = []
+
     
 
 
@@ -238,76 +177,56 @@ def tab1_content():
     print("Time computation=", time.time()-start_time)
     print(colored("=====================  Tab1_content  =========================", "yellow"))
     
-    Text1 = f"This project enlights the evolution over the years of movie and series making."
-    Text2 = f"The adaptation of the way of production as well as our way of consumption are analyzed."
-    Text3 = f"HOW MUCH THE COUNTRIES ARE INVESTING IN THE FILMS PRODUCTION AND WHICH IS THE LEVEL OF INFLUENCE OF A COUNTRY OVER THE OTHERS."
+    # Content Descriptions
+    Text1 = "This project highlights the evolution over the years of movie and series production."
+    Text2 = "It analyzes the adaptation of production methods and consumption patterns."
+    Text3 = "The focus lies on how much countries invest in film production and their influence on others."
     
-    Text4 = (
-    'The IMDb Non-Commercial Datasets, the open source can be find '
-    '<a href="https://developer.imdb.com/non-commercial-datasets/" target="_blank">here</a>.'
-)    
-    Text5 = f"It corresponds to a multiple variety of tab-separated-values (TSV) formatted files in the UTF-8 character set. "
+    dataset_link = "The IMDb Non-Commercial Datasets are open source and can be found [here](https://developer.imdb.com/non-commercial-datasets/)."
     
-    Text7 = f"The interface possess three tabs:"
+    Text5 = "These datasets consist of a variety of tab-separated-values (TSV) formatted files in the UTF-8 character set."
     
-    Text8 = f"🏠 Home: This is the homepage."
+    interface_description = "The interface comprises three tabs:"
     
-    Text9 = f"📈 Analytics: Provides an analysis of the overall dataframe using Plotly for visualization."
-    Text91 = f"It offers various functions, including data filtration, machine learning regressions, smoothing with the Savitzky-Golay filter, variable creation, and dynamic subplot modification."
-    
-    Text10 = f"🎥 Movies & Artists: Allows analysis based on requests for specific artist names."
-
+    # Tab Descriptions
+    tabs_description = [
+        "🏠 Home: This is the homepage.",
+        "📈 Analytics: Provides an analysis of the overall dataframe using Plotly for visualization.",
+        " It offers various functionalities including:",
+        "   - Data filtration",
+        "   - Machine learning regressions",
+        "   - Smoothing with the Savitzky-Golay filter",
+        "   - Variable creation",
+        "   - Dynamic subplot modification",
+        "🎥 Movies & Artists: Allows analysis based on requests for specific artist names."
+    ]
     
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
     
     idgraph='graph-code'
-    
-    # flowchart_info, function_names = dci.create_detailed_flowchart(current_file_path, component_ids)
         
-    # # Build and print the hierarchy
-    # hierarchy = dci.build_hierarchy(flowchart_info)
-    # hierarchy = dci.simplify_hierarchy(hierarchy)
-    
-    # print(hierarchy, output_to_callbacks)
-    # dci.print_hierarchy(hierarchy)
-    
-    # dci.create_detailed_flowchart(current_file_path, component_ids)
-    # print("==============================================================")
-    # graph_of_the_code = dci.create_hierarchy_figure(hierarchy)
-    
     print(colored("==================== End Tab1_content ========================", "yellow"))  
 
     return html.Div([
         html.Div([
-            html.H2("Goal:", style={"color": "#FFD700"}, className="text-light"),
+            html.H2("Project Goal:", style={"color": "#FFD700"}, className="text-light"),
             html.P(Text1),
+            html.P(Text2),
+            html.P(Text3),
         ]),
         html.Div([
             html.H2("Dataset:", style={"color": "#FFD700"}, className="text-light"),
-            html.P([
-                html.Span(children='The IMDb Non-Commercial Datasets, the open source can be find '),
-                html.A('here', href='https://developer.imdb.com/non-commercial-datasets/', target='_blank', style={"color": "#FFD700"})
-            ]),
+            dcc.Markdown(dataset_link),  # Use dcc.Markdown to render the link
             html.P(Text5),
-            html.H2("Dash tool:", style={"color": "#FFD700"}, className="text-light"),
-            html.P(Text8),
-            html.P(Text9),
-            html.P(Text91),
-            html.P(Text10),
-            
-        ])   
-        # html.Div([
-        #     html.H2("Overview:", style={"color": "#FFD700"}, className="text-light"),
-        #     html.P(Text7),
-        #     html.P(Text9, className="text-center"),
-        #     html.Img(src='assets/Dash_tab2.png', alt='Description of image', style={'max-width': '50%', 'height': 'auto'}),
-            
-        #     html.P(Text10, className="text-center"),
-        #     html.Img(src='assets/Dash_tab2.png', alt='Description of image', style={'max-width': '50%', 'height': 'auto'}),
-        # ]),  
-        ], style={'padding': '20px'})
+        ]),
+        html.Div([
+            html.H2("Dash Interface:", style={"color": "#FFD700"}, className="text-light"),
+            html.P(interface_description),
+            *[html.P(text) for text in tabs_description],  # Dynamically add tab descriptions
+        ])
+    ], style={'padding': '20px'})
 
 
 """
@@ -786,7 +705,6 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     if not subplot_button_clicks:
         print("No subplot buttons have been clicked. The figure is unique.")  
     elif all(x == 0 for x in subplot_button_clicks):
-        print(subplot_button_clicks)
         print("Subplot buttons are all 0.")
         return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value,
                                     yfunc_dropdown_value, zfunc_dropdown_value,
@@ -794,9 +712,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
                                     smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                                     0, nb_subplots, nb_subplots_row, nb_subplots_col,
                                     df1_filtered, df_col_string, current_fig, data_for_plot, Large_file_memory)
-    else:
-        print("subplot_button_clicks=",subplot_button_clicks)
-            
+    else:           
         # Use last_clicked_index for any needed logic
         if last_clicked_index is not None:
             print(f"Last clicked subplot button index: {last_clicked_index}")
@@ -1156,7 +1072,6 @@ def update_graph_subplot(x_column, y_column, z_column, yfunc_column, zfunc_colum
     """
     Utility function to update a graph based on the provided parameters.
     """
-    print("update_graph_subplot")
     fig, data_for_plot = fc.figure_update_subplot(df, df_col_string, current_fig, data_for_plot, x_column, y_column, z_column,
                                                   yfunc_column, zfunc_column, graph_type, dim_type, 
                                                   smt_dropdown_value, smt_order_value, sub_bot_smt_value,

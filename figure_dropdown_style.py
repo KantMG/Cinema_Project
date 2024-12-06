@@ -95,8 +95,8 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
         'width': '160px',  # Set a consistent width
         'height': '40px',  # Set a consistent width
         'borderRadius': '5px',  # Optional: Add rounded corners
-        'backgroundColor': '#1e1e1e',
-        'color': '#f8f9fa'
+        # 'backgroundColor': '#1e1e1e',
+        # 'color': '#white'
     }
     
     dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}
@@ -115,7 +115,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         options=[{'label': val, 'value': val} for val in dim_type],
                         value='1D',  # Set default to "All", meaning no filtering
                         style=uniform_style,
-                        className='dash-dropdown',
+                        # className='dash-dropdown',
                         clearable=True
                     )
                 ]
@@ -710,19 +710,6 @@ def buttons_subplots(id_subname, text_button, nb_buttons, nb_buttons_row, nb_but
         html.Span("", style={'margin': '0 10px'}),
         *rows   # Unpack the rows list to include each row of buttons
     ])
-
-
-    # return html.Div(children=[
-    #     html.Span("", style={'margin': '0 10px'}),
-    #     html.Div(button_list, style={
-    #                     'display': 'flex',
-    #                     # 'margin-left': '200px',
-    #                     'justify-content': 'flex-start',
-    #                     'gap': '5px',
-    #                     'margin-bottom': '20px'  # Add space below the dropdowns
-    #                 }
-    #             ), 
-    #     ])
 
 
 """#=============================================================================

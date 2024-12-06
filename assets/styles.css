@@ -121,8 +121,8 @@ body {
 
 /* Specific styles for the selected value in the dropdown */
 .dash-dropdown .Select-control {
-    background-color: #1e1e1e !important; /* Background */
-    color: #f8f9fa !important; /* Text color */
+    background-color: #FFD700 !important; /* Background */
+    color: white !important; /* Text color */
     box-shadow: none !important; /* Remove box shadow */
 }
 
@@ -134,9 +134,18 @@ body {
 
 /* Styling for selected value in the dropdown control */
 .dash-dropdown .Select-value {
-    background-color: #1e1e1e !important; /* Match dropdown background */
-    color: #f8f9fa !important; /* Ensure selected value is white */
+    color: black !important; /* Text color */
+    background-color: #FFD700; /* Background color */
+    font-weight: bold; /* Make text bold */
+    opacity: 1; /* Ensure it's fully opaque */
 }
+
+.dash-dropdown .Select-menu .Select-option.is-selected {
+    color: black !important; /* Ensure the selected option text color is black */ 
+    background-color: #FFD700 !important; /* Background color for selected items */
+    font-weight: bold; /* Keep text bold */
+}
+
 
 
 /* End Dropdowns classe */

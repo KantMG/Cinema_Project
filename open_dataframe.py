@@ -698,3 +698,72 @@ def open_data_name(requested_columns, requested_filters, Project_path, Large_fil
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
+
+
+def open_made_dataframe(Project_path, df1_col_groupby, Large_file_memory, Get_file_sys_mem):
+
+    if os.path.exists(Project_path+'Made_data/groupby_'+df1_col_groupby):
+        df1 = read_and_rename(
+            Project_path+'Made_data/groupby_'+df1_col_groupby,
+            rename_map=None,
+            large_file=Large_file_memory
+        )
+        List_col_tab2 = df1.columns
+            
+    else:
+        selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes", df1_col_groupby] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
+        selected_filter  = [None for i in selected_columns]
+                
+        df1 = open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+        
+        if "isOriginalTitle" in df1.columns:
+            df1 = df1.loc[df1["isOriginalTitle"] == 1]
+            df1.reset_index(drop=True, inplace=True)
+        
+        if "titleType" in df1.columns:
+            exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
+            df1 = df1[~df1["titleType"].isin(exclude_type)]
+                
+        # Remove the value "Short" in the "genres" column since it is a value in "titleType"
+        df1 = update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
+        
+        # Lists of columns that are relevants regarding the tab where where we are.
+        List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
+        List_col_exclude_tab2 = ["tconst"] #, "isOriginalTitle"
+
+        List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
+        List_filter = [None, None, None, None]
+        df_name = open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
+
+        df1, List_col_tab2 = dc.create_data_specific(df1, df1_col_groupby, df_name, ["primaryName"])
+        # Check if the directory does not exist and create it
+        if not os.path.exists(Project_path+'Made_data'):
+            os.makedirs(Project_path+'Made_data')
+            print(f"Directory Made_data created.")
+        else:
+            print(f"Directory Made_data already exists.")
+        df1.to_csv(
+            Project_path+'Made_data/groupby_'+df1_col_groupby,
+            sep='\t',
+            index=False,
+            encoding='utf-8',
+            quotechar='"'
+        )
+    
+    # List_col_exclude_tab2 = [] #, "isOriginalTitle"
+    # Function to convert 'directors' column to int
+    def convert_directors(director):
+        if director == '\\N':
+            return None  # Handling the \N value explicitly
+        elif director.startswith('nm'):
+            return int(director[2:])  # Convert to int by slicing off 'nm'
+        else:
+            return int(director)  # In case it's a number
+    
+    df1[df1_col_groupby] = df1[df1_col_groupby].apply(convert_directors)
+    print(df1)
+    print(df1.dtypes)
+    
+    return df1, List_col_tab2
+    
+
