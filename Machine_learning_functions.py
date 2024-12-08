@@ -17,11 +17,6 @@ Created on Sun Dec  8 16:05:54 2024
    #============================================================================="""
 
 
-import dash
-from dash import dcc, html, Input, Output, dash_table, callback, callback_context
-import dash_bootstrap_components as dbc
-import pandas as pd
-import plotly.io as pio
 import numpy as np
 
 from sklearn.model_selection import train_test_split
@@ -30,20 +25,9 @@ from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error, median_absolute_error
-from scipy import signal
+from sklearn.model_selection import cross_val_score
 
 from termcolor import colored
-
-import matplotlib.pyplot as plt
-import plotly.tools as tls  # For converting Matplotlib to Plotly
-import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
-
-import Function_dataframe as fd
-import Function_errors as fe
-import data_plot_preparation as dpp
-import figure_layout as fl
 
 
 """#=============================================================================
@@ -86,11 +70,39 @@ def make_regression_model(data_for_plot,x,y,weights,reg_type,reg_order,test_size
         'Linear Regression': lm.LinearRegression,
         'Decision Tree': tree.DecisionTreeRegressor,
         'k-NN': neighbors.KNeighborsRegressor,
-        'Polynomial Regression': lambda: make_pipeline(StandardScaler(), PolynomialFeatures(degree=reg_order), lm.LinearRegression())  # Use a lambda to return a new instance
+        'Polynomial Regression': lambda degree: make_pipeline(StandardScaler(), PolynomialFeatures(degree=degree), lm.LinearRegression())  # Use a lambda to return a new instance
         }        
 
+    # Handle Polynomial Regression with cross-validation
+    if reg_type == 'Polynomial Regression':
+        if reg_order is None:
+            best_degree = None
+            best_score = float('inf')  # Initialize with infinity as we want to minimize the score
+            
+            for degree in range(1, 7):  # Testing degrees from 1 to 6
+                model = Dict_regression_models[reg_type](degree)
+                cv_scores = cross_val_score(model, x_train, y_train, cv=5, scoring='neg_mean_squared_error')  # 5-fold CV
+
+                # Calculate mean of the negative MSE (to minimize it, hence the negative sign)
+                mean_cv_score = -cv_scores.mean()
+
+                print(f'Degree {degree} - CV Mean Squared Error: {mean_cv_score}')
+
+                # Check if this is the best degree found
+                if mean_cv_score < best_score:
+                    best_score = mean_cv_score
+                    best_degree = degree
+
+            print(f'Best Polynomial Degree: {best_degree} with Mean Squared Error: {best_score}')
+
+            # Set the best degree for the final model
+            reg_order = best_degree
+
     # Instantiate the model
-    model = Dict_regression_models[reg_type]()
+    model = Dict_regression_models[reg_type](reg_order) if reg_order is not None else Dict_regression_models[reg_type]()
+
+    # # Instantiate the model
+    # model = Dict_regression_models[reg_type]()
     
     # Fit the model
     if weights is not None and reg_type == 'Polynomial Regression':
