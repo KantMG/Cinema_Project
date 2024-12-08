@@ -284,6 +284,107 @@ def avg_column_value_index(Pivot_table):
    #============================================================================="""
 
 
+def group_small_values(data, col, count_column, n, col_ref=None):
+    
+    """
+    Goal: Group the values which are the less present in the dataframe other the same name "Other".
+
+    Parameters:
+    - data: Dataframe.
+    - col: Column in the dataframe that must be grouped.
+    - count_column: Column in the dataframe (usally count) which will give the total amount of the Other.
+    - n: Integer that will define which value of col are counted in the "Other" value. All values of col which are not in the n first count.
+    - col_ref: Column in the dataframe that will be use as a reference to regroup the values of col.
+
+    Returns:
+    - The updated Dataframe.
+    """
+    
+    # Group by col value and sum the count_column
+    grouped_data = data.groupby(col)[count_column].sum().reset_index()
+    
+    # Get the top n col value based on summed of count_column
+    top_n_genres = grouped_data.nlargest(n, count_column)
+    
+    # Extract the col value
+    top_n = top_n_genres[col].unique()
+    
+    # Replace values not in top_n with "Other"
+    data[col] = data[col].where(data[col].isin(top_n), 'Other')
+    
+    result = aggregate_value(data, col, count_column, col_ref)
+        
+    return result
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def aggregate_value(data, col_to_aggregate, count_col, col_ref=None):
+
+    """
+    Goal: Aggregate the value of the dataframe.
+
+    Parameters:
+    - data: Dataframe.
+    - col_to_aggregate: Column in the dataframe that must be grouped.
+    - count_col: Column in the dataframe (usally count) which will give the total amount of the Other.
+    - col_ref: Column in the dataframe that will be use as a reference to regroup the values of col.
+
+    Returns:
+    - The updated Dataframe.
+    """
+
+    # Identify columns to aggregate based on exclusions
+    columns_to_aggregate = data.columns.tolist()
+    
+    if col_ref is not None:
+        columns_to_aggregate.remove(col_ref)
+    columns_to_aggregate.remove(col_to_aggregate)
+    columns_to_aggregate.remove(count_col)
+
+    # Create aggregation dictionary for other columns
+    aggregation_dict = {}
+    for col in columns_to_aggregate:
+        # Assign the average calculation for each column
+        aggregation_dict[col] = (col, lambda x: (x * data.loc[x.index, count_col]).sum() / data.loc[x.index, count_col].sum())
+
+    # Perform aggregation
+    if col_ref is not None:
+        temp_data = data.groupby([col_ref, col_to_aggregate], as_index=False).agg(
+            count=(count_col, 'sum'),
+            **aggregation_dict
+        )
+    else:
+        temp_data = data.groupby([col_to_aggregate], as_index=False).agg(
+            count=(count_col, 'sum'),
+            **aggregation_dict
+        )
+  
+    # Now we want to merge the aggregated data back with the unaggregated data without the grouped rows
+    if col_ref is not None:
+        # Keep other unique entries in the original data
+        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
+
+        # Concatenate the aggregated and the other data
+        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_ref, col_to_aggregate])
+    else:
+        # Keep other unique entries in the original data
+        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
+
+        # Concatenate the aggregated and the other data
+        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_to_aggregate])
+
+    return final_data.reset_index(drop=True)
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def name_check(df,Job,Name):
     
     """

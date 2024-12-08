@@ -44,6 +44,8 @@ from plotly.subplots import make_subplots
 import Function_dataframe as fd
 import Function_errors as fe
 import data_plot_preparation as dpp
+import figure_layout as fl
+import Machine_learning_functions as mlf
 
 
 cmaps = [('Perceptually Uniform Sequential', [
@@ -119,7 +121,7 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
     
     # Update the figure layout
     print("############## Update figure layout ##############")
-    fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column,df_col_string)       
+    fl.fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column,df_col_string)       
     plt.close()
     # =============================================================================
     print(colored("=============================================================================", "green"))
@@ -365,12 +367,12 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
             if x_column in df_col_string and "Movie" not in g_column:
                 # Grouping y_column values
                 n = 10  # Number of top categories to keep
-                data_for_plot = group_small_values(data_for_plot, y_axis, x_axis, n)
+                data_for_plot = fd.group_small_values(data_for_plot, y_axis, x_axis, n)
 
             if y_column in df_col_string and "Movie" not in g_column:
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
-                data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+                data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
 
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
@@ -447,11 +449,11 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
                 if zf_column == "Avg":
-                    data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+                    data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
                 elif zf_column == "Avg on the ordinate":
-                    data_for_plot = group_small_values(data_for_plot, z_axis, t_axis, n, x_axis)
+                    data_for_plot = fd.group_small_values(data_for_plot, z_axis, t_axis, n, x_axis)
                 elif zf_column == "Weight on y":
-                    data_for_plot = group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+                    data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
                         
@@ -512,7 +514,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
             if x_column in df_col_string:
                 # Grouping y_column values
                 n = 24  # Number of top categories to keep
-                data_for_plot = group_small_values(data_for_plot, x_column, 'count', n)
+                data_for_plot = fd.group_small_values(data_for_plot, x_column, 'count', n)
 
             # x_values,fig_x_value,y_values,fig_y_value=None,None,None,None
             plotly_fig = px.pie(
@@ -720,7 +722,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
 
     # Creating a DataFrame
     data_for_plot = pd.DataFrame(data_for_plot)
-    
+
     # Resetting the index to have a clean index
     data_for_plot.reset_index(drop=True, inplace=True)
     
@@ -731,78 +733,17 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
     x_offset = data_for_plot[x_axis].values - offset
     x = x_offset.reshape(-1, 1)
     y = data_for_plot[y_axis].values.reshape(-1, 1)
-
     
-    # x, y = data_for_plot[x_axis].values.reshape(-1, 1), data_for_plot[y_axis].values.reshape(-1, 1)
+    weights = None
     if z_column is not None and (zf_column == "Weight on y" or zf_column == "Avg"):
         if yf_column == "Avg":
             y = data_for_plot[z_axis].values.reshape(-1, 1)
         elif yf_column == "Avg on the ordinate":
             y = data_for_plot[y_axis].values.reshape(-1, 1)
-        weights = data_for_plot[t_axis].values.reshape(-1, 1).flatten()
-        
-    # Split the data
-    if t_axis is not None:
-        if t_axis == 'standard_error':
-            x_train, x_test, y_train, y_test, weights_train, weights_test = train_test_split(x, y, weights, test_size=test_size_val, random_state=0)
-            # Invert weights (take care with zero values)
-            epsilon = 1e-8  # Small constant to avoid division by zero
-            weights_train = 1 / (weights_train + epsilon)
-            weights_test = 1 / (weights_test + epsilon)
-    else:
-        x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size_val, random_state=0)
-
-    Dict_regression_models = {
-        'Linear Regression': lm.LinearRegression,
-        'Decision Tree': tree.DecisionTreeRegressor,
-        'k-NN': neighbors.KNeighborsRegressor,
-        'Polynomial Regression': lambda: make_pipeline(StandardScaler(), PolynomialFeatures(degree=reg_order), lm.LinearRegression())  # Use a lambda to return a new instance
-        }        
-
-    # Instantiate the model
-    model = Dict_regression_models[reg_type]()
+        weights = data_for_plot[t_axis].values.reshape(-1, 1).flatten()    
     
-    # Fit the model
-    if t_axis == 'standard_error' and reg_type == 'Polynomial Regression':
-        model.fit(x_train, y_train, linearregression__sample_weight=weights_train)
-    else:
-        model.fit(x_train, y_train)
-    
-    # Make predictions
-    y_pred = model.predict(x_test)    
-    
-    if reg_type == 'Polynomial Regression':
-        # # Get the coefficients and intercept
-        # # Note: Here we access the named steps in the pipeline.
-        poly = model.named_steps['polynomialfeatures']  # Get the PolynomialFeatures step
-        linear_reg = model.named_steps['linearregression']  # Get the LinearRegression step
-        
-        coefficients = linear_reg.coef_
-        intercept = linear_reg.intercept_    
-    
-        # Display the polynomial equation
-        round_coef = 8
-        polynomial_equation = f"y = {round(intercept[0], round_coef)}"
-        for i in range(1, len(coefficients[0])):
-            polynomial_equation += f" + {round(coefficients[0][i], round_coef)} * x^{i}"
-        
-        print(polynomial_equation)
-
-    # Mean Squared Error (MSE)
-    # Average of the squares of the differences between predicted values (y_pred) and actual values (y_test).
-    mse = mean_squared_error(y_test, y_pred)
-    # R-squared (R²)
-    # Proportion of variance in the dependent variable that can be explained by the independent variables in the model.
-    r2 = r2_score(y_test, y_pred)
-    
-    print(f'Mean Squared Error: {mse}')
-    print(f'R^2 Score: {r2}')
-    
-    # Make predictions (optional)
-    predictions = model.predict(x)
-    
-    # You can also view the predictions alongside the original DataFrame if desired
-    data_for_plot['predicted_count'] = predictions   
+    # Make ML regression
+    mlf.make_regression_model(data_for_plot,x,y,weights,reg_type,reg_order,test_size_val)
 
     # Plotly figure with the original data and the regression line
     plotly_fig.add_trace(go.Scatter(
@@ -1066,7 +1007,7 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
         # Add the core of the figure
         print("############## Core figure creation ##############")
         figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string)       
-        fig_update_layout(figure_returned, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,graph_type, dim_type,df_col_string)   
+        fl.fig_update_layout(figure_returned, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,graph_type, dim_type,df_col_string)   
         print()
         
     traces = figure_returned.data    
@@ -1112,348 +1053,4 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
         data_for_plot = data_for_plot.to_dict(orient='records')  # Convert DataFrame to a dictionary
         
     return plotly_fig, data_for_plot
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def group_small_values(data, col, count_column, n, col_ref=None):
-    
-    """
-    Goal: Group the values which are the less present in the dataframe other the same name "Other".
-
-    Parameters:
-    - data: Dataframe.
-    - col: Column in the dataframe that must be grouped.
-    - count_column: Column in the dataframe (usally count) which will give the total amount of the Other.
-    - n: Integer that will define which value of col are counted in the "Other" value. All values of col which are not in the n first count.
-    - col_ref: Column in the dataframe that will be use as a reference to regroup the values of col.
-
-    Returns:
-    - The updated Dataframe.
-    """
-    
-    # Group by col value and sum the count_column
-    grouped_data = data.groupby(col)[count_column].sum().reset_index()
-    
-    # Get the top n col value based on summed of count_column
-    top_n_genres = grouped_data.nlargest(n, count_column)
-    
-    # Extract the col value
-    top_n = top_n_genres[col].unique()
-    
-    # Replace values not in top_n with "Other"
-    data[col] = data[col].where(data[col].isin(top_n), 'Other')
-    
-    result = aggregate_value(data, col, count_column, col_ref)
-        
-    return result
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def aggregate_value(data, col_to_aggregate, count_col, col_ref=None):
-
-    """
-    Goal: Aggregate the value of the dataframe.
-
-    Parameters:
-    - data: Dataframe.
-    - col_to_aggregate: Column in the dataframe that must be grouped.
-    - count_col: Column in the dataframe (usally count) which will give the total amount of the Other.
-    - col_ref: Column in the dataframe that will be use as a reference to regroup the values of col.
-
-    Returns:
-    - The updated Dataframe.
-    """
-
-    # Identify columns to aggregate based on exclusions
-    columns_to_aggregate = data.columns.tolist()
-    
-    if col_ref is not None:
-        columns_to_aggregate.remove(col_ref)
-    columns_to_aggregate.remove(col_to_aggregate)
-    columns_to_aggregate.remove(count_col)
-
-    # Create aggregation dictionary for other columns
-    aggregation_dict = {}
-    for col in columns_to_aggregate:
-        # Assign the average calculation for each column
-        aggregation_dict[col] = (col, lambda x: (x * data.loc[x.index, count_col]).sum() / data.loc[x.index, count_col].sum())
-
-    # Perform aggregation
-    if col_ref is not None:
-        temp_data = data.groupby([col_ref, col_to_aggregate], as_index=False).agg(
-            count=(count_col, 'sum'),
-            **aggregation_dict
-        )
-    else:
-        temp_data = data.groupby([col_to_aggregate], as_index=False).agg(
-            count=(count_col, 'sum'),
-            **aggregation_dict
-        )
-  
-    # Now we want to merge the aggregated data back with the unaggregated data without the grouped rows
-    if col_ref is not None:
-        # Keep other unique entries in the original data
-        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
-
-        # Concatenate the aggregated and the other data
-        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_ref, col_to_aggregate])
-    else:
-        # Keep other unique entries in the original data
-        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
-
-        # Concatenate the aggregated and the other data
-        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_to_aggregate])
-
-    return final_data.reset_index(drop=True)
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column, df_col_string):
-
-    """
-    Goal: Update the layout of the dash figure.
-
-    Parameters:
-    - fig_json_serializable: Dash figure.
-    - figname: The name of the Figure.
-    - xlabel: The xlabel of the axis (can be None).
-    - ylabel: The ylabel of the axis (can be None).
-    - zlabel: The zlabel of the axis (can be None).
-    - x_column: Column in the dataframe
-    - g_column: Type of Graphyque for the figure.
-    - d_column: Graphyque dimension for the figure.
-    - df_col_string: List of columns in the DataFrame that are of object type.
-
-    Returns:
-    - fig_json_serializable: Dash figure updated.
-    """
-    
-    
-    modified_xlabel = xlabel.replace(' ', '_') if xlabel is not None else None
-    modified_ylabel = ylabel.replace(' ', '_') if ylabel is not None else None
-    modified_zlabel = zlabel.replace(' ', '_') if zlabel is not None else None
-    modified_glabel = g_column.replace(' ', '_') if g_column is not None else None
-    
-    print("figpath = ", 'x_'+str(modified_xlabel)+'_y_'+str(modified_ylabel)+'_z_'+str(modified_zlabel)+'_g_'+str(modified_glabel)+'_d_'+str(d_column))
-    
-    df_col_string = [col + '_split' for col in df_col_string]
-
-    fig_json_serializable.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        # title = figname,
-        # title_font=dict(size=20, color='white')
-        )
-
-    if x_column is not None and (d_column =="1D"or d_column =="2D") and g_column != 'Pie':
-        fig_json_serializable.update_layout(
-            plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-            paper_bgcolor='#101820',  # Dark gray for the paper
-            font=dict(color='white'),  # White text color
-            # title = figname,
-            # title_font=dict(size=20, color='white'),  # Title styling
-            xaxis=dict(
-                # range=[0, 2000] if g_column == 'Histogram Movie' else None,
-                title=dict(text=xlabel, font=dict(size=20, color='white')),  # X-axis label styling
-                tickfont=dict(color='white', size=18),  # X-axis tick color
-                tickangle=0,  # Rotate the x-axis labels for better readability
-                showgrid=True,  # Grid styling
-                gridcolor='gray',  # Grid color
-                categoryorder='category ascending',  # Ensures categorical x-values are treated correctly
-            ),
-            yaxis=dict(
-                title=dict(text=ylabel, font=dict(size=20, color='white')),  # Y-axis label styling
-                tickfont=dict(color='white', size=18),  # Y-axis tick color
-                tickangle=0,  # Rotate the x-axis labels for better readability
-                showgrid=True,  # Grid styling
-                gridcolor='gray',  # Grid color
-                categoryorder='total ascending' if x_column in df_col_string else 'category ascending',  # Ensures categorical x-values are treated correctly
-                
-            )
-            
-        )
-        # if y_column is not None:
-        #     fig_json_serializable.update_layout(
-        #         updatemenus=[
-        #             dict(
-        #                 buttons=list([
-        #                     dict(
-        #                         args=[{"marker.colorscale": "Viridis", "coloraxis.colorbar.title": y_column}],
-        #                         label="Linear Scale",
-        #                         method="restyle"
-        #                     ),
-        #                     dict(
-        #                         args=[{"marker.colorscale": "Viridis", "marker.colors": data_for_plot[y_column].apply(lambda x: max(x, 1e-10)), "coloraxis.colorbar.title": y_column}],
-        #                         label="Log Scale",
-        #                         method="restyle"
-        #                     )
-        #                 ]),
-        #                 direction="down",
-        #                 pad={"r": 10, "t": 10},
-        #                 showactive=True,
-        #                 x=0.1,           # position of the dropdown
-        #                 xanchor="left",
-        #                 y=1.1,           # position of the dropdown
-        #                 yanchor="top"
-        #             ),
-        #         ],
-        #         coloraxis_colorbar=dict(title=y_column)  # Add the color bar title
-        #     )
-        
-    elif x_column is not None and d_column =="3D":
-        fig_json_serializable.update_layout(
-            plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-            paper_bgcolor='#101820',  # Dark gray for the paper
-            font=dict(color='white'),  # White text color
-            # title = figname,
-            # title_font=dict(size=20, color='white'),  # Title styling
-            scene=dict(
-                    xaxis=dict(
-                        title=dict(text=xlabel, font=dict(size=18, color='white')),  # X-axis label styling
-                        tickmode='array',
-                        tickfont=dict(color='white', size=14),  # X-axis tick color
-                        tickangle=0,  # Rotate the x-axis labels for better readability
-                        showgrid=True,  # Grid styling
-                        gridcolor='gray',  # Grid color
-                        categoryorder='category ascending',  # Ensures categorical x-values are treated correctly
-                    ),
-                    yaxis=dict(
-                        title=dict(text=ylabel, font=dict(size=18, color='white')),  # Y-axis label styling
-                        tickmode='array',
-                        tickfont=dict(color='white', size=14),  # Y-axis tick color
-                        tickangle=0,  # Rotate the x-axis labels for better readability
-                        showgrid=True,  # Grid styling
-                        gridcolor='gray',  # Grid color
-                        categoryorder='category ascending',  # Ensures categorical x-values are treated correctly
-                    ),
-                    zaxis=dict(
-                        title=dict(text='Count', font=dict(size=18, color='white')),
-                        tickmode='array',
-                        tickfont=dict(color='white', size=14)  # Z-axis tick color
-                    )
-            )
-        )
-        
-    if g_column == 'Colormesh':    
-
-        # Update 3D scene options
-        fig_json_serializable.update_scenes(
-            aspectratio=dict(x=1, y=1, z=0.7),
-            aspectmode="manual"
-        )
-        
-        # Add dropdowns
-        button_layer_1_height = 1.08
-        
-        updatemenus=[
-            dict(
-                buttons=list([
-                    dict(
-                        args=["colorscale", "Viridis"],
-                        label="Viridis",
-                        method="restyle"
-                    ),
-                    dict(
-                        args=["colorscale", "Cividis"],
-                        label="Cividis",
-                        method="restyle"
-                    ),
-                    dict(
-                        args=["colorscale", "Blues"],
-                        label="Blues",
-                        method="restyle"
-                    ),
-                    dict(
-                        args=["colorscale", "Greens"],
-                        label="Greens",
-                        method="restyle"
-                    ),
-                ]),
-                direction="down",
-                pad={"r": 10, "t": 10},
-                showactive=True,
-                x=0.1,
-                xanchor="left",
-                y=button_layer_1_height,
-                yanchor="top"
-            ),
-            dict(
-                buttons=list([
-                    dict(
-                        args=["reversescale", False],
-                        label="False",
-                        method="restyle"
-                    ),
-                    dict(
-                        args=["reversescale", True],
-                        label="True",
-                        method="restyle"
-                    )
-                ]),
-                direction="down",
-                pad={"r": 10, "t": 10},
-                showactive=True,
-                x=0.37,
-                xanchor="left",
-                y=button_layer_1_height,
-                yanchor="top"
-            ),
-            dict(
-                buttons=list([
-                    dict(
-                        args=[{"contours.showlines": False, "type": "contour"}],
-                        label="Hide lines",
-                        method="restyle"
-                    ),
-                    dict(
-                        args=[{"contours.showlines": True, "type": "contour"}],
-                        label="Show lines",
-                        method="restyle"
-                    ),
-                ]),
-                direction="down",
-                pad={"r": 10, "t": 10},
-                showactive=True,
-                x=0.58,
-                xanchor="left",
-                y=button_layer_1_height,
-                yanchor="top"
-            ),
-        ]
-    
-        fig_json_serializable.update_layout(
-        updatemenus=updatemenus
-        )
-        
-        
-    if g_column == 'Histogram Movie':
-        fig_json_serializable.update_layout(
-        margin=dict(l=150, r=20, t=20, b=20)
-        )
-        
-
-
-    if d_column == "3D":
-        name = 'default'
-        # Default parameters which are used when `layout.scene.camera` is not provided
-        camera = dict(
-            up=dict(x=0, y=0, z=1),
-            center=dict(x=0, y=0, z=0),
-            eye=dict(x=1.25, y=1.25, z=1.25)
-        )
-        
-        fig_json_serializable.update_layout(scene_camera=camera) #, title=name
         
