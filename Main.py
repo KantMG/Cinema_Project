@@ -70,7 +70,7 @@ start_time = time.time()
 
 Large_file_memory = False
 Get_file_sys_mem = False
-Test_data = True
+Test_data = False
 
 if Test_data == True :
     Test_directory_name = "Test_data"
