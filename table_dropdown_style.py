@@ -101,6 +101,9 @@ def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_d
     - data_table: The data tables. 
     """    
     
+    
+    print(df.columns)
+    
     columns = df.columns
 
     # Calculate widths, ensuring 'title' is handled specifically
@@ -197,4 +200,3 @@ def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_d
     )
 
     return dropdowns_with_labels, data_table
-

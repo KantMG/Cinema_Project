@@ -24,8 +24,11 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import dask.dataframe as dd
 import plotly.graph_objects as go
+import plotly.express as px
+import plotly.figure_factory as pxf
 from termcolor import colored
 import numpy as np
+import seaborn as sns
 
 import os
 import time
@@ -44,6 +47,7 @@ import table_dropdown_style as tds
 import figure_creation as fc
 import data_plot_preparation as dpp
 import figure_dropdown_style as fds
+import correlation_feature as cf
 
 import open_dataframe as od
 import Function_dataframe as fd
@@ -53,73 +57,35 @@ import Function_errors as fe
    #=============================================================================
    #============================================================================="""
 
-# Source for data set : 
-source_data = 'https://developer.imdb.com/non-commercial-datasets/'
-
 # Save the project on github with: !bash ./save_project_on_git.sh
-GitHub_adress= 'https://github.com/KantMG/Cinema_Project'
+GitHub_adress= 'https://github.com/KantMG/Exploratory_Data_Analysis'
 
 # Save the project on the laptop:
-Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Cinema_Project/'
+Project_path='/home/quentin/Documents/Work/Data_analytics/Studies/Kaggle_challenges/Titanic/kaggle/input/titanic/'
+file_name = "train.csv"
+
+# Project_path='/home/quentin/Documents/Work/Data_analytics/Datasets/Kaggle/home-data-for-ml-course/'
+# file_name = "train.csv"
+
+# Project_path='/home/quentin/Documents/Work/Data_analytics/Studies/Kaggle_challenges/Store_Sales/kaggle/input/store-sales-time-series-forecasting/'
+# file_name = "train.csv"
 
 # Get the current working directory or script path as needed
 current_file_path = os.getcwd()+'/Main.py'
+
+
 
 start_time = time.time()
 
 
 Large_file_memory = False
-Get_file_sys_mem = False
-Test_data = False
-
-if Test_data == True :
-    Test_directory_name = "Test_data"
-    if not os.path.exists(Project_path+Test_directory_name):
-        dc.test_data_creation(Project_path, Test_directory_name, ['title.akas.tsv','title.basics.tsv', 'title.crew.tsv', 'title.episode.tsv', 'title.principals.tsv', 'title.ratings.tsv', 'name.basics.tsv'], 10**4, True)
-    Project_path=Project_path+Test_directory_name+'/'
+df1 = od.read_and_rename(
+    Project_path+file_name,
+    large_file=Large_file_memory
+)
 
 
-# Define how to present the data: It can be Movie, directors, writers
-df1_col_groupby = 'Movie'
-if df1_col_groupby == 'Movie':
-
-    selected_columns = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "directors", "writers", "region", "language", "isOriginalTitle" , "parentTconst", "seasonNumber", "episodeNumber"
-    selected_filter  = [None for i in selected_columns]
-    df1 = od.open_dataframe(selected_columns, selected_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-    
-    # Only remain in the dataframe the Original Title
-    if "isOriginalTitle" in df1.columns:
-        df1 = df1.loc[df1["isOriginalTitle"] == 1]
-        df1.reset_index(drop=True, inplace=True)
-    
-    if "titleType" in df1.columns:
-        exclude_type = ["tvEpisode", "video", "videoGame", "tvPilot", "tvSpecial"]
-        df1 = df1[~df1["titleType"].isin(exclude_type)]
-        
-    # Remove the value "Short" in the "genres" column since it is a value in "titleType"
-    df1 = od.update_dataframe_remove_element_from_cell(df1, ["genres"], "Short")
-    
-    # Lists of columns that are relevants regarding the tab where where we are.
-    List_col_tab2 = ["startYear", "runtimeMinutes", "genres", "titleType", "isAdult", "averageRating", "numVotes"] #, "region", "language" , "parentTconst", "seasonNumber", "episodeNumber"
-    List_col_exclude_tab2 = ["tconst"]   
-
-else:
-    
-    df1, List_col_tab2 = od.open_made_dataframe(Project_path, df1_col_groupby, Large_file_memory, Get_file_sys_mem)
-    List_col_exclude_tab2 = []
-
-    
-
-
-List_col_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category", "title"]
-List_col_fig_tab3 = ["startYear", "runtimeMinutes", "genres", "directors", "writers", "averageRating", "numVotes", "category"]
-
-
-List_col = ["nconst", "primaryName", "birthYear", "deathYear"]
-List_filter = [None, None, None, None]
-df_name = od.open_data_name(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-
-
+tar = "Survived"
 
 List_dim = ["1D", "2D", "3D"]
 List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
@@ -128,6 +94,13 @@ List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie",
 previous_clicks = {}
 previous_reset_clicks = 0
 last_clicked_index = 0
+
+List_col_tab2 = df1.columns.tolist()
+List_col_tab3 = df1.columns.tolist()
+List_col_fig_tab3 = df1.columns.tolist()
+
+
+List_col_exclude_tab2 = []
 
 
 print(colored("***************** Start dash ****************", "yellow"))
@@ -144,18 +117,18 @@ app, dark_dropdown_style, uniform_style = wis.web_interface_style()
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
-            html.H1("Dash interface dedicated to the analysation of IMDb Datasets", style={"color": "#FFD700", 'height': '100px'}, className="text-light"),
+            html.H1("Dash interface dedicated to the Exploratory Data Analysis.", style={"color": "#FFD700", 'height': '20px'}, className="text-light"),
             tab1_content()
         ])
     elif tab == 'tab-2':
         return html.Div([
-            html.H1("Graphic interface dedicated to the dataframe related to the overall IMDB database.", style={"color": "#FFD700"}, className="text-light"),
+            html.H1("Graphic interface dedicated to Exploratory Data Analysis.", style={"color": "#FFD700"}, className="text-light"),
             tab2_content()
         ])
     elif tab == 'tab-3':
         return html.Div([
             html.Div([
-                html.H1("Research on an artist or a movie.", style={"color": "#FFD700"}, className="text-light"),
+                html.H1("Tabular interface dedicated to Exploratory Data Analysis.", style={"color": "#FFD700"}, className="text-light"),
             ]),
             dcc.Input(id='input-value', type='text', placeholder='Enter a value...', style={**dark_dropdown_style, **uniform_style}),
             html.Div(id='dynamic-content')
@@ -204,29 +177,200 @@ def tab1_content():
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
-    
-    idgraph='graph-code'
         
     print(colored("==================== End Tab1_content ========================", "yellow"))  
 
+
+    dtype_counts = df1.dtypes.value_counts()
+    
+    dtype_df = dtype_counts.reset_index()
+    dtype_df.columns = ['dtype', 'count']  # Rename columns for clarity
+    dtype_df['dtype'] = dtype_df['dtype'].astype(str)
+    
+    fig_dtype_df1 = px.pie(
+        dtype_df, 
+        values='count', 
+        names='dtype',
+        title='Data Types Distribution in '+file_name
+    )
+    fig_dtype_df1.update_traces(
+        textinfo='label+percent',  # Show label and percentage on pie chart
+        hoverinfo='label+value+percent',  # Show label, count (value), and percentage on hover
+        customdata=dtype_df['count']  # Include count for hover
+    )
+    fig_dtype_df1.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )
+
+
+    missing_data = df1.isna().sum()
+    
+    fig_missing_bar = px.bar(
+        x=missing_data.index,  # Column names (categories)
+        y=missing_data.values,  # Count of missing values
+        labels={'x': 'Columns', 'y': 'Count of Missing Values'},
+        title='Count of Missing Values in Each Column'
+    )
+    fig_missing_bar.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )
+
+
+    unique_counts = df1.nunique()
+    unique_counts_df = unique_counts.reset_index()  # Reset index to create a DataFrame
+    unique_counts_df.columns = ['Columns', 'Unique Count']
+
+
+    fig_nuinque_bar = px.bar(
+        unique_counts_df,
+        x="Columns",  # Column names (categories)
+        y='Unique Count',  # Count of missing values
+        # labels={'x': 'Columns', 'y': 'Count of Missing Values'},
+        title='Count of Unique Values in Each Column'
+    )
+    fig_nuinque_bar.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )
+
+
+    # fig_missing_heatmap = sns.heatmap(missing_data, cbar=False)
+
+    
+    df1_description = df1.describe().reset_index()
+    data_table_df1 = tds.dropdown_table(df1_description, 'table-df1', tab,
+                                     dark_dropdown_style, uniform_style, False)[1]    
+    
+    
+    
+    correlation_matrix = df1.corr(numeric_only=True)
+    
+    # Create the heatmap using Plotly Express
+    fig_correlation_heatmap = px.imshow(
+        correlation_matrix,
+        color_continuous_scale='RdBu',  # Color scale similar to Seaborn
+        labels=dict(x='Columns', y='Columns', color='Correlation'),
+        title='Correlation Matrix Heatmap',
+        zmin=-1,  # Set minimum value for the colorbar
+        zmax=1    # Set maximum value for the colorbar
+    )    
+    fig_correlation_heatmap.update_traces(text=correlation_matrix.round(2).values, texttemplate="%{text}", textfont={"size": 12})
+    fig_correlation_heatmap.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )
+    
+
+
+    cf.correlation_target(df1, tar)
+    
+    
     return html.Div([
         html.Div([
-            html.H2("Project Goal:", style={"color": "#FFD700"}, className="text-light"),
-            html.P(Text1),
-            html.P(Text2),
-            html.P(Text3),
+            html.H2("Dataframe name:", style={"color": "#FFD700"}, className="text-light"),
+            html.P(file_name),
         ]),
         html.Div([
-            html.H2("Dataset:", style={"color": "#FFD700"}, className="text-light"),
-            dcc.Markdown(dataset_link),  # Use dcc.Markdown to render the link
-            html.P(Text5),
+            html.H2("Feature characteristics:", style={"color": "#FFD700"}, className="text-light"),
+            # html.P(Text5),
         ]),
+        
+        
+        
+        html.Div(
+            style={'display': 'flex'}, 
+            children=[
+                # Graph on the left for data types distribution
+                html.Div(
+                    [dcc.Graph(id='dtype-df1', style={'width': '80%', 'height': '500px'},
+                               figure=fig_dtype_df1)], 
+                    style={'margin-left': '20px', 'width': '45%'}  # Adjust width as needed
+                ),
+                # Graph on the right for missing values heatmap
+                html.Div(
+                    [dcc.Graph(id='heatmap-df1', style={'width': '90%', 'height': '500px'},
+                               figure=fig_missing_bar)], 
+                    style={'margin-left': '20px', 'width': '45%'}  # Adjust width as needed
+                ),
+            ]
+        ),
+
         html.Div([
-            html.H2("Dash Interface:", style={"color": "#FFD700"}, className="text-light"),
-            html.P(interface_description),
-            *[html.P(text) for text in tabs_description],  # Dynamically add tab descriptions
-        ])
+            html.Div(style={'display': 'flex', 'margin-top': '10px', 'overflowX': 'auto'}, children=[
+                html.Div(data_table_df1, style={'width': '100%'})  # Table display
+            ])
+        ]),
+
+        html.Div([
+            html.H2("Feature connection:", style={"color": "#FFD700"}, className="text-light"),
+        ]),
+
+        html.Div(
+            style={'display': 'flex'},
+            children=[
+                html.Div(
+                    [dcc.Graph(id='correlation-heatmap-df2', style={'width': '70%', 'height': '700px'},
+                               figure=fig_correlation_heatmap)],
+                    style={'margin-left': '10px', 'width': '70%'}
+                ),
+                html.Div(
+                    [dcc.Graph(id='nunique-df1', style={'width': '90%', 'height': '500px'},
+                               figure=fig_nuinque_bar)], 
+                    style={'margin-left': '20px', 'width': '45%'}  # Adjust width as needed
+                ),
+            ]
+        ),
+
+
+        html.Div([
+            html.H2("Feature/Target connection:", style={"color": "#FFD700"}, className="text-light"),
+            # html.P("Select the target:"),
+        ]),
+
+        html.Div(
+            style={'display': 'flex'},
+            children=[
+                html.Div(
+                    [dcc.Graph(id='correlation-heatmap-df2', style={'width': '70%', 'height': '700px'},
+                               figure=fig_correlation_heatmap)],
+                    style={'margin-left': '10px', 'width': '70%'}
+                ),
+            ]
+        )
+
+
+
     ], style={'padding': '20px'})
+
+
+# df1.dtypes.value_counts().plot.pie()
+
+# sns.heatmap(df1.isna(), cbar=False)
+
+# df1.describe()
+
+
+        # html.Div([
+        #     html.H2("Nan value:", style={"color": "#FFD700"}, className="text-light"),
+        #     html.P(interface_description),
+        #     *[html.P(text) for text in tabs_description],  # Dynamically add tab descriptions
+        # ])
+        
+
 
 
 """

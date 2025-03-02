@@ -24,153 +24,22 @@ import re
 import os
 from termcolor import colored
 
-# Initialize a list to store execution times
-performance_logs = []
-
-def log_performance(stage, start_time):
-    """Log the performance metric."""
-    end_time = time.time()
-    duration = end_time - start_time
-    performance_logs.append((stage, duration))
-    print(f"{stage} took {duration:.2f} seconds")
-
-
-# # After data processing is complete, you can plot the performance logs
-# def plot_performance_logs():
-#     # Create a DataFrame from performance logs
-#     logs_df = pd.DataFrame(performance_logs, columns=["Stage", "Duration"])
-
-#     figname="Performance Logs of Data Processing"
-#     fig, ax = plt.subplots(figsize=(22,12))
-#     ax.set_title(figname)
-    
-#     ax.set_xlabel("Processing Stages", fontsize=35)
-#     ax.set_ylabel("Processing time (seconds)", fontsize=35)
-#     ax.set_yscale('log')
-#     plt.xticks(rotation=45, ha='right')
-    
-#     p = ax.bar(logs_df['Stage'], logs_df['Duration'], color = 'olivedrab') # , color=mcolors.CSS4_COLORS[colors[i]]
-        
-#     ax.tick_params(axis='both', labelsize=20)
-        
-#     plt.tight_layout()
-    
-#     plt.show()
-
-
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
 
 
-def file_columns_dtype():
-
-    """
-    Goal: 
-    - Define the mapping of files to their columns and their types.
-    
-    Returns:
-    - The file column mapping.
-    """
-        
-    # Define the mapping of files to their columns and their types
-    file_columns_mapping = {
-        'title.akas.tsv': {
-            "columns": ["titleId", "ordering", "title", "region", "language", "types", "attributes", "isOriginalTitle"],
-            "types": {
-                "titleId": str,
-                "ordering": int,
-                "title": str,
-                "region": str,
-                "language": str,
-                "types": str,
-                "attributes": str,
-                "isOriginalTitle": bool
-            },
-            "rename": {"titleId": "tconst"}  # Define a renaming rule for this file
-        },
-        'title.basics.tsv': {
-            "columns": ["tconst", "titleType", "primaryTitle", "originalTitle", "startYear", "endYear", "runtimeMinutes", "genres", "isAdult"],
-            "types": {
-                "tconst": str,
-                "titleType": str,
-                "primaryTitle": str,
-                "originalTitle": str,
-                "startYear": float,
-                "endYear": float,
-                "runtimeMinutes": float,
-                "genres": str,
-                "isAdult": float
-            }
-        },
-        'title.crew.tsv': {
-            "columns": ["tconst", "directors", "writers"],
-            "types": {
-                "tconst": str,
-                "directors": str,
-                "writers": str
-            }
-        },
-        'title.episode.tsv': {
-            "columns": ["tconst", "parentTconst", "seasonNumber", "episodeNumber"],
-            "types": {
-                "tconst": str,
-                "parentTconst": str,
-                "seasonNumber": int,
-                "episodeNumber": int,
-            }
-        },
-        'title.ratings.tsv': {
-            "columns": ["tconst", "averageRating", "numVotes"],
-            "types": {
-                "tconst": str,
-                "averageRating": "float64",
-                "numVotes": "float64"
-            }
-        },
-        'title.principals.tsv': {
-            "columns": ["tconst", "ordering", "nconst", "category", "job", "characters"],
-            "types": {
-                "tconst": str,
-                "ordering": int,
-                "nconst": str,
-                "category": str,
-                "job": str,
-                "characters": str
-            }
-        },
-        'name.basics.tsv': {
-            "columns": ["nconst", "primaryName", "birthYear", "deathYear", "primaryProfession", "knownForTitles"],
-            "types": {
-                "nconst": str,
-                "primaryName": str,
-                "birthYear": float,
-                "deathYear": float,
-                "primaryProfession": str,
-                "knownForTitles": str
-            }
-        }
-    }
-    return file_columns_mapping
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def open_dataframe(requested_columns, requested_filters, Project_path, Large_file_memory, Get_file_sys_mem):
+def open_dataframe(Project_path, Large_file_memory, requested_columns, requested_filters):
 
     """
     Goal: 
     - Read and rename the DataFrame.
     
     Parameters:
-    - requested_columns: List of columns to extract from the DataFrame located in several file.
-    - requested_filters: List of filter to apply on each column.
     - Project_path: Path of the tsv file.
     - Large_file_memory: Estimate if the file is too large to be open with panda and use dask instead.
-    - Get_file_sys_mem: Estimate the memory consuming by the files.
+    - requested_columns: List of columns to extract from the DataFrame located in several file.
+    - requested_filters: List of filter to apply on each column.
     
     Returns:
     - df: DataFrame
@@ -373,7 +242,7 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
     if large_file:
         df = dd.read_csv(
             filepath,
-            sep='\t',
+            # sep='\t',
             usecols=usecols,
             encoding='utf-8',
             na_values=['\\N'],
@@ -384,7 +253,7 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
     else:
         df = pd.read_csv(
             filepath,
-            sep='\t',
+            # sep='\t',
             usecols=usecols,
             encoding='utf-8',
             on_bad_lines='skip',
