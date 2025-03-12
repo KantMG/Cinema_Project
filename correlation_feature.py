@@ -19,46 +19,10 @@ from scipy.stats import chi2_contingency, f_oneway, zscore
 
 
 
-def correlation_target(df, tar):
+def anova_target(df, tar):
 
     numerical_features = make_column_selector(dtype_include=np.number)(df)
     categorical_features = make_column_selector(dtype_exclude=np.number)(df)
-
-    # Calculate the correlation between tar and other numerical features
-    correlation_with_target = df[numerical_features].corr()[tar]
-    
-    high_correlation_features = correlation_with_target[correlation_with_target > 0.5]
-    
-    # Display the features with high correlation
-    print()
-    print("High correlation features")
-    print(high_correlation_features)
-    
-    
-    # Study of the varaince
-    selector = VarianceThreshold(threshold = 0.2)
-    selector.fit_transform(df[numerical_features])
-    print(selector.get_support())
-    
-    # Get the boolean mask of selected features
-    support_mask = selector.get_support()
-    
-    # Get the list of feature names corresponding to False in the support mask
-    features_to_remove = [feature for feature, is_supported in zip(numerical_features, support_mask) if not is_supported]
-    
-    # Display the features with low variance
-    print(features_to_remove)
-    print()
-    
-    
-    # Assuming high_correlation_features is a pandas Series and categorical_features is a defined list
-    high_correlation_numerical_features = [feature for feature in high_correlation_features.index 
-                                           if feature in numerical_features and feature != tar]
-    
-    # Display the features with high correlation that are also categorical
-    print("High correlation numerical features:", high_correlation_numerical_features)
-
-
 
 
     # Initialize results list

@@ -76,7 +76,7 @@ cmaps = [('Perceptually Uniform Sequential', [
    #============================================================================="""
 
 
-def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, Large_file_memory):
+def create_figure(df, df_col_string, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, Large_file_memory):
 
     """
     Goal: Create a sophisticated figure which adapt to any input variable.
@@ -84,10 +84,12 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
     Parameters:
     - df: dataframe
     - x_column: Column in the dataframe
-    - y_column: Column in the dataframe (can be None)
+    - y_column: Column in the dataframe (default count)
     - z_column: Column in the dataframe (can be None)
+    - t_column: Column in the dataframe (can be None)
     - yf_column: Function to operate on y_column with the rest of the dataframe
     - zf_column: Function to operate on z_column with the rest of the dataframe
+    - tf_column: Function to operate on t_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
     - sub_bot_smt_value: Button to apply the smoothing.
@@ -107,21 +109,21 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
     fig_json_serializable = go.Figure()  # This figure can now be used with dcc.Graph in Dash
     
     # Create the label of the figure
-    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, True, df_col_string)  
+    figname, xlabel, ylabel, zlabel, tlabel = label_fig(x_column, y_column, z_column, t_column, yf_column, zf_column, g_column, d_column, True, df_col_string)  
     data_for_plot = []
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
-        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, yf_column, zf_column, g_column, Large_file_memory)
+        Para, data_for_plot, x_column, y_column, z_column, t_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, g_column, Large_file_memory)
         print("The data ready to be ploted is:")
         print(data_for_plot)
         print()
         # Add the core of the figure
         print("############## Core figure creation ##############")
-        fig_json_serializable, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string)
+        fig_json_serializable, data_for_plot, xlabel, ylabel, zlabel, tlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, tlabel, df_col_string)
     
     # Update the figure layout
     print("############## Update figure layout ##############")
-    fl.fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column,df_col_string)       
+    fl.fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,tlabel,x_column,y_column,z_column,t_column,g_column,d_column,df_col_string)       
     plt.close()
     # =============================================================================
     print(colored("=============================================================================", "green"))
@@ -136,7 +138,7 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, yf_column, zf
    #============================================================================="""
 
 
-def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, init, df_col_string):
+def label_fig(x_column, y_column, z_column, t_column, yf_column, zf_column, g_column, d_column, init, df_col_string):
 
     """
     Goal: Create the figure labels.
@@ -145,6 +147,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     - x_column: Column in the dataframe (can be None).
     - y_column: Column in the dataframe (can be None).
     - z_column: Column in the dataframe (can be None).
+    - t_column: Column in the dataframe (can be None).
     - yf_column: Function to operate on y_column with the rest of the dataframe
     - zf_column: Function to operate on z_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
@@ -167,32 +170,25 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     # x_column, y_column, z_column = columns
     
     
-    name_to_work_on = "production" #  production, directors, writers
     
     df_col_string = [col[:-6] if col.endswith('_split') else col for col in df_col_string]
 
     if init == False:
         if x_column is not None: 
-            figname = 'Amount of '+name_to_work_on+' over the ' + x_column
+            figname = "x"+str(x_column)+"y"+str(y_column)+"z"+str(z_column)+"t"+str(t_column)
     
-            if x_column == 'count':
-                xlabel = 'Amount of '+name_to_work_on
-            elif 'avg_' in x_column:
+            if 'avg_' in x_column:
                 xlabel = 'Average '+x_column[4:]#+' of the movies'
             else:
                 xlabel = x_column
             
-            if y_column == 'count':
-                ylabel = 'Amount of '+name_to_work_on
-            elif 'avg_' in y_column:
+            if 'avg_' in y_column:
                 ylabel = 'Average '+y_column[4:]#+' of the movies'              
             else:
                 ylabel = y_column
             
             if z_column is not None:
-                if z_column == 'count':
-                    zlabel = 'Amount of '+name_to_work_on
-                elif 'avg_' in z_column:
+                if 'avg_' in z_column:
                     zlabel = 'Average '+z_column[4:]#+' of the movies'
                 else:
                     zlabel = z_column
@@ -200,10 +196,15 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
                 if yf_column == 'Avg' and zf_column == 'Weight on y':
                     ylabel = 'Amount of '+name_to_work_on
                 if yf_column == 'Avg on the ordinate' and zf_column == 'Weight on y':
-                    ylabel = 'Average '+y_column[4:]#+' of the movies'
-                    
+                    ylabel = 'Average '+y_column[4:]#+' of the movies'  
             else:
                 zlabel = None
+
+            if t_column is not None:
+                tlabel = t_column
+            else:
+                tlabel = "None"
+
 
             if d_column == "2D":
                 if g_column == 'Colormesh':
@@ -215,18 +216,18 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
     
         else: 
             figname = 'No data selected'
-            xlabel, ylabel, zlabel = "None","None","None"
+            xlabel, ylabel, zlabel, tlabel = "None","None","None","None"
     
     else:
         figname = 'No data selected'
-        xlabel, ylabel, zlabel = "None","None","None"        
+        xlabel, ylabel, zlabel, tlabel = "None","None","None","None"  
     
     if x_column in df_col_string:
         xlabel_temp = xlabel
         xlabel = ylabel
         ylabel = xlabel_temp
     
-    return figname, xlabel, ylabel, zlabel
+    return figname, xlabel, ylabel, zlabel, tlabel
 
 
 """#=============================================================================
@@ -234,7 +235,7 @@ def label_fig(x_column, y_column, z_column, yf_column, zf_column, g_column, d_co
    #============================================================================="""
 
 
-def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string):
+def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, tlabel, df_col_string):
 
     """
     Goal: Create the plot inside the figure regarding the inputs.
@@ -244,8 +245,10 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
+    - t_column: Column in the dataframe (can be None)
     - yf_column: Function to operate on y_column with the rest of the dataframe
     - zf_column: Function to operate on z_column with the rest of the dataframe
+    - tf_column: Function to operate on t_column with the rest of the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
     - sub_bot_smt_value: Button to apply the smoothing.
@@ -255,6 +258,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     - xlabel: The xlabel of the axis (can be None).
     - ylabel: The ylabel of the axis (can be None).
     - zlabel: The zlabel of the axis (can be None).
+    - tlabel: The tlabel of the axis (can be None).
     - df_col_string: List of columns in the DataFrame that are of object type.
 
     Returns:
@@ -269,48 +273,55 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
     legend = "None"
     
     x_axis = x_column
-    y_axis = 'count'
-    z_axis = None
-    t_axis = None
-    if str(y_column)!='None' and yf_column != "Value in x_y interval":
-        z_axis = y_column
-    if x_column in df_col_string:
-        x_axis = 'count'
-        y_axis = x_column
+    y_axis = y_column
+    z_axis = z_column
+    t_axis = t_column
+    # if str(y_column)!='None' and yf_column != "Value in x_y interval":
+    #     z_axis = y_column
+    # if x_column in df_col_string:
+    #     x_axis = 'count'
+    #     y_axis = x_column
+
+
+
 
     if yf_column == "Avg":
-        z_axis = 'avg_' + y_column
-
-    if yf_column == "Avg on the ordinate":
-        x_axis = x_column
         y_axis = 'avg_' + y_column
-        z_axis = 'count'
-        if x_column in df_col_string:
-            x_axis = 'avg_' + y_column
-            y_axis = x_column
-            z_axis = 'count'
-        
-    if z_column is not None and zf_column == "Avg" and yf_column != "Value in x_y interval":
-        t_axis = 'avg_' + z_column
-    if z_column is not None and zf_column == "Avg" and yf_column == "Value in x_y interval":
+    if zf_column == "Avg":
         z_axis = 'avg_' + z_column
-    if z_column is not None and zf_column == "Avg on the ordinate" and yf_column != "Value in x_y interval":
-        y_axis = 'avg_' + z_column
-        t_axis = 'count'
-    if z_column is not None and zf_column == "Avg on the ordinate" and yf_column == "Value in x_y interval":
-        y_axis = 'avg_' + z_column
-        z_axis = 'count'
-        
-    if z_column is not None and zf_column == "Weight on y":
-        # y_axis = 'sum_' + z_column
-        t_axis = 'standard_error'   
+    if tf_column == "Avg":
+        t_axis = 'avg_' + t_column
 
-    if d_column=="2D" and g_column=="Colormesh":    
-        x_axis = x_column
-        y_axis = y_column
-        z_axis = 'count'
-        if z_column is not None:
-            z_axis = 'avg_' + z_column
+    # if yf_column == "Avg on the ordinate":
+    #     x_axis = x_column
+    #     y_axis = 'avg_' + y_column
+    #     z_axis = 'count'
+    #     if x_column in df_col_string:
+    #         x_axis = 'avg_' + y_column
+    #         y_axis = x_column
+    #         z_axis = 'count'
+        
+    # if z_column is not None and zf_column == "Avg" and yf_column != "Value in x_y interval":
+    #     t_axis = 'avg_' + z_column
+    # if z_column is not None and zf_column == "Avg" and yf_column == "Value in x_y interval":
+    #     z_axis = 'avg_' + z_column
+    # if z_column is not None and zf_column == "Avg on the ordinate" and yf_column != "Value in x_y interval":
+    #     y_axis = 'avg_' + z_column
+    #     t_axis = 'count'
+    # if z_column is not None and zf_column == "Avg on the ordinate" and yf_column == "Value in x_y interval":
+    #     y_axis = 'avg_' + z_column
+    #     z_axis = 'count'
+        
+    # if z_column is not None and zf_column == "Weight on y":
+    #     # y_axis = 'sum_' + z_column
+    #     t_axis = 'standard_error'   
+
+    # if d_column=="2D" and g_column=="Colormesh":    
+    #     x_axis = x_column
+    #     y_axis = y_column
+    #     z_axis = 'count'
+    #     if z_column is not None:
+    #         z_axis = 'avg_' + z_column
 
     print("x_axis=", x_axis)
     print("y_axis=", y_axis)
@@ -321,22 +332,13 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
 
 
     # Rename the label of the figure
-    figname, xlabel, ylabel, zlabel = label_fig(x_axis, y_axis, z_axis, yf_column, zf_column, g_column, d_column, False, df_col_string)  
+    figname, xlabel, ylabel, zlabel, tlabel = label_fig(x_axis, y_axis, z_axis, t_axis, yf_column, zf_column, g_column, d_column, False, df_col_string)  
     
     
     if d_column=="1D": 
-        
-        # Check if 'startYear' is in the DataFrame
-        if 'startYear' in data_for_plot.columns:
-            # Check if startYear 0 exists and drop it if it does
-            if 0 in data_for_plot['startYear'].values:
-                data_for_plot.drop(data_for_plot[data_for_plot['startYear'] == 0].index, inplace=True)
-            
-            # Resetting index if needed
-            data_for_plot.reset_index(drop=True, inplace=True)
-        
-        
-        if str(y_column)=='None':
+                
+        print()
+        if str(y_column)=='count' and str(z_column) == 'None':
             
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
             
@@ -360,9 +362,10 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     # log_x=True,
                     size_max=60
                     )
+            print("y = count")
         
         #Case where y_column is None and z_column is None
-        elif str(y_column)!='None' and str(z_column)=='None':           
+        elif str(z_column)=='count' or (str(y_column)=='count' and str(z_column) != 'None' and str(t_column) == 'None'):           
 
             if x_column in df_col_string and "Movie" not in g_column:
                 # Grouping y_column values
@@ -443,8 +446,10 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     points=False)
 
         #Case where z_column is not None
-        else:
-                        
+        elif str(t_column)=='count' or (str(y_column)=='count' and str(t_column) != 'None'):
+            
+            print("t_column=count")
+            
             if y_column in df_col_string:
                 # Grouping y_column values
                 n = 7  # Number of top categories to keep
@@ -458,7 +463,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
                         
             # y_values = data_for_plot[y_column].unique()
-            if g_column=="Histogram" and (zf_column == "Avg" or zf_column == "Avg on the ordinate"):
+            if g_column=="Histogram" and (zf_column == "Avg"):
                 if "Movie" in g_column:    
                     # Create the animation frames by grouping your data by the z_axis
                     frames = data_for_plot.groupby(z_axis)
@@ -498,12 +503,13 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
                     animation_frame=z_axis if "Movie" in g_column else None,
                     line_group=g_column if "Movie" in g_column else None
                     )
-            elif g_column=="Scatter" and (zf_column == "Avg" or zf_column == "Avg on the ordinate" or zf_column == "Weight on y"):
+            elif g_column=="Scatter":
+                print("t_column=count Scatter")
                 plotly_fig = px.scatter(
                     data_for_plot,
                     x=x_axis,
                     y=y_axis,
-                    size=t_axis if zf_column == "Avg" or zf_column == "Weight on y" else None,
+                    size=t_axis if tf_column == "Avg" or tf_column == "Weight on y" else None,
                     size_max=60,
                     color=z_axis if "Movie" not in g_column else None,
                     animation_frame=z_axis if "Movie" in g_column else None
@@ -561,7 +567,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, yf_column, zf_column
         plotly_fig = go.Figure(
             data=[go.Surface(z=pivoted_data.values, x=pivoted_data.columns, y=pivoted_data.index)])
 
-    return plotly_fig, data_for_plot, xlabel, ylabel, zlabel  
+    return plotly_fig, data_for_plot, xlabel, ylabel, zlabel, tlabel  
 
 
 """#=============================================================================
@@ -959,7 +965,7 @@ def transform_trace_to_format(trace, index_subplot):
    #============================================================================="""
 
 def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot, 
-                       x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type,
+                       x_column, y_column, z_column, t_column, yf_column, zf_column, graph_type, dim_type,
                        smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                        index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, Large_file_memory):
     
@@ -974,6 +980,7 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
+    - t_column: Column in the dataframe (can be None)
     - yf_column: Function to operate on y_column with the rest of the dataframe
     - zf_column: Function to operate on z_column with the rest of the dataframe
     - graph_type: Type of Graphyque for the figure.
@@ -996,7 +1003,7 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
 
     fig_json_serializable = go.Figure()
     # Create the label of the figure
-    figname, xlabel, ylabel, zlabel = label_fig(x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, True, df_col_string)  
+    figname, xlabel, ylabel, zlabel, tlabel = label_fig(x_column, y_column, z_column, t_column, yf_column, zf_column, graph_type, dim_type, True, df_col_string)  
     
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
@@ -1006,7 +1013,7 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
         print()
         # Add the core of the figure
         print("############## Core figure creation ##############")
-        figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, df_col_string)       
+        figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, t_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, tlabel, df_col_string)       
         fl.fig_update_layout(figure_returned, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,graph_type, dim_type,df_col_string)   
         print()
         

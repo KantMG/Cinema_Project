@@ -75,7 +75,9 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     """
 
     # Get column names
-    columns = df.columns
+    columns = df.columns.tolist()
+    columns.append('count')
+    print("New cols",columns)
     
     # Get the list of y function
     function_on_y = ["Avg", "Avg on the ordinate", "Weight on y"]
@@ -87,7 +89,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     dim_type = ["1D", "2D", "3D"]
     
     # Get the list of axis and graph function
-    axis = ["x", "y", "z", "Func on y", "Func on z", "Graph", "Dim"]
+    axis = ["x", "y", "z", "t", "Func on y", "Func on z", "Func on t", "Graph", "Dim"]
 
 
     # Define a consistent style for both input and dropdown elements
@@ -135,6 +137,21 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     )
                 ]
             )
+        elif axi == 'Func on t':
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in function_on_y],
+                        value="Avg",
+                        style=uniform_style,
+                        className='dash-dropdown'
+                        # clearable=True
+                    )
+                ]
+            )
         elif axi == 'Func on z':
             dropdown_with_label = html.Div(
                 style=dropdown_container_style,
@@ -165,6 +182,21 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     )
                 ]
             )
+        elif axi== 't':
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in columns],
+                        # value=None,
+                        style=uniform_style,
+                        className='dash-dropdown',
+                        clearable=True
+                    )
+                ]
+            )
         elif axi== 'z':
             dropdown_with_label = html.Div(
                 style=dropdown_container_style,
@@ -188,7 +220,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     dcc.Dropdown(
                         id=f'{axi}-dropdown-'+tab,
                         options=[{'label': val, 'value': val} for val in columns],
-                        # value=None,
+                        value="count",
                         style=uniform_style,
                         className='dash-dropdown',
                         clearable=True
@@ -748,7 +780,7 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
                 dropdowns_with_labels_for_fig,
                 style={
                     'display': 'flex',
-                    'margin-left': '200px',
+                    'margin-left': '100px',
                     'justify-content': 'flex-start',
                     'gap': '5px',
                     'margin-bottom': '20px'  # Add space below the dropdowns

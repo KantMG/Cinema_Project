@@ -51,7 +51,7 @@ import figure_layout as fl
    #============================================================================="""
 
 
-def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column, df_col_string):
+def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,tlabel,x_column,y_column,z_column,t_column,g_column,d_column, df_col_string):
 
     """
     Goal: Update the layout of the dash figure.
@@ -62,7 +62,11 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
     - xlabel: The xlabel of the axis (can be None).
     - ylabel: The ylabel of the axis (can be None).
     - zlabel: The zlabel of the axis (can be None).
+    - tlabel: The tlabel of the axis (can be None).
     - x_column: Column in the dataframe
+    - y_column: Column in the dataframe
+    - z_column: Column in the dataframe
+    - t_column: Column in the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
     - df_col_string: List of columns in the DataFrame that are of object type.

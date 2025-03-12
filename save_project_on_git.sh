@@ -13,7 +13,7 @@ git add .
 git commit -m "Initial commit"
 
 #Copy the repository URL from GitHub
-git remote add origin git@github.com:KantMG/Exploratory_Data_Analysis.git
+git remote add origin https://github.com/KantMG/Exploratory_Data_Analysis.git
 
 #Push your code to GitHub:
 git push -u origin master

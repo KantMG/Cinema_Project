@@ -175,6 +175,78 @@ def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_d
             # 'className': 'table-header',    # Apply header style
             'backgroundColor': '#343a40',
             'color': 'white',
+            'whiteSpace': 'normal',
+            'textAlign': 'center',
+            'height': 'auto',
+        },
+        style_cell={
+            # 'className': 'table-cell',       # Apply cell style
+            'backgroundColor': '#1e1e1e',
+            'color': '#f8f9fa',
+            'overflow': 'hidden',
+            'textOverflow': 'ellipsis',
+            'whiteSpace': 'normal',
+            'textAlign': 'center',
+            'height': 'auto',
+        },
+        style_data={
+            'whiteSpace': 'nowrap',
+            'textAlign': 'center',
+        },
+        # style_data_conditional=[
+        #     {
+        #         'if': {'column_id': col},
+        #         'width': f'{column_widths[col]}px'
+        #     } for col in columns
+        # ]
+    )
+
+    return dropdowns_with_labels, data_table
+
+
+def table_with_filter_action(df, id_table, tab, dark_dropdown_style, uniform_style, need_dropdown):
+
+    """
+    Goal: Create the table and the associated dropdown.
+
+    Parameters:
+    - df: dataframe.
+    - id_table: id of the table.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+    - need_dropdown: Bool to decide if the table has some dropdowns or not.
+
+    Returns:
+    - dropdowns_with_labels: The table dropdowns. 
+    - data_table: The data tables. 
+    """    
+
+    columns = df.columns
+
+    # Calculate widths, ensuring 'title' is handled specifically
+    column_widths = {col: get_column_width(col) for col in columns}
+
+    data_table = dash_table.DataTable(
+        id=id_table,
+        data=df.to_dict('records'),
+        columns=[{'id': c, 'name': c} for c in columns],
+        editable=True,
+        filter_action='native',
+        # row_deletable=True,
+        page_action='native',
+        fixed_rows={'headers': True},
+        style_table={
+            # 'className': 'table-container',  # Apply table container style
+            'minWidth': '200px',   #str(int(len(columns) * 170)) + 'px',
+            'overflowX': 'auto',
+            'paddingLeft': '2px',
+            'paddingRight': '20px',
+            'marginLeft': '8px'
+        },
+        style_header={
+            # 'className': 'table-header',    # Apply header style
+            'backgroundColor': '#343a40',
+            'color': 'white',
             'whiteSpace': 'nowrap',
             'textAlign': 'center',
         },
@@ -199,4 +271,4 @@ def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_d
         ]
     )
 
-    return dropdowns_with_labels, data_table
+    return data_table

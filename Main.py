@@ -87,6 +87,67 @@ df1 = od.read_and_rename(
 
 tar = "Survived"
 
+shape_df1 = df1.shape
+nb_col_df1 = shape_df1[1]
+nb_row_df1 = shape_df1[0]
+
+dtype_counts = df1.dtypes.value_counts()
+
+dtype_df = dtype_counts.reset_index()
+dtype_df.columns = ['dtype', 'count']  # Rename columns for clarity
+dtype_df['dtype'] = dtype_df['dtype'].astype(str)
+
+
+df1_num_description = df1.describe(include=[np.number])#.reset_index()
+df1_obj_description = df1.describe(include=['object'])#.reset_index()
+
+# Calculate the count of NaN values
+df1_num_nan_count = df1.select_dtypes(include=[np.number]).isna().sum()
+df1_obj_nan_count = df1.select_dtypes(include=['object']).isna().sum()
+
+df1_num_description.loc['NaN'] = df1_num_nan_count
+df1_obj_description.loc['NaN'] = df1_obj_nan_count
+
+df1_num_variance =  df1.select_dtypes(include=[np.number]).var()
+df1_num_description.loc['var'] = df1_num_variance.values
+
+if 'var' in df1_num_description.index and 'std' in df1_num_description.index:
+    # Create new index order
+    new_order = []
+
+    # Append rows until 'std' is reached
+    for idx in df1_num_description.index:
+        new_order.append(idx)
+        if idx == 'std':
+            # Add the 'var' row immediately after 'std'
+            new_order.append('var')
+
+    # Remove duplicates maintaining order
+    new_order = list(dict.fromkeys(new_order))
+
+    # Reindex the DataFrame
+    df1_num_description = df1_num_description.reindex(new_order)
+
+
+df1_num_description = df1_num_description.reset_index()
+df1_obj_description = df1_obj_description.reset_index()
+
+
+correlation_matrix = df1.corr(numeric_only=True)
+
+tar_correlations = correlation_matrix[tar]
+
+# Optional: Sort the correlations
+tar_correlations = tar_correlations.sort_values(ascending=True)[:-1]
+
+# Create a DataFrame for plotting
+tar_correlation_df = tar_correlations.reset_index()
+
+
+cf.anova_target(df1, tar)
+
+
+
 List_dim = ["1D", "2D", "3D"]
 List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
 
@@ -130,8 +191,7 @@ def render_content(tab):
             html.Div([
                 html.H1("Tabular interface dedicated to Exploratory Data Analysis.", style={"color": "#FFD700"}, className="text-light"),
             ]),
-            dcc.Input(id='input-value', type='text', placeholder='Enter a value...', style={**dark_dropdown_style, **uniform_style}),
-            html.Div(id='dynamic-content')
+            tab3_content()
         ])
 
 
@@ -150,42 +210,11 @@ def tab1_content():
     print("Time computation=", time.time()-start_time)
     print(colored("=====================  Tab1_content  =========================", "yellow"))
     
-    # Content Descriptions
-    Text1 = "This project highlights the evolution over the years of movie and series production."
-    Text2 = "It analyzes the adaptation of production methods and consumption patterns."
-    Text3 = "The focus lies on how much countries invest in film production and their influence on others."
-    
-    dataset_link = "The IMDb Non-Commercial Datasets are open source and can be found [here](https://developer.imdb.com/non-commercial-datasets/)."
-    
-    Text5 = "These datasets consist of a variety of tab-separated-values (TSV) formatted files in the UTF-8 character set."
-    
-    interface_description = "The interface comprises three tabs:"
-    
-    # Tab Descriptions
-    tabs_description = [
-        "🏠 Home: This is the homepage.",
-        "📈 Analytics: Provides an analysis of the overall dataframe using Plotly for visualization.",
-        " It offers various functionalities including:",
-        "   - Data filtration",
-        "   - Machine learning regressions",
-        "   - Smoothing with the Savitzky-Golay filter",
-        "   - Variable creation",
-        "   - Dynamic subplot modification",
-        "🎥 Movies & Artists: Allows analysis based on requests for specific artist names."
-    ]
-    
     # Print all ids
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
         
     print(colored("==================== End Tab1_content ========================", "yellow"))  
-
-
-    dtype_counts = df1.dtypes.value_counts()
-    
-    dtype_df = dtype_counts.reset_index()
-    dtype_df.columns = ['dtype', 'count']  # Rename columns for clarity
-    dtype_df['dtype'] = dtype_df['dtype'].astype(str)
     
     fig_dtype_df1 = px.pie(
         dtype_df, 
@@ -224,37 +253,36 @@ def tab1_content():
         )
 
 
-    unique_counts = df1.nunique()
-    unique_counts_df = unique_counts.reset_index()  # Reset index to create a DataFrame
-    unique_counts_df.columns = ['Columns', 'Unique Count']
+    # unique_counts = df1.nunique()
+    # unique_counts_df = unique_counts.reset_index()  # Reset index to create a DataFrame
+    # unique_counts_df.columns = ['Columns', 'Unique Count']
 
 
-    fig_nuinque_bar = px.bar(
-        unique_counts_df,
-        x="Columns",  # Column names (categories)
-        y='Unique Count',  # Count of missing values
-        # labels={'x': 'Columns', 'y': 'Count of Missing Values'},
-        title='Count of Unique Values in Each Column'
-    )
-    fig_nuinque_bar.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        # title = figname,
-        # title_font=dict(size=20, color='white')
-        )
+    # fig_nuinque_bar = px.bar(
+    #     unique_counts_df,
+    #     x="Columns",  # Column names (categories)
+    #     y='Unique Count',  # Count of missing values
+    #     # labels={'x': 'Columns', 'y': 'Count of Missing Values'},
+    #     title='Count of Unique Values in Each Column'
+    # )
+    # fig_nuinque_bar.update_layout(
+    #     plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+    #     paper_bgcolor='#101820',  # Dark gray for the paper
+    #     font=dict(color='white'),  # White text color
+    #     # title = figname,
+    #     # title_font=dict(size=20, color='white')
+    #     )
 
 
     # fig_missing_heatmap = sns.heatmap(missing_data, cbar=False)
 
-    
-    df1_description = df1.describe().reset_index()
-    data_table_df1 = tds.dropdown_table(df1_description, 'table-df1', tab,
+        
+    data_table_df1_num = tds.dropdown_table(df1_num_description, 'table-df1', tab,
                                      dark_dropdown_style, uniform_style, False)[1]    
+    data_table_df1_obj = tds.dropdown_table(df1_obj_description, 'table-df1', tab,
+                                     dark_dropdown_style, uniform_style, False)[1]
     
     
-    
-    correlation_matrix = df1.corr(numeric_only=True)
     
     # Create the heatmap using Plotly Express
     fig_correlation_heatmap = px.imshow(
@@ -274,15 +302,34 @@ def tab1_content():
         # title_font=dict(size=20, color='white')
         )
     
+    # Plotting
+    fig_tar_correlation = px.bar(
+        tar_correlation_df,
+        x=tar_correlation_df[tar],  # Assuming 'tar' is a variable that contains the correlation values
+        y='index',
+        title='Correlation of Features with the Target',
+        labels={'index': 'Features', tar: 'Correlation Coefficient'},
+        orientation='h'  # Horizontal bar plot
+    )
+    
+    # Adding a vertical line for zero correlation (cannot be directly added in Plotly as in Matplotlib)
+    fig_tar_correlation.add_vline(x=0, line_color='grey', line_dash='dash')
 
-
-    cf.correlation_target(df1, tar)
+    fig_tar_correlation.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )    
     
     
     return html.Div([
         html.Div([
-            html.H2("Dataframe name:", style={"color": "#FFD700"}, className="text-light"),
-            html.P(file_name),
+            html.H2("Dataframe:", style={"color": "#FFD700"}, className="text-light"),
+            html.P("Name : "+file_name),
+            html.P("Nb Columns : "+str(nb_col_df1)),
+            html.P("Nb Rows : "+str(nb_row_df1))
         ]),
         html.Div([
             html.H2("Feature characteristics:", style={"color": "#FFD700"}, className="text-light"),
@@ -309,14 +356,37 @@ def tab1_content():
             ]
         ),
 
+
+        html.Div([
+            html.P("Numeric Summary:", style={"color": "#FFD700"}, className="text-light"),
+            # html.P(Text5),
+        ]),
+
         html.Div([
             html.Div(style={'display': 'flex', 'margin-top': '10px', 'overflowX': 'auto'}, children=[
-                html.Div(data_table_df1, style={'width': '100%'})  # Table display
+                html.Div(data_table_df1_num, style={'width': '100%'})  # Table display
             ])
         ]),
 
         html.Div([
-            html.H2("Feature connection:", style={"color": "#FFD700"}, className="text-light"),
+            html.P("\nObject Summary:", style={"color": "#FFD700"}, className="text-light"),
+            # html.P(Text5),
+        ]),
+
+        html.Div([
+            html.Div(style={'display': 'flex', 'margin-top': '10px', 'overflowX': 'auto'}, children=[
+                html.Div(data_table_df1_obj, style={'width': '100%'})  # Table display
+            ])
+        ]),
+
+
+        html.Div([
+            html.H2("Feature/Target correlation:", style={"color": "#FFD700"}, className="text-light"),
+        ]),
+
+        html.Div([
+            html.P("Numeric Summary:", style={"color": "#FFD700"}, className="text-light"),
+            # html.P(Text5),
         ]),
 
         html.Div(
@@ -328,17 +398,17 @@ def tab1_content():
                     style={'margin-left': '10px', 'width': '70%'}
                 ),
                 html.Div(
-                    [dcc.Graph(id='nunique-df1', style={'width': '90%', 'height': '500px'},
-                               figure=fig_nuinque_bar)], 
-                    style={'margin-left': '20px', 'width': '45%'}  # Adjust width as needed
+                    [dcc.Graph(id='nunique-df1', style={'width': '100%', 'height': '700px'},
+                               figure=fig_tar_correlation)], 
+                    style={'margin-left': '10px', 'width': '30%'}  # Adjust width as needed
                 ),
             ]
         ),
 
 
         html.Div([
-            html.H2("Feature/Target connection:", style={"color": "#FFD700"}, className="text-light"),
-            # html.P("Select the target:"),
+            html.P("Object Summary:", style={"color": "#FFD700"}, className="text-light"),
+            # html.P(Text5),
         ]),
 
         html.Div(
@@ -355,21 +425,6 @@ def tab1_content():
 
 
     ], style={'padding': '20px'})
-
-
-# df1.dtypes.value_counts().plot.pie()
-
-# sns.heatmap(df1.isna(), cbar=False)
-
-# df1.describe()
-
-
-        # html.Div([
-        #     html.H2("Nan value:", style={"color": "#FFD700"}, className="text-light"),
-        #     html.P(interface_description),
-        #     *[html.P(text) for text in tabs_description],  # Dynamically add tab descriptions
-        # ])
-        
 
 
 
@@ -605,8 +660,72 @@ def update_y_dropdown_tab2(selected_x, selected_tab):
             return []
         print(f"Selected X: {selected_x}")  # Additional debugging
         exclude_cols=List_col_exclude_tab2
-        return update_y_dropdown_utility(selected_x, df1.columns, exclude_cols)
+        return update_y_dropdown_utility(selected_x, df1.columns.tolist(), exclude_cols)
     return dash.no_update
+
+
+
+@app.callback(
+    [Output('x-dropdown-tab-2', 'value'),
+    Output('y-dropdown-tab-2', 'value'),
+    Output('z-dropdown-tab-2', 'value'),
+    Output('t-dropdown-tab-2', 'value')],
+    [Input('x-dropdown-tab-2', 'value')]+
+    [Input('y-dropdown-tab-2', 'value')]+
+    [Input('z-dropdown-tab-2', 'value')]+
+    [Input('t-dropdown-tab-2', 'value')]+
+    [Input('tabs', 'value')]
+)
+def update_y_value_default_tab2(selected_x, selected_y, selected_z, selected_t, selected_tab):
+    print()
+    print(colored("------------ callback update_y_value_default_tab2 ------------", "red"))
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    print("Triggered component:", triggered_id)
+    print()
+    
+    
+    if selected_tab == 'tab-2':
+        
+        print(selected_x, selected_y, selected_z)
+        
+        if selected_x is None:
+            print("X Dropdown Value is None, returning an empty list [].")
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+        
+        elif selected_x is not None and triggered_id == 'x-dropdown-tab-2' and selected_z is None:
+            print("2")
+            return dash.no_update, "count", dash.no_update, dash.no_update
+        
+        elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_t is None:
+            print("3")
+            return dash.no_update, dash.no_update, "count", dash.no_update
+
+        elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_t is None:
+            print("4")
+            return dash.no_update, "count", dash.no_update, dash.no_update
+
+
+
+
+        elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_y != "count":
+            print("5")
+            return dash.no_update, dash.no_update, dash.no_update, "count"
+
+        elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is not None and selected_t != "count":
+            print("6")
+            return dash.no_update, "count", dash.no_update, dash.no_update
+
+        
+    return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+
+
+
+
 
 @app.callback(
     Output('z-dropdown-tab-2', 'options'),
@@ -629,8 +748,34 @@ def update_z_dropdown_tab2(selected_x, selected_y, selected_tab):
             return []
         print(f"Selected y: {selected_y}")  # Additional debugging
         exclude_cols=List_col_exclude_tab2
-        return update_z_dropdown_utility(selected_x, selected_y, df1.columns, exclude_cols)
+        return update_z_dropdown_utility(selected_x, selected_y, df1.columns.tolist(), exclude_cols)
     return dash.no_update
+
+
+# @app.callback(
+#     Output('t-dropdown-tab-2', 'options'),
+#     [Input('x-dropdown-tab-2', 'value'),
+#      Input('y-dropdown-tab-2', 'value'),
+#      Input('z-dropdown-tab-2', 'value'),
+#     Input('tabs', 'value')]
+# )
+# def update_t_dropdown_tab2(selected_x, selected_y, selected_z, selected_tab):
+#     print()
+#     print(colored("------------ callback update_t_dropdown_tab2 ------------", "red"))
+#     print("Active Tab=", selected_tab)
+#     print("Time computation=", time.time()-start_time)
+#     ctx = dash.callback_context
+#     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+#     print("Triggered component:", triggered_id)
+#     print()
+#     if selected_tab == 'tab-2':
+#         if selected_z is None:
+#             print("Z Dropdown Value is None, returning an empty list [].")
+#             return []
+#         print(f"Selected z: {selected_z}")  # Additional debugging
+#         exclude_cols=List_col_exclude_tab2
+#         return update_t_dropdown_utility(selected_x, selected_y, selected_z, df1.columns.tolist(), exclude_cols)
+#     return dash.no_update
 
 @app.callback(
     [Output('Func on y-dropdown-tab-2', 'options'),
@@ -677,6 +822,33 @@ def update_zfunc_dropdown_tab2(selected_z, selected_tab):
         return update_func_dropdown_utility(selected_z, function_on_z, 'Avg')
     return dash.no_update, dash.no_update
 
+
+@app.callback(
+    [Output('Func on t-dropdown-tab-2', 'options'),
+    Output('Func on t-dropdown-tab-2', 'value')],
+    Input('t-dropdown-tab-2', 'value'),
+    Input('tabs', 'value')  # Include tab value to conditionally trigger callback
+)
+def update_tfunc_dropdown_tab2(selected_t, selected_tab):
+    print()
+    print(colored("------------ callback update_tfunc_dropdown_tab2 ------------", "red"))
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
+    if selected_tab == 'tab-2':
+        if selected_t is None:
+            print("T Dropdown Value is None, returning an empty list [].")
+            return [], []  # Return an empty options list if the DF is not ready
+        # Proceed to get options based on selected_x and stored_df1...
+        print(f"Selected T: {selected_t}")  # Additional debugging
+        
+        function_on_t = ["Avg", "Avg on the ordinate", "Weight on y"]
+        
+        return update_func_dropdown_utility(selected_t, function_on_t, 'Avg')
+    return dash.no_update, dash.no_update
+
+
+
+
 @app.callback(
     Output('Dim-dropdown-tab-2', 'options'),
     Input('y-dropdown-tab-2', 'value'),
@@ -719,8 +891,10 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input('x-dropdown-tab-2', 'value'),
      Input('y-dropdown-tab-2', 'value'),
      Input('z-dropdown-tab-2', 'value'),
+     Input('t-dropdown-tab-2', 'value'),
      Input('Func on y-dropdown-tab-2', 'value'),
      Input('Func on z-dropdown-tab-2', 'value'),
+     Input('Func on t-dropdown-tab-2', 'value'),
      Input('Graph-dropdown-tab-2', 'value'),
      Input('Dim-dropdown-tab-2', 'value'),
      Input("dropdown-regression-tab-2", "value"),
@@ -740,8 +914,8 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
     State('graph-output-tab-2', 'figure'),
     State('figure-store-tab-2', 'data')
     )
-def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value,
-                      yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value,
+def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
+                      yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value,
                       reg_dropdown_value, reg_order_value, test_size_value, sub_bot_reg_value,
                       smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                       nb_subplots, nb_subplots_row, nb_subplots_col,
@@ -774,7 +948,9 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         return dash.no_update
 
     df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    df_col_numeric.append('count')
     df_col_all = df1.columns.tolist()
+    df_col_all.append('count')
     df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
     
     if z_dropdown_value is not None and z_dropdown_value not in df_col_numeric:
@@ -871,7 +1047,7 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
             
             
     
-    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, df_col_string, Large_file_memory)
+    return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, df_col_string, Large_file_memory)
 
 
 """
@@ -884,128 +1060,32 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
 # =============================================================================
 """
 
-# Callback to update UI based on input value in Tab 3
-@app.callback(
-    [Output('dynamic-content', 'children'), Output('stored-df2', 'data')],
-    Input('input-value', 'value')
-)
-def update_ui(input_value):
-    if not input_value:  # Return nothing if input is empty or None
-        return '', None
+def tab3_content():
+
     print()
     print(colored("------------ callback update_ui ------------", "red"))
 
-    # Check if the input value exists in the 'nconst' column of df_name
-    if input_value in df_name['primaryName'].values:
-        
-        tab = "tab-3"
-        
-        print(input_value)
-        nconst_value = df_name[df_name['primaryName'] == input_value]['nconst'].iloc[0]
-        birthYear_value = int(df_name[df_name['primaryName'] == input_value]['birthYear'].iloc[0])
-        deathYear_value = int(df_name[df_name['primaryName'] == input_value]['deathYear'].iloc[0])
-        
-        # Display the found nconst value (for debugging purposes)
-        print(f"Matched nconst: {nconst_value}")
-                        
-        List_col = ["startYear", "runtimeMinutes", "genres", "isAdult", "directors", "writers", "averageRating", "numVotes", "nconst", "category", "characters", "title", "isOriginalTitle"]
-        
-        List_filter = [None, None, None, None, None, None, None, None, nconst_value, None, None, None, True]
-        
-        df2 = od.open_dataframe(List_col, List_filter, Project_path, Large_file_memory, Get_file_sys_mem)
-        filters = {List_col[i]: (List_filter[i] if List_filter[i] != '' else None) for i in range(min(len(List_col), len(List_filter)))}
-        df2 = od.apply_filter(df2, filters)
-        exclude_col = ["tconst", "isAdult", "nconst", "isOriginalTitle", "characters"]
-        df2 = df2.drop(columns=exclude_col)
-        
-        # Create a mapping from nconst to primaryName
-        mapping = dict(zip(df_name['nconst'], df_name['primaryName']))
-        
-        # Replace the strings in df2 using the mapping
-        df2['directors'] = df2['directors'].replace(mapping)
-        df2['writers'] = df2['writers'].replace(mapping)
-        
-        
-        if Large_file_memory:
-            df2 = df2.compute()
-        
-        if len(df2.index) == 0: 
-            return html.Div([
-                html.Div([
-                    html.P(f'The artist '+input_value+' doesnt have referenced movies.'),
-                ])
-                ], style={'padding': '20px'}), df2.to_dict('records')        
-        else:
-                        
-            # Split the strings into individual elements and flatten the list
-            all_elements = df2['category'].str.split(',').explode().str.strip()
-            primaryProfession = all_elements.value_counts()
-            primaryProfession = primaryProfession[primaryProfession > 1].index.tolist()
-
-            # Create the table with the appropriate dropdowns for each column
-            dropdowns_with_labels, data_table_df2 = tds.dropdown_table(df2, 'table-df2', tab, dark_dropdown_style, uniform_style, True)
-            
-            exclude_col = ["title"]
-            df2_filter = df2.drop(columns=exclude_col)            
-
-            dropdowns_with_labels_for_fig_tab3 = fds.dropdown_figure(df2_filter, 'graph-df2', tab, dark_dropdown_style, uniform_style, Large_file_memory)
-
-
-            dropdowns_with_labels_for_fig_filter_tab3 = fds.button_modal_dropdowns_inputs("filter-"+tab,  "Filter on data",
-                                                                          df2_filter, 'graph-df2', tab,
-                                                                          "Select filters on the dataframe.", dark_dropdown_style, uniform_style)
+    tab = "tab-3"
     
-
-
-            button_dropdown_function_tab3 = fds.button_modal_double_input("function-"+tab,  "Function creation",
-                                                                          "Enter function name", "Enter operation (e.g., A + B)",
-                                                                          "Create Function", dark_dropdown_style, uniform_style)
-        
-            button_dropdown_regression_tab3 = fds.button_modal_dropdown_input("regression-"+tab, "Regression model", 
-                                                                              ["Polynomial Regression", "Decision Tree", "k-NN"], "Enter an order if needed",
-                                                                             "Create regression", dark_dropdown_style, uniform_style)
-        
-            button_dropdown_smoothing_tab3 = fds.button_modal_dropdown_input("smoothing-"+tab,  "Smoothing", 
-                                                                             ["Savitzky-Golay Filter"], "Enter an order if needed",
-                                                                             "Select a smoothing function", dark_dropdown_style, uniform_style)
-
-            button_subplot_tab3 = fds.button_modal_subplot_creation("subplot-"+tab,  "Subplot creation", 
-                                                                             "Number of subplot", "Number of rows", "Number of columns",
-                                                                             "Configuration of the subplot figure", dark_dropdown_style, uniform_style)
-
-
-
-            return html.Div([
-                html.P(f'The artist '+input_value+' is born in '+str(birthYear_value)+' and died in '+str(deathYear_value)+' during its career as '+', '.join(primaryProfession)+' he participated to the creation of the following productions.'),
-                html.Div(style={'display': 'flex', 'margin-top': '10px', 'flex-wrap': 'wrap'}, children=[
-                    html.Div(dropdowns_with_labels, style={'display': 'flex', 'justify-content': 'flex-start', 'gap': '5px'})
-                ]),
-                html.Div(style={'display': 'flex', 'margin-top': '10px'}, children=[
-                    html.Div(data_table_df2, style={'width': '100%'})  # Adjusted to take full width
-                ]),
-
-                html.Div([
-                    html.H1("Graphic interface dedicated to the dataframe related to the artist "+input_value+".", style={"color": "#FFD700"}, className="text-light"),
-                    
-                    fds.figure_position_dash(tab,
-                                             'graph-output-'+tab, 
-                                             dropdowns_with_labels_for_fig_tab3, 
-                                             dropdowns_with_labels_for_fig_filter_tab3,
-                                             button_dropdown_function_tab3,
-                                             button_dropdown_regression_tab3,
-                                             button_dropdown_smoothing_tab3,
-                                             button_subplot_tab3
-                                             )
-                    
-                ], style={'padding': '20px'})
-                                
-            ], style={'padding': '20px'}), df2.to_dict('records')
-        
     
-    # If the input does not correspond to any primaryName, filter df_name
-    filtered_df = df_name[df_name['primaryName'].str.contains(input_value, case=False, na=False)]
-    dropdowns_with_labels_df_name, data_table_df_name = tds.dropdown_table(filtered_df, 'table-df_name', 'tab-3' , dark_dropdown_style, uniform_style, False)
-    return data_table_df_name, None
+# =============================================================================
+#     # First make the data filter as in input and then build the table
+# =============================================================================
+    
+    
+    # Create the table with the appropriate dropdowns for each column
+    data_table_df1_ta3 = tds.table_with_filter_action(df1, 'table-df1-tab3', tab, dark_dropdown_style, uniform_style, True)
+              
+
+    return html.Div([
+
+        html.Div(style={'display': 'flex', 'margin-top': '10px', 'overflowX': 'auto'}, children=[
+            html.Div(data_table_df1_ta3, style={'width': '100%'})  # Adjusted to take full width
+        ]),
+
+                        
+    ], style={'padding': '20px'})
+
 
 
 
@@ -1042,111 +1122,6 @@ def update_stored_df2(*args):
     return []  # Return empty if not in the right tab
 
 
-# =============================================================================
-# Callback for graph-df2 in tab-3
-# =============================================================================
-
-@app.callback(
-    Output('y-dropdown-tab-3', 'options'),
-    Input('x-dropdown-tab-3', 'value'),
-    Input('tabs', 'value')  # Include tab value to conditionally trigger callback
-)
-def update_y_dropdown_tab3(selected_x, selected_tab):
-    print()
-    print(colored("------------ callback update_y_dropdown_tab3 ------------", "red")) 
-    if selected_tab == 'tab-3':  # Only execute if in the correct tab
-        exclude_cols = ["title", "characters"]
-        return update_y_dropdown_utility(selected_x, List_col_fig_tab3, exclude_cols)
-    return []  # Return empty if not in the right tab
-
-
-
-@app.callback(
-    [Output('Func on y-dropdown-tab-3', 'options'),
-    Output('Func on y-dropdown-tab-3', 'value')],
-    Input('y-dropdown-tab-3', 'value'),
-    Input('tabs', 'value')  # Include tab value to conditionally trigger callback
-)
-def update_yfunc_dropdown_tab3(selected_y, selected_tab):
-    print()
-    print(colored("------------ callback update_yfunc_dropdown_tab3 ------------", "red"))
-    print("Active Tab=", selected_tab)
-    print("Time computation=", time.time()-start_time)
-    if selected_tab == 'tab-3':
-        if selected_y is None:
-            print("Y Dropdown Value is None, returning an empty list [].")
-            return [], []  # Return an empty options list if the DF is not ready
-        # Proceed to get options based on selected_x and stored_df1...
-        print(f"Selected Y: {selected_y}")  # Additional debugging
-        
-        function_on_y = ["Avg", "Avg on the ordinate", "Value in x_y interval"]
-        
-        return update_func_dropdown_utility(selected_y, function_on_y, None)
-    return dash.no_update, dash.no_update
-
-
-@app.callback(
-    [Output('Func on z-dropdown-tab-3', 'options'),
-    Output('Func on z-dropdown-tab-3', 'value')],
-    Input('z-dropdown-tab-3', 'value'),
-    Input('tabs', 'value')  # Include tab value to conditionally trigger callback
-)
-def update_zfunc_dropdown_tab3(selected_z, selected_tab):
-    print()
-    print(colored("------------ callback update_zfunc_dropdown_tab2 ------------", "red"))
-    print("Active Tab=", selected_tab)
-    print("Time computation=", time.time()-start_time)
-    if selected_tab == 'tab-3':
-        if selected_z is None:
-            print("Z Dropdown Value is None, returning an empty list [].")
-            return [], []  # Return an empty options list if the DF is not ready
-        # Proceed to get options based on selected_x and stored_df1...
-        print(f"Selected Z: {selected_z}")  # Additional debugging
-        
-        function_on_z = ["Avg", "Avg on the ordinate", "Weight on y"]
-        
-        return update_func_dropdown_utility(selected_z, function_on_z, 'Avg')
-    return dash.no_update, dash.no_update
-
-
-@app.callback(
-    Output('graph-output-tab-3', 'figure'), Output('figure-store-tab-3', 'data'),
-    [Input('tabs', 'value'),
-     Input('x-dropdown-tab-3', 'value'),
-     Input('y-dropdown-tab-3', 'value'),
-     Input('z-dropdown-tab-3', 'value'),
-     Input('Func on y-dropdown-tab-3', 'value'),
-     Input('Func on z-dropdown-tab-3', 'value'),
-     Input('Graph-dropdown-tab-3', 'value'),
-     Input('Dim-dropdown-tab-3', 'value'),
-     Input("dropdown-smoothing-tab-3", "value"),
-     Input("input-smoothing-tab-3", "value"),
-     Input("submit-button-smoothing-tab-3", "n_clicks")] +
-    [Input(f'fig-dropdown-{col}-tab-3', 'value') for col in List_col_fig_tab3],
-    State('stored-df2', 'data')
-)
-def update_graph_tab3(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, *args):
-    print()
-    print(colored("------------ callback update_graph_tab3 ------------", "red")) 
-    stored_df2 = args[-1]
-    
-    # Convert the stored data back to a DataFrame
-    df2 = pd.DataFrame(stored_df2)
-    # Create a copy of the DataFrame to avoid modifying the original stored data
-    filtered_data_table = df2.copy()   
-
-    df_col_numeric = df2.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    df_col_all = df2.columns.tolist()
-    df_col_string = [col for col in df_col_all if col not in df_col_numeric]  
-        
-    print("Active Tab:", selected_tab)
-    print(filtered_data_table)
-    if selected_tab == 'tab-3' and stored_df2 is not None:  # Only execute if in the correct tab
-            print(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value)
-            return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, filtered_data_table, df_col_string, False)
-
-
-
 
 # =============================================================================
 # Utility Function for Graphs
@@ -1156,6 +1131,7 @@ def update_y_dropdown_utility(selected_x, List_cols, exclude_cols):
     """
     Utility function to generate dropdown options for the y-axis based on the selected x-axis column and dataframe.
     """
+    List_cols.append('count')
     return [{'label': col, 'value': col} for col in List_cols 
                     if col != selected_x and col not in exclude_cols]
 
@@ -1163,8 +1139,16 @@ def update_z_dropdown_utility(selected_x, selected_y, List_cols, exclude_cols):
     """
     Utility function to generate dropdown options for the z-axis based on the selected x-axis and y-axis column and dataframe.
     """
+    List_cols.append('count')
     return [{'label': col, 'value': col} for col in List_cols 
                     if col not in (selected_x, selected_y) and col not in exclude_cols]
+
+def update_t_dropdown_utility(selected_x, selected_y, selected_z, List_cols, exclude_cols):
+    """
+    Utility function to generate dropdown options for the t-axis based on the selected x-axis, y-axis and z-axis column and dataframe.
+    """
+    return [{'label': col, 'value': col} for col in List_cols 
+                    if col not in (selected_x, selected_y, selected_z) and col not in exclude_cols]
 
 def update_func_dropdown_utility(selected_y, function_on_axi, initial_value=None):
     """
@@ -1172,13 +1156,14 @@ def update_func_dropdown_utility(selected_y, function_on_axi, initial_value=None
     """
     
     df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    # df_col_numeric.append('count')
     
     if selected_y not in df_col_numeric:  # Check if y column is not numeric
         return [], None
     else:
         return [{'label': col, 'value': col} for col in function_on_axi], initial_value
 
-def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df, df_col_string, large_file_memory):
+def update_graph_utility(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df, df_col_string, large_file_memory):
 
     """
     Utility function to generate a graph based on the provided parameters.
@@ -1191,7 +1176,7 @@ def update_graph_utility(x_column, y_column, z_column, yfunc_column, zfunc_colum
         filtered_data_graph = df.copy()
     # Create the figure based on filtered data
 
-    fig, data_for_plot = fc.create_figure(filtered_data_graph, df_col_string, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
+    fig, data_for_plot = fc.create_figure(filtered_data_graph, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
     return fig, data_for_plot
 
 def update_graph_minor_change_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val, fig_json_serializable, data_for_plot, df_col_string):
