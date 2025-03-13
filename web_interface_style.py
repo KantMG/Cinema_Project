@@ -70,8 +70,8 @@ def web_interface_style():
             className='header-container',
             style={'display': 'flex', 'alignItems': 'center', 'padding': '20px'},  # Flexbox layout for header
             children=[
-                # IMDB Logo
-                html.Img(src='assets/maxresdefault.jpg', style={'height': '140px', 'borderRadius': '14px 14px 14px 14px'}),  # Replace with your logo's path and adjust the size
+                # Logo
+                html.Img(src='assets/Exploratory Data Analysis_logo.png', style={'height': '180px', 'borderRadius': '18px 18px 18px 18px'}),  # Replace with your logo's path and adjust the size
                 # Container for Tabs
                 html.Div(
                     className='tabs-container',
@@ -173,7 +173,7 @@ def web_interface_style():
                                      }
                                      ),
                             ])
-                ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'flex-start', 'height': '50px', 'margin': '50px'}  # Adjust according to height
+                ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'flex-start', 'height': '50px', 'margin': '30px'}  # Adjust according to height
         
                ),
             ]

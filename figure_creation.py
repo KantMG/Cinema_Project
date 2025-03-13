@@ -362,10 +362,9 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                     # log_x=True,
                     size_max=60
                     )
-            print("y = count")
         
         #Case where y_column is None and z_column is None
-        elif str(z_column)=='count' or (str(y_column)=='count' and str(z_column) != 'None' and str(t_column) == 'None'):           
+        elif (str(z_column)=='count' and str(t_column) == 'None') or (str(y_column)=='count' and str(z_column) != 'None' and str(t_column) == 'None'):           
 
             if x_column in df_col_string and "Movie" not in g_column:
                 # Grouping y_column values
@@ -446,9 +445,9 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                     points=False)
 
         #Case where z_column is not None
-        elif str(t_column)=='count' or (str(y_column)=='count' and str(t_column) != 'None'):
+        elif str(t_column)=='count' or (str(y_column)=='count' and str(t_column) != 'None') or (str(z_column)=='count' and str(t_column) != 'None'):
             
-            print("t_column=count")
+            print("t_column not None")
             
             if y_column in df_col_string:
                 # Grouping y_column values
@@ -509,7 +508,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                     data_for_plot,
                     x=x_axis,
                     y=y_axis,
-                    size=t_axis if tf_column == "Avg" or tf_column == "Weight on y" else None,
+                    size=t_axis, #if tf_column == "Avg" or tf_column == "Weight on y" else None,
                     size_max=60,
                     color=z_axis if "Movie" not in g_column else None,
                     animation_frame=z_axis if "Movie" in g_column else None

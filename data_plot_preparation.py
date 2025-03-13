@@ -66,7 +66,7 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
     
     print("delete_rows_unknow_and_split done")
          
-
+    
     #Case where y_column is None
     if str(y_column)=='count' and str(z_column)=='None':
         # Get the Count table of the dataframe  
@@ -143,6 +143,43 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
                 'avg_z_column': 'avg_' + z_column,
                 'sum_t_column': 'standard_error',
             }, inplace=True)       
+
+
+    # #Case where z_column is not None
+    elif str(z_column)=='count' and str(t_column)!='None':   
+
+        
+        if yf_column=="Avg" and tf_column == "Avg":
+            
+            data_for_plot = df_temp.groupby([x_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                avg_t_column=('{}'.format(t_column), 'mean'),
+                count=('{}'.format(t_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_y_column': 'avg_' + y_column,
+                'avg_t_column': 'avg_' + t_column
+            }, inplace=True)
+           
+            
+        elif yf_column=="Avg" and tf_column == "Weight on y":
+
+            data_for_plot = df_temp.groupby([x_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                sum_t_column=('{}'.format(t_column), 'sum'),
+                count=('{}'.format(t_column), 'size')
+            ).reset_index()
+
+            # We'll use sum_numVotes as the number of observations for each startYear
+            data_for_plot['sum_t_column'] = data_for_plot['avg_y_column'] / np.sqrt(data_for_plot['sum_t_column'])
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_y_column': 'avg_' + y_column,
+                'sum_t_column': 'standard_error',
+            }, inplace=True)  
     
 
 
@@ -151,6 +188,8 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
         
         print(x_column,y_column,z_column,t_column)
         print(yf_column,zf_column)
+        print(yf_column is None)
+        
         if yf_column=="Avg" and zf_column == "Avg":
             
             data_for_plot = df_temp.groupby([x_column]).agg(
@@ -181,7 +220,22 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
             data_for_plot.rename(columns={
                 'avg_y_column': 'avg_' + y_column,
                 'sum_z_column': 'standard_error',
-            }, inplace=True)       
+            }, inplace=True)  
+            
+        
+        elif yf_column is None and zf_column == "Avg":
+            
+            print("sisss")
+            
+            data_for_plot = df_temp.groupby([x_column, y_column]).agg(
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_z_column': 'avg_' + z_column,
+            }, inplace=True) 
 
     
 

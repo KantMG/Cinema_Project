@@ -699,24 +699,38 @@ def update_y_value_default_tab2(selected_x, selected_y, selected_z, selected_t, 
             print("2")
             return dash.no_update, "count", dash.no_update, dash.no_update
         
-        elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_t is None:
+        
+        elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is None:
             print("3")
             return dash.no_update, dash.no_update, "count", dash.no_update
 
-        elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_t is None:
+        elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is not None and selected_t is None:
             print("4")
-            return dash.no_update, "count", dash.no_update, dash.no_update
+            return dash.no_update, dash.no_update, "count", dash.no_update
 
+        elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_t is not None:
+            print("5")
+            return dash.no_update, dash.no_update, "count", dash.no_update
 
 
 
         elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_y != "count":
-            print("5")
+            print("6")
             return dash.no_update, dash.no_update, dash.no_update, "count"
 
+        elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is None and selected_y != "count":
+            print("7")
+            return dash.no_update, "count", dash.no_update, None
+
+
         elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is not None and selected_t != "count":
-            print("6")
+            print("8")
             return dash.no_update, "count", dash.no_update, dash.no_update
+
+        elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is None and selected_z != "count" and selected_y != "count":
+            print("9")
+            return dash.no_update, dash.no_update, "count", dash.no_update
+
 
         
     return dash.no_update, dash.no_update, dash.no_update, dash.no_update
