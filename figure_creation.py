@@ -366,46 +366,50 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
         #Case where y_column is None and z_column is None
         elif (str(z_column)=='count' and str(t_column) == 'None') or (str(y_column)=='count' and str(z_column) != 'None' and str(t_column) == 'None'):           
 
-            if x_column in df_col_string and "Movie" not in g_column:
-                # Grouping y_column values
-                n = 10  # Number of top categories to keep
-                data_for_plot = fd.group_small_values(data_for_plot, y_axis, x_axis, n)
+            # if x_column in df_col_string and "Movie" not in g_column:
+            #     # Grouping y_column values
+            #     n = 10  # Number of top categories to keep
+            #     data_for_plot = fd.group_small_values(data_for_plot, y_axis, x_axis, n)
 
-            if y_column in df_col_string and "Movie" not in g_column:
-                # Grouping y_column values
-                n = 7  # Number of top categories to keep
-                data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+            # if y_column in df_col_string and "Movie" not in g_column:
+            #     # Grouping y_column values
+            #     n = 7  # Number of top categories to keep
+            #     data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
 
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
-
+            
+            
             if "Histogram" in g_column:
-                if "Movie" in g_column:    
-                    # First, create a new DataFrame to calculate cumulative sums
-                    cumulative_data = data_for_plot.groupby([y_axis, z_axis])[x_axis].sum().reset_index()
-                    # Sort the DataFrame by year (z_axis) for cumulative calculation
-                    cumulative_data = cumulative_data.sort_values(by=[y_axis, z_axis])
-                    # Calculate the cumulative sum for each genre (x_axis)
-                    cumulative_data['count'] = cumulative_data.groupby(y_axis)[x_axis].cumsum()
-                    # Use cumulative_data for the plot
-                    data_for_plot = cumulative_data
+                
+                # if "Movie" in g_column:    
+                #     # First, create a new DataFrame to calculate cumulative sums
+                #     cumulative_data = data_for_plot.groupby([y_axis, z_axis])[x_axis].sum().reset_index()
+                #     # Sort the DataFrame by year (z_axis) for cumulative calculation
+                #     cumulative_data = cumulative_data.sort_values(by=[y_axis, z_axis])
+                #     # Calculate the cumulative sum for each genre (x_axis)
+                #     cumulative_data['count'] = cumulative_data.groupby(y_axis)[x_axis].cumsum()
+                #     # Use cumulative_data for the plot
+                #     data_for_plot = cumulative_data
 
-                    # Create the animation frames by grouping your data by the z_axis
-                    frames = data_for_plot.groupby(z_axis)
-                    # For each frame, sort the data based on the y values or any other criteria you choose
-                    sorted_frames = {}
-                    for name, group in frames:
-                        sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
-                        sorted_frames[name] = sorted_group
-                    # Concatenate sorted frames back into a single DataFrame
-                    data_for_plot = pd.concat(sorted_frames.values(), ignore_index=True)
-
+                #     # Create the animation frames by grouping your data by the z_axis
+                #     frames = data_for_plot.groupby(z_axis)
+                #     # For each frame, sort the data based on the y values or any other criteria you choose
+                #     sorted_frames = {}
+                #     for name, group in frames:
+                #         sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
+                #         sorted_frames[name] = sorted_group
+                #     # Concatenate sorted frames back into a single DataFrame
+                #     data_for_plot = pd.concat(sorted_frames.values(), ignore_index=True)
+                
+                
                 plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_axis, 
                    y=y_axis,
                    color=z_axis if "Movie" not in g_column else None,
                    animation_frame=z_axis if "Movie" in g_column else None,
+                   range_x=[data_for_plot[x_axis].min(), data_for_plot[x_axis].max()] if "Movie" in g_column else None,
                    range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if "Movie" in g_column else None
                    )
                 
@@ -446,41 +450,51 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
 
         #Case where z_column is not None
         elif str(t_column)=='count' or (str(y_column)=='count' and str(t_column) != 'None') or (str(z_column)=='count' and str(t_column) != 'None'):
-            
-            print("t_column not None")
-            
-            if y_column in df_col_string:
-                # Grouping y_column values
-                n = 7  # Number of top categories to keep
-                if zf_column == "Avg":
-                    data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
-                elif zf_column == "Avg on the ordinate":
-                    data_for_plot = fd.group_small_values(data_for_plot, z_axis, t_axis, n, x_axis)
-                elif zf_column == "Weight on y":
-                    data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+                        
+            # if y_column in df_col_string:
+            #     # Grouping y_column values
+            #     n = 7  # Number of top categories to keep
+            #     if zf_column == "Avg":
+            #         data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
+            #     elif zf_column == "Avg on the ordinate":
+            #         data_for_plot = fd.group_small_values(data_for_plot, z_axis, t_axis, n, x_axis)
+            #     elif zf_column == "Weight on y":
+            #         data_for_plot = fd.group_small_values(data_for_plot, z_axis, y_axis, n, x_axis)
 
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
                         
             # y_values = data_for_plot[y_column].unique()
-            if g_column=="Histogram" and (zf_column == "Avg"):
-                if "Movie" in g_column:    
-                    # Create the animation frames by grouping your data by the z_axis
-                    frames = data_for_plot.groupby(z_axis)
-                    # For each frame, sort the data based on the y values or any other criteria you choose
-                    sorted_frames = {}
-                    for name, group in frames:
-                        sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
-                        sorted_frames[name] = sorted_group
-                    # Concatenate sorted frames back into a single DataFrame
-                    data_for_plot = pd.concat(sorted_frames.values())
+            if "Histogram" in g_column:
+                
+                # if "Movie" in g_column:    
+                #     # Create the animation frames by grouping your data by the z_axis
+                #     frames = data_for_plot.groupby(z_axis)
+                #     # For each frame, sort the data based on the y values or any other criteria you choose
+                #     sorted_frames = {}
+                #     for name, group in frames:
+                #         sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
+                #         sorted_frames[name] = sorted_group
+                #     # Concatenate sorted frames back into a single DataFrame
+                #     data_for_plot = pd.concat(sorted_frames.values())
+                
+                if str(y_column)=='count':
+                    y_axis_anim, z_axis_anim, t_axis_anim = y_axis, z_axis, t_axis
+                if str(z_column)=='count':
+                    y_axis_anim, z_axis_anim, t_axis_anim = y_axis, z_axis, t_axis
+                if str(t_column)=='count':
+                    y_axis_anim, z_axis_anim, t_axis_anim = y_axis, t_axis, z_axis
+                
                 plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_axis, 
-                   y=y_axis,
-                   color=z_axis if "Movie" not in g_column else None,
-                   animation_frame=z_axis if "Movie" in g_column else None,
-                   range_y=[sorted_data_for_plot[y_axis].min(), sorted_data_for_plot[y_axis].max()] if "Movie" in g_column else None
+                   y=y_axis_anim,
+                   color=z_axis_anim,
+                   animation_frame=t_axis_anim,
+                   range_x=[data_for_plot[x_axis].min(), data_for_plot[x_axis].max()] if "Movie" in g_column else None,
+                   range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if "Movie" in g_column else None
                    )
+                
+                
             elif g_column=="Curve" and (zf_column == "Avg"):
                 plotly_fig = go.Figure()
                 # Add traces for each unique group
@@ -656,7 +670,7 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
    #============================================================================="""
 
 
-def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, yf_column, zf_column, graph_type, dim_type, reg_type, reg_order, test_size_val=0.2):
+def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, dim_type, reg_type, reg_order, test_size_val=0.2):
 
     """
     Goal: Add a trace inside the figure regarding the inputs.
@@ -668,8 +682,10 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
+    - t_column: Column in the dataframe (can be None)
     - yf_column: Function to operate on y_column with the rest of the dataframe
     - zf_column: Function to operate on z_column with the rest of the dataframe
+    - tf_column: Function to operate on t_column with the rest of the dataframe
     - graph_type: Type of Graphyque for the figure.
     - dim_type: Graphyque dimension for the figure.
     - reg_type: Type of regression for the data.
@@ -775,7 +791,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
 
 
 def figure_add_subplot(fig_json_serializable, data_for_plot, 
-                       x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
+                       x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type,
                        nb_subplots, nb_subplots_row, nb_subplots_col):
 
     """
@@ -787,8 +803,10 @@ def figure_add_subplot(fig_json_serializable, data_for_plot,
     - x_column: Column in the dataframe
     - y_column: Column in the dataframe (can be None)
     - z_column: Column in the dataframe (can be None)
+    - t_column: Column in the dataframe (can be None)
     - yf_column: Function to operate on y_column with the rest of the dataframe
     - zf_column: Function to operate on z_column with the rest of the dataframe
+    - tf_column: Function to operate on t_column with the rest of the dataframe
     - graph_type: Type of Graphyque for the figure.
     - dim_type: Graphyque dimension for the figure.
     - nb_subplots: Amount of subplots in the figure.
@@ -964,7 +982,7 @@ def transform_trace_to_format(trace, index_subplot):
    #============================================================================="""
 
 def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot, 
-                       x_column, y_column, z_column, t_column, yf_column, zf_column, graph_type, dim_type,
+                       x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, dim_type,
                        smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                        index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, Large_file_memory):
     
@@ -982,6 +1000,7 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
     - t_column: Column in the dataframe (can be None)
     - yf_column: Function to operate on y_column with the rest of the dataframe
     - zf_column: Function to operate on z_column with the rest of the dataframe
+    - tf_column: Function to operate on t_column with the rest of the dataframe
     - graph_type: Type of Graphyque for the figure.
     - dim_type: Graphyque dimension for the figure.
     - sub_bot_smt_value: Button to apply the smoothing.
@@ -1006,14 +1025,14 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
     
     if x_column is not None: 
         print("Extract from data base the required column and prepare them for the figure.")
-        Para, data_for_plot, x_column, y_column, z_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, yf_column, zf_column, graph_type, Large_file_memory)
+        Para, data_for_plot, x_column, y_column, z_column, t_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, Large_file_memory)
         print("The data ready to be ploted is:")
         print(data_for_plot)
         print()
         # Add the core of the figure
         print("############## Core figure creation ##############")
-        figure_returned, data_for_plot, xlabel, ylabel, zlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, t_column, yf_column, zf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, tlabel, df_col_string)       
-        fl.fig_update_layout(figure_returned, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,graph_type, dim_type,df_col_string)   
+        figure_returned, data_for_plot, xlabel, ylabel, zlabel, tlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, tlabel, df_col_string)       
+        fl.fig_update_layout(figure_returned, data_for_plot,figname,xlabel,ylabel,zlabel,tlabel,x_column,y_column,z_column,t_column,graph_type, dim_type,df_col_string)   
         print()
         
     traces = figure_returned.data    

@@ -109,7 +109,7 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
 
             
     # #Case where z_column is not None
-    elif str(y_column)=='count' and str(z_column)!='None' and str(t_column)!='None':   
+    elif str(y_column)=='count' and str(t_column)!='None':   
 
         
         if zf_column=="Avg" and tf_column == "Avg":
@@ -143,6 +143,37 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
                 'avg_z_column': 'avg_' + z_column,
                 'sum_t_column': 'standard_error',
             }, inplace=True)       
+
+
+        elif zf_column is None and tf_column == "Avg":
+
+            data_for_plot = df_temp.groupby([x_column, z_column]).agg(
+                avg_t_column=('{}'.format(t_column), 'mean'),
+                count=('{}'.format(t_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_t_column': 'avg_' + t_column
+            }, inplace=True)
+
+
+        elif zf_column == "Avg" and tf_column is None:
+
+            data_for_plot = df_temp.groupby([x_column, t_column]).agg(
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                count=('{}'.format(z_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_z_column': 'avg_' + z_column
+            }, inplace=True)
+
+        else:
+            data_for_plot = df_temp.groupby([x_column, z_column, t_column]).size().reset_index(name='count')
+
+
 
 
     # #Case where z_column is not None
@@ -180,6 +211,9 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
                 'avg_y_column': 'avg_' + y_column,
                 'sum_t_column': 'standard_error',
             }, inplace=True)  
+        
+        else:
+            data_for_plot = df_temp.groupby([x_column, y_column, t_column]).size().reset_index(name='count')
     
 
 
@@ -225,8 +259,6 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
         
         elif yf_column is None and zf_column == "Avg":
             
-            print("sisss")
-            
             data_for_plot = df_temp.groupby([x_column, y_column]).agg(
                 avg_z_column=('{}'.format(z_column), 'mean'),
                 count=('{}'.format(y_column), 'size')
@@ -236,6 +268,9 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
             data_for_plot.rename(columns={
                 'avg_z_column': 'avg_' + z_column,
             }, inplace=True) 
+
+        else:
+            data_for_plot = df_temp.groupby([x_column, y_column, z_column]).size().reset_index(name='count')
 
     
 

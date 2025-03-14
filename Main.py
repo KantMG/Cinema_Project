@@ -641,31 +641,6 @@ def update_output(reset_click, n_clicks, input_1_value, input_2_value, input_3_v
 #  -----------------------------------------------------------------
 
 @app.callback(
-    Output('y-dropdown-tab-2', 'options'),
-    [Input('x-dropdown-tab-2', 'value')]+
-    [Input('tabs', 'value')]
-)
-def update_y_dropdown_tab2(selected_x, selected_tab):
-    print()
-    print(colored("------------ callback update_y_dropdown_tab2 ------------", "red"))
-    print("Active Tab=", selected_tab)
-    print("Time computation=", time.time()-start_time)
-    ctx = dash.callback_context
-    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-    print("Triggered component:", triggered_id)
-    print()
-    if selected_tab == 'tab-2':
-        if selected_x is None:
-            print("X Dropdown Value is None, returning an empty list [].")
-            return []
-        print(f"Selected X: {selected_x}")  # Additional debugging
-        exclude_cols=List_col_exclude_tab2
-        return update_y_dropdown_utility(selected_x, df1.columns.tolist(), exclude_cols)
-    return dash.no_update
-
-
-
-@app.callback(
     [Output('x-dropdown-tab-2', 'value'),
     Output('y-dropdown-tab-2', 'value'),
     Output('z-dropdown-tab-2', 'value'),
@@ -676,9 +651,9 @@ def update_y_dropdown_tab2(selected_x, selected_tab):
     [Input('t-dropdown-tab-2', 'value')]+
     [Input('tabs', 'value')]
 )
-def update_y_value_default_tab2(selected_x, selected_y, selected_z, selected_t, selected_tab):
+def update_value_default_tab2(selected_x, selected_y, selected_z, selected_t, selected_tab):
     print()
-    print(colored("------------ callback update_y_value_default_tab2 ------------", "red"))
+    print(colored("------------ callback update_value_default_tab2 ------------", "red"))
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
     ctx = dash.callback_context
@@ -737,8 +712,28 @@ def update_y_value_default_tab2(selected_x, selected_y, selected_z, selected_t, 
 
 
 
-
-
+@app.callback(
+    Output('y-dropdown-tab-2', 'options'),
+    [Input('x-dropdown-tab-2', 'value')]+
+    [Input('tabs', 'value')]
+)
+def update_y_dropdown_tab2(selected_x, selected_tab):
+    print()
+    print(colored("------------ callback update_y_dropdown_tab2 ------------", "red"))
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    print("Triggered component:", triggered_id)
+    print()
+    if selected_tab == 'tab-2':
+        if selected_x is None:
+            print("X Dropdown Value is None, returning an empty list [].")
+            return []
+        print(f"Selected X: {selected_x}")  # Additional debugging
+        exclude_cols=List_col_exclude_tab2
+        return update_y_dropdown_utility(selected_x, df1.columns.tolist(), exclude_cols)
+    return dash.no_update
 
 
 @app.callback(
@@ -766,30 +761,31 @@ def update_z_dropdown_tab2(selected_x, selected_y, selected_tab):
     return dash.no_update
 
 
-# @app.callback(
-#     Output('t-dropdown-tab-2', 'options'),
-#     [Input('x-dropdown-tab-2', 'value'),
-#      Input('y-dropdown-tab-2', 'value'),
-#      Input('z-dropdown-tab-2', 'value'),
-#     Input('tabs', 'value')]
-# )
-# def update_t_dropdown_tab2(selected_x, selected_y, selected_z, selected_tab):
-#     print()
-#     print(colored("------------ callback update_t_dropdown_tab2 ------------", "red"))
-#     print("Active Tab=", selected_tab)
-#     print("Time computation=", time.time()-start_time)
-#     ctx = dash.callback_context
-#     triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-#     print("Triggered component:", triggered_id)
-#     print()
-#     if selected_tab == 'tab-2':
-#         if selected_z is None:
-#             print("Z Dropdown Value is None, returning an empty list [].")
-#             return []
-#         print(f"Selected z: {selected_z}")  # Additional debugging
-#         exclude_cols=List_col_exclude_tab2
-#         return update_t_dropdown_utility(selected_x, selected_y, selected_z, df1.columns.tolist(), exclude_cols)
-#     return dash.no_update
+@app.callback(
+    Output('t-dropdown-tab-2', 'options'),
+    [Input('x-dropdown-tab-2', 'value'),
+     Input('y-dropdown-tab-2', 'value'),
+     Input('z-dropdown-tab-2', 'value'),
+    Input('tabs', 'value')]
+)
+def update_t_dropdown_tab2(selected_x, selected_y, selected_z, selected_tab):
+    print()
+    print(colored("------------ callback update_t_dropdown_tab2 ------------", "red"))
+    print("Active Tab=", selected_tab)
+    print("Time computation=", time.time()-start_time)
+    ctx = dash.callback_context
+    triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    print("Triggered component:", triggered_id)
+    print()
+    if selected_tab == 'tab-2':
+        if selected_y is None:
+            print("Y Dropdown Value is None, returning an empty list [].")
+            return []
+        print(f"Selected y: {selected_y}")  # Additional debugging
+        exclude_cols=List_col_exclude_tab2
+        return update_t_dropdown_utility(selected_x, selected_y, selected_z, df1.columns.tolist(), exclude_cols)
+    return dash.no_update
+
 
 @app.callback(
     [Output('Func on y-dropdown-tab-2', 'options'),
@@ -808,7 +804,7 @@ def update_yfunc_dropdown_tab2(selected_y, selected_tab):
             return [], []
         print(f"Selected Y: {selected_y}")  # Additional debugging
         
-        function_on_y = ["Avg", "Avg on the ordinate", "Value in x_y interval"]
+        function_on_y = ["Avg", "Value in x_y interval"]
         
         return update_func_dropdown_utility(selected_y, function_on_y, None)
     return dash.no_update, dash.no_update
@@ -831,7 +827,7 @@ def update_zfunc_dropdown_tab2(selected_z, selected_tab):
         # Proceed to get options based on selected_x and stored_df1...
         print(f"Selected Z: {selected_z}")  # Additional debugging
         
-        function_on_z = ["Avg", "Avg on the ordinate", "Weight on y"]
+        function_on_z = ["Avg", "Weight on y"]
         
         return update_func_dropdown_utility(selected_z, function_on_z, 'Avg')
     return dash.no_update, dash.no_update
@@ -855,7 +851,7 @@ def update_tfunc_dropdown_tab2(selected_t, selected_tab):
         # Proceed to get options based on selected_x and stored_df1...
         print(f"Selected T: {selected_t}")  # Additional debugging
         
-        function_on_t = ["Avg", "Avg on the ordinate", "Weight on y"]
+        function_on_t = ["Avg", "Weight on y"]
         
         return update_func_dropdown_utility(selected_t, function_on_t, 'Avg')
     return dash.no_update, dash.no_update
@@ -967,9 +963,9 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     df_col_all.append('count')
     df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
     
-    if z_dropdown_value is not None and z_dropdown_value not in df_col_numeric:
-        print("z-dropdown-tab-2 is "+z_dropdown_value+" which is a string column.")
-        print("Please select a numeric column for z-dropdown-tab-2")
+    if t_dropdown_value is not None and t_dropdown_value not in df_col_numeric:
+        print("t-dropdown-tab-2 is "+t_dropdown_value+" which is a string column.")
+        print("Please select a numeric column for t-dropdown-tab-2")
         return dash.no_update
 
     if graph_dropdown_value is None:
@@ -980,8 +976,8 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         return dash.no_update
 
     if triggered_id == "submit-button-regression-tab-2":
-        return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value,
-                                                 yfunc_dropdown_value, zfunc_dropdown_value, 
+        return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
+                                                 yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, 
                                                  graph_dropdown_value, dim_dropdown_value,
                                                  reg_dropdown_value, reg_order_value, test_size_value,
                                                  current_fig, data_for_plot, df_col_string)
@@ -1017,8 +1013,8 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         print('subplot-button type, return no update.')
         if all(click == 0 for click in subplot_button_clicks) :
 
-            return update_graph_subplot_creation(x_dropdown_value, y_dropdown_value, z_dropdown_value,
-                                        yfunc_dropdown_value, zfunc_dropdown_value,
+            return update_graph_subplot_creation(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
+                                        yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value,
                                         graph_dropdown_value, dim_dropdown_value,
                                         nb_subplots, nb_subplots_row, nb_subplots_col,
                                         current_fig, data_for_plot)        
@@ -1040,8 +1036,8 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
         print("No subplot buttons have been clicked. The figure is unique.")  
     elif all(x == 0 for x in subplot_button_clicks):
         print("Subplot buttons are all 0.")
-        return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value,
-                                    yfunc_dropdown_value, zfunc_dropdown_value,
+        return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
+                                    yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value,
                                     graph_dropdown_value, dim_dropdown_value,
                                     smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                                     0, nb_subplots, nb_subplots_row, nb_subplots_col,
@@ -1052,8 +1048,8 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
             print(f"Last clicked subplot button index: {last_clicked_index}")
             # Additional logic based on the last clicked button can go here
 
-        return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value,
-                                    yfunc_dropdown_value, zfunc_dropdown_value,
+        return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
+                                    yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value,
                                     graph_dropdown_value, dim_dropdown_value,
                                     smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                                     last_clicked_index, nb_subplots, nb_subplots_row, nb_subplots_col,
@@ -1161,6 +1157,7 @@ def update_t_dropdown_utility(selected_x, selected_y, selected_z, List_cols, exc
     """
     Utility function to generate dropdown options for the t-axis based on the selected x-axis, y-axis and z-axis column and dataframe.
     """
+    List_cols.append('count')
     return [{'label': col, 'value': col} for col in List_cols 
                     if col not in (selected_x, selected_y, selected_z) and col not in exclude_cols]
 
@@ -1193,30 +1190,30 @@ def update_graph_utility(x_column, y_column, z_column, t_column, yfunc_column, z
     fig, data_for_plot = fc.create_figure(filtered_data_graph, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
     return fig, data_for_plot
 
-def update_graph_minor_change_utility(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val, fig_json_serializable, data_for_plot, df_col_string):
+def update_graph_minor_change_utility(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val, fig_json_serializable, data_for_plot, df_col_string):
     """
     Utility function to update a graph based on the provided parameters.
     """
-    fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val)
+    fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val)
     return fig, data_for_plot
 
-def update_graph_subplot_creation(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
+def update_graph_subplot_creation(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type,
                             nb_subplots, nb_subplots_row, nb_subplots_col, current_fig, data_for_plot):
     """
     Utility function to update a graph based on the provided parameters.
     """
-    fig, data_for_plot = fc.figure_add_subplot(current_fig, data_for_plot, x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type, nb_subplots, nb_subplots_row, nb_subplots_col)
+    fig, data_for_plot = fc.figure_add_subplot(current_fig, data_for_plot, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, nb_subplots, nb_subplots_row, nb_subplots_col)
     
     return fig, data_for_plot
 
-def update_graph_subplot(x_column, y_column, z_column, yfunc_column, zfunc_column, graph_type, dim_type,
+def update_graph_subplot(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type,
                          smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                          index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, df, df_col_string, current_fig, data_for_plot, large_file_memory):
     """
     Utility function to update a graph based on the provided parameters.
     """
-    fig, data_for_plot = fc.figure_update_subplot(df, df_col_string, current_fig, data_for_plot, x_column, y_column, z_column,
-                                                  yfunc_column, zfunc_column, graph_type, dim_type, 
+    fig, data_for_plot = fc.figure_update_subplot(df, df_col_string, current_fig, data_for_plot, x_column, y_column, z_column, t_column,
+                                                  yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, 
                                                   smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                                                   index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col, large_file_memory)
     return fig, data_for_plot
