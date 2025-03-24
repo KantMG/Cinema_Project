@@ -19,11 +19,20 @@ from scipy.stats import chi2_contingency, f_oneway, zscore
 
 
 
+# Condition for Anova test:
+    # Observation independante
+    # Donnée distribué normalement (test possible comme )  
+    # Pas de données extremes  (methode de tuquet)
+    # Variance de groupe à peu près égales
+    # Effectifs par classes à peu près egaux
+    
+
+
 def anova_target(df, tar):
 
     numerical_features = make_column_selector(dtype_include=np.number)(df)
     categorical_features = make_column_selector(dtype_exclude=np.number)(df)
-
+    
 
     # Initialize results list
     anova_results = {}

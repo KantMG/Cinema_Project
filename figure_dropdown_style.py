@@ -901,7 +901,16 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
                                 }
                             ), 
                         ]
-                    )
+                    ),
+                    html.Div(
+                        html.Button("Show Data Table", id='datatable-button-'+tab, n_clicks=0, className='button'),
+                        style={
+                            'display': 'flex',
+                            'justify-content': 'flex-start',
+                            'gap': '10px',  # Add spacing between dropdowns
+                        }
+                    ),
+                    
                 ]
             )
         ]

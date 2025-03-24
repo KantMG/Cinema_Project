@@ -225,19 +225,24 @@ def table_with_filter_action(df, id_table, tab, dark_dropdown_style, uniform_sty
 
     # Calculate widths, ensuring 'title' is handled specifically
     column_widths = {col: get_column_width(col) for col in columns}
-
+    
+    PAGE_SIZE = 20
+    
     data_table = dash_table.DataTable(
         id=id_table,
         data=df.to_dict('records'),
         columns=[{'id': c, 'name': c} for c in columns],
         editable=True,
-        filter_action='native',
+        filter_action='native' if need_dropdown else 'none',
         # row_deletable=True,
         page_action='native',
-        fixed_rows={'headers': True},
+        page_current=0,
+        page_size=PAGE_SIZE,
+        
+        # fixed_rows={'headers': True},
         style_table={
             # 'className': 'table-container',  # Apply table container style
-            'minWidth': '200px',   #str(int(len(columns) * 170)) + 'px',
+            # 'minWidth': '200px',   #str(int(len(columns) * 170)) + 'px',
             'overflowX': 'auto',
             'paddingLeft': '2px',
             'paddingRight': '20px',
@@ -263,12 +268,12 @@ def table_with_filter_action(df, id_table, tab, dark_dropdown_style, uniform_sty
             'whiteSpace': 'nowrap',
             'textAlign': 'center',
         },
-        style_data_conditional=[
-            {
-                'if': {'column_id': col},
-                'width': f'{column_widths[col]}px'
-            } for col in columns
-        ]
+        # style_data_conditional=[
+        #     {
+        #         'if': {'column_id': col},
+        #         'width': f'{column_widths[col]}px'
+        #     } for col in columns
+        # ]
     )
 
     return data_table

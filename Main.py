@@ -135,16 +135,16 @@ df1_obj_description = df1_obj_description.reset_index()
 
 correlation_matrix = df1.corr(numeric_only=True)
 
-tar_correlations = correlation_matrix[tar]
 
-# Optional: Sort the correlations
-tar_correlations = tar_correlations.sort_values(ascending=True)[:-1]
+info = df1.info()
 
-# Create a DataFrame for plotting
-tar_correlation_df = tar_correlations.reset_index()
+print(info)
 
 
-cf.anova_target(df1, tar)
+memory_info = df1.memory_usage(deep=True)  # Get memory usage of each column
+total_memory_kb = memory_info.sum() / 1024  # Convert bytes to KB
+print(f"Total memory usage: {total_memory_kb:.2f} KB")  # Print memory usage in KB
+print(memory_info / 1024)  # Print memory usage per column in KB
 
 
 
@@ -178,8 +178,8 @@ app, dark_dropdown_style, uniform_style = wis.web_interface_style()
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
-            html.H1("Dash interface dedicated to the Exploratory Data Analysis.", style={"color": "#FFD700", 'height': '20px'}, className="text-light"),
-            tab1_content()
+            html.H1("Dash interface dedicated to the Exploratory Data Analysis of:", style={"color": "#FFD700", 'height': '20px'}, className="text-light"),
+            tab1_content()      
         ])
     elif tab == 'tab-2':
         return html.Div([
@@ -206,6 +206,10 @@ def render_content(tab):
 """
 
 def tab1_content():
+    
+    
+    tab = 'tab-1'
+    
     print()
     print("Time computation=", time.time()-start_time)
     print(colored("=====================  Tab1_content  =========================", "yellow"))
@@ -252,30 +256,6 @@ def tab1_content():
         # title_font=dict(size=20, color='white')
         )
 
-
-    # unique_counts = df1.nunique()
-    # unique_counts_df = unique_counts.reset_index()  # Reset index to create a DataFrame
-    # unique_counts_df.columns = ['Columns', 'Unique Count']
-
-
-    # fig_nuinque_bar = px.bar(
-    #     unique_counts_df,
-    #     x="Columns",  # Column names (categories)
-    #     y='Unique Count',  # Count of missing values
-    #     # labels={'x': 'Columns', 'y': 'Count of Missing Values'},
-    #     title='Count of Unique Values in Each Column'
-    # )
-    # fig_nuinque_bar.update_layout(
-    #     plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-    #     paper_bgcolor='#101820',  # Dark gray for the paper
-    #     font=dict(color='white'),  # White text color
-    #     # title = figname,
-    #     # title_font=dict(size=20, color='white')
-    #     )
-
-
-    # fig_missing_heatmap = sns.heatmap(missing_data, cbar=False)
-
         
     data_table_df1_num = tds.dropdown_table(df1_num_description, 'table-df1', tab,
                                      dark_dropdown_style, uniform_style, False)[1]    
@@ -283,53 +263,14 @@ def tab1_content():
                                      dark_dropdown_style, uniform_style, False)[1]
     
     
-    
-    # Create the heatmap using Plotly Express
-    fig_correlation_heatmap = px.imshow(
-        correlation_matrix,
-        color_continuous_scale='RdBu',  # Color scale similar to Seaborn
-        labels=dict(x='Columns', y='Columns', color='Correlation'),
-        title='Correlation Matrix Heatmap',
-        zmin=-1,  # Set minimum value for the colorbar
-        zmax=1    # Set maximum value for the colorbar
-    )    
-    fig_correlation_heatmap.update_traces(text=correlation_matrix.round(2).values, texttemplate="%{text}", textfont={"size": 12})
-    fig_correlation_heatmap.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        # title = figname,
-        # title_font=dict(size=20, color='white')
-        )
-    
-    # Plotting
-    fig_tar_correlation = px.bar(
-        tar_correlation_df,
-        x=tar_correlation_df[tar],  # Assuming 'tar' is a variable that contains the correlation values
-        y='index',
-        title='Correlation of Features with the Target',
-        labels={'index': 'Features', tar: 'Correlation Coefficient'},
-        orientation='h'  # Horizontal bar plot
-    )
-    
-    # Adding a vertical line for zero correlation (cannot be directly added in Plotly as in Matplotlib)
-    fig_tar_correlation.add_vline(x=0, line_color='grey', line_dash='dash')
-
-    fig_tar_correlation.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        # title = figname,
-        # title_font=dict(size=20, color='white')
-        )    
-    
-    
     return html.Div([
         html.Div([
-            html.H2("Dataframe:", style={"color": "#FFD700"}, className="text-light"),
-            html.P("Name : "+file_name),
-            html.P("Nb Columns : "+str(nb_col_df1)),
-            html.P("Nb Rows : "+str(nb_row_df1))
+            html.H2(file_name, style={"color": "#4682B4", 'fontSize': '34px'}, className="text-light"),
+            
+            # print(f"Total memory usage: {total_memory_kb:.2f} KB")
+            html.P(f"Total memory usage: {total_memory_kb:.2f} KB", style={'fontSize': '24px'}),
+
+            html.P("Columns / Rows : "+str(nb_col_df1)+" / "+str(nb_row_df1), style={'fontSize': '24px'})
         ]),
         html.Div([
             html.H2("Feature characteristics:", style={"color": "#FFD700"}, className="text-light"),
@@ -378,11 +319,98 @@ def tab1_content():
                 html.Div(data_table_df1_obj, style={'width': '100%'})  # Table display
             ])
         ]),
-
-
+        
         html.Div([
             html.H2("Feature/Target correlation:", style={"color": "#FFD700"}, className="text-light"),
         ]),
+
+        html.Div([
+            html.Div([
+                html.H3("Choose the target:", className="text-light"),
+            ], style={'display': 'inline-block', 'verticalAlign': 'middle', 'marginRight': '10px'}),  # Inline header
+            dcc.Dropdown(
+                id='target-value',
+                options=[{'label': val, 'value': val} for val in df1.columns],
+                placeholder='Target',
+                style={**dark_dropdown_style, **uniform_style, 'display': 'inline-block', 'width': '160px'}  # Adjust width as necessary
+            )
+              # Inline dynamic content
+        ], style={'display': 'flex', 'alignItems': 'center'}),
+        
+        html.Div(id='dynamic-content-tab1')
+
+
+    ], style={'padding': '20px'})
+
+
+
+
+# Callback to update UI based on input value in Tab 3
+@app.callback(
+    Output('dynamic-content-tab1', 'children'),
+    Input('target-value', 'value')
+)
+def update_target_value(input_value):
+    if not input_value:  # Return nothing if input is empty or None
+        return ''
+
+    target_value = input_value
+    print(target_value)
+    print()
+    print(colored("------------ callback update_target_value ------------", "red"))
+
+    tar_correlations = correlation_matrix[target_value]
+    
+    # Optional: Sort the correlations
+    tar_correlations = tar_correlations.sort_values(ascending=True)[:-1]
+    
+    # Create a DataFrame for plotting
+    tar_correlation_df = tar_correlations.reset_index()
+
+
+    # Create the heatmap using Plotly Express
+    fig_correlation_heatmap = px.imshow(
+        correlation_matrix,
+        color_continuous_scale='RdBu',  # Color scale similar to Seaborn
+        labels=dict(x='Columns', y='Columns', color='Correlation'),
+        title='Correlation Matrix Heatmap',
+        zmin=-1,  # Set minimum value for the colorbar
+        zmax=1    # Set maximum value for the colorbar
+    )    
+    fig_correlation_heatmap.update_traces(text=correlation_matrix.round(2).values, texttemplate="%{text}", textfont={"size": 12})
+    fig_correlation_heatmap.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )
+    
+    # Plotting
+    fig_tar_correlation = px.bar(
+        tar_correlation_df,
+        x=tar_correlation_df[target_value],  # Assuming 'tar' is a variable that contains the correlation values
+        y='index',
+        title='Correlation of Features with the target: '+target_value,
+        labels={'index': 'Features', target_value: 'Correlation Coefficient'},
+        orientation='h'  # Horizontal bar plot
+    )
+    
+    # Adding a vertical line for zero correlation (cannot be directly added in Plotly as in Matplotlib)
+    fig_tar_correlation.add_vline(x=0, line_color='grey', line_dash='dash')
+
+    fig_tar_correlation.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )    
+    
+    cf.anova_target(df1, target_value)
+    
+    
+    return html.Div([
 
         html.Div([
             html.P("Numeric Summary:", style={"color": "#FFD700"}, className="text-light"),
@@ -407,24 +435,28 @@ def tab1_content():
 
 
         html.Div([
-            html.P("Object Summary:", style={"color": "#FFD700"}, className="text-light"),
+            html.P("Bivariate Anova:", style={"color": "#FFD700"}, className="text-light"),
             # html.P(Text5),
         ]),
 
-        html.Div(
-            style={'display': 'flex'},
-            children=[
-                html.Div(
-                    [dcc.Graph(id='correlation-heatmap-df2', style={'width': '70%', 'height': '700px'},
-                               figure=fig_correlation_heatmap)],
-                    style={'margin-left': '10px', 'width': '70%'}
-                ),
-            ]
-        )
+        # html.Div(
+        #     style={'display': 'flex'},
+        #     children=[
+        #         html.Div(
+        #             [dcc.Graph(id='correlation-heatmap-df2', style={'width': '70%', 'height': '700px'},
+        #                        figure=fig_correlation_heatmap)],
+        #             style={'margin-left': '10px', 'width': '70%'}
+        #         ),
+        #     ]
+        # )
 
 
 
     ], style={'padding': '20px'})
+
+
+
+
 
 
 
@@ -487,8 +519,66 @@ def tab2_content():
                                      button_subplot_tab2
                                      )
         ], style={'padding': '20px'}),
+        
+        html.Div(id='dynamic-content-tab2')
+        
     ], style={'padding': '20px'})
     
+
+
+
+@app.callback(
+    Output('dynamic-content-tab2', 'children'), 
+    Input('datatable-button-tab-2', "n_clicks"),
+    [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2]
+)
+def update_tableau_show(n_clic, *args):
+    
+    
+    if not n_clic or n_clic % 2 == 0:
+        return ''
+
+    print(n_clic)
+    print()
+    print(colored("------------ callback update_tableau_show ------------", "red"))
+
+    tab = "tab-2"
+    
+    filter_values = list(args[0:len(List_col_tab2)])
+    filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}    
+    df1_filtered = od.apply_filter(df1, filter_values)
+    
+# =============================================================================
+#     # First make the data filter as in input and then build the table
+# =============================================================================
+    
+    # Create the table with the appropriate dropdowns for each column
+    data_table_df1_ta2 = tds.table_with_filter_action(df1_filtered, 'table-df1-tab2', tab, dark_dropdown_style, uniform_style, False)
+              
+
+    return html.Div([
+
+        html.Div(style={'display': 'flex', 'margin-top': '10px', 'overflowX': 'auto'}, children=[
+            html.Div(data_table_df1_ta2, style={'width': '100%'})  # Adjusted to take full width
+        ]),
+
+                        
+    ], style={'padding': '20px'})
+
+
+@app.callback(
+    Output('datatable-button-tab-2', 'children'), 
+    Input('datatable-button-tab-2', "n_clicks")
+)
+def update_tableau_show(n_clic):
+    
+    
+    if not n_clic or n_clic % 2 == 0:
+        return "Show Data Table"
+    else:
+        return "Hide Data Table"
+
+
 
 # =============================================================================
 # Callback for graph in tab-2
@@ -1058,78 +1148,6 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
             
     
     return update_graph_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value, yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value, smt_dropdown_value, smt_order_value, sub_bot_smt_value, df1_filtered, df_col_string, Large_file_memory)
-
-
-"""
-# =============================================================================
-# =============================================================================
-# =============================================================================
-# Tab-3
-# =============================================================================
-# =============================================================================
-# =============================================================================
-"""
-
-def tab3_content():
-
-    print()
-    print(colored("------------ callback update_ui ------------", "red"))
-
-    tab = "tab-3"
-    
-    
-# =============================================================================
-#     # First make the data filter as in input and then build the table
-# =============================================================================
-    
-    
-    # Create the table with the appropriate dropdowns for each column
-    data_table_df1_ta3 = tds.table_with_filter_action(df1, 'table-df1-tab3', tab, dark_dropdown_style, uniform_style, True)
-              
-
-    return html.Div([
-
-        html.Div(style={'display': 'flex', 'margin-top': '10px', 'overflowX': 'auto'}, children=[
-            html.Div(data_table_df1_ta3, style={'width': '100%'})  # Adjusted to take full width
-        ]),
-
-                        
-    ], style={'padding': '20px'})
-
-
-
-
-# =============================================================================
-# Callback for table-df2 in tab-3
-# =============================================================================
-tab = 'tab-3'
-
-@app.callback(
-    Output('table-df2', 'data'),
-    [Input(f'{col}-dropdown-table-'+tab, 'value') for col in List_col_tab3],
-    Input('tabs', 'value'),  # Include tab value to conditionally trigger callback
-    State('stored-df2', 'data')  # Ensure this is included as State
-)
-def update_stored_df2(*args):
-    print()
-    print(colored("------------ callback update_stored_df2 ------------", "red")) 
-    selected_tab = args[-2]
-    stored_df2 = args[-1]         # The last argument is stored_df2
-    selected_values = {col: args[i] for i, col in enumerate(List_col_tab3)}
-    
-    if selected_tab == 'tab-3':  # Only execute if in the Data Visualization tab
-        if stored_df2 is None:  # Check if stored_df2 is None or empty
-            return []
-        # Convert the stored data back to a DataFrame
-        df2 = pd.DataFrame(stored_df2)
-        # Create a copy of the DataFrame to avoid modifying the original stored data
-        filtered_data_table = df2.copy()
-        print("Update table")
-        print(filtered_data_table)
-        filtered_data_table = od.apply_filter(filtered_data_table, selected_values)
-        
-        return filtered_data_table.to_dict('records')
-    return []  # Return empty if not in the right tab
 
 
 
