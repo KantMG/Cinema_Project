@@ -355,10 +355,18 @@ def update_target_value(input_value):
         return ''
 
     target_value = input_value
-    print(target_value)
+
     print()
     print(colored("------------ callback update_target_value ------------", "red"))
 
+    is_target_numeric = pd.api.types.is_numeric_dtype(df1[target_value])
+
+    if is_target_numeric != True:
+        
+        cf.anova_target(df1, target_value)
+        
+        return ''
+        
     tar_correlations = correlation_matrix[target_value]
     
     # Optional: Sort the correlations
@@ -406,6 +414,8 @@ def update_target_value(input_value):
         # title = figname,
         # title_font=dict(size=20, color='white')
         )    
+    
+    # cf.check_anova_conditions(df1, target_value)
     
     cf.anova_target(df1, target_value)
     
