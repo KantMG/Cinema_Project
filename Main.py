@@ -70,6 +70,7 @@ file_name = "train.csv"
 # Project_path='/home/quentin/Documents/Work/Data_analytics/Studies/Kaggle_challenges/Store_Sales/kaggle/input/store-sales-time-series-forecasting/'
 # file_name = "train.csv"
 
+
 # Get the current working directory or script path as needed
 current_file_path = os.getcwd()+'/Main.py'
 
@@ -85,7 +86,20 @@ df1 = od.read_and_rename(
 )
 
 
-tar = "Survived"
+
+from sklearn.datasets import load_diabetes, load_iris
+# Load the Iris dataset
+iris = load_iris()
+df1 = pd.DataFrame(data=iris.data, columns=iris.feature_names)
+# Add the target variable as a column to the DataFrame
+df1['Species'] = iris.target
+# Map numeric target labels to species names for clarity
+df1['Species'] = df1['Species'].map({0: 'setosa', 1: 'versicolor', 2: 'virginica'})
+
+
+
+
+# tar = "Survived"
 
 shape_df1 = df1.shape
 nb_col_df1 = shape_df1[1]
@@ -98,15 +112,22 @@ dtype_df.columns = ['dtype', 'count']  # Rename columns for clarity
 dtype_df['dtype'] = dtype_df['dtype'].astype(str)
 
 
-df1_num_description = df1.describe(include=[np.number])#.reset_index()
-df1_obj_description = df1.describe(include=['object'])#.reset_index()
+# Getting numeric description and handling cases with no numeric features
+if df1.select_dtypes(include=[np.number]).empty:
+    df1_num_description = pd.DataFrame()  # creates an empty DataFrame
+else:
+    df1_num_description = df1.describe(include=[np.number])
+    # Calculate the count of NaN values
+    df1_num_nan_count = df1.select_dtypes(include=[np.number]).isna().sum()
+    df1_num_description.loc['NaN'] = df1_num_nan_count
 
-# Calculate the count of NaN values
-df1_num_nan_count = df1.select_dtypes(include=[np.number]).isna().sum()
-df1_obj_nan_count = df1.select_dtypes(include=['object']).isna().sum()
-
-df1_num_description.loc['NaN'] = df1_num_nan_count
-df1_obj_description.loc['NaN'] = df1_obj_nan_count
+# Getting object description and handling cases with no object features
+if df1.select_dtypes(include=['object']).empty:
+    df1_obj_description = pd.DataFrame()  # creates an empty DataFrame
+else:
+    df1_obj_description = df1.describe(include=['object'])
+    df1_obj_nan_count = df1.select_dtypes(include=['object']).isna().sum()
+    df1_obj_description.loc['NaN'] = df1_obj_nan_count
 
 df1_num_variance =  df1.select_dtypes(include=[np.number]).var()
 df1_num_description.loc['var'] = df1_num_variance.values
@@ -417,9 +438,15 @@ def update_target_value(input_value):
     
     # cf.check_anova_conditions(df1, target_value)
     
-    cf.anova_target(df1, target_value)
+    messages, normality_fig = cf.anova_target(df1, target_value, "Species")
     
-    
+        
+    html_output = html.Div([
+        html.P(msg, style={"color": "#FFD700"}, className="text-light") for msg in messages
+    ] + [
+        dcc.Graph(figure=normality_fig)  # Add the generated Plotly figure
+    ])    
+        
     return html.Div([
 
         html.Div([
@@ -448,6 +475,8 @@ def update_target_value(input_value):
             html.P("Bivariate Anova:", style={"color": "#FFD700"}, className="text-light"),
             # html.P(Text5),
         ]),
+        
+        html_output
 
         # html.Div(
         #     style={'display': 'flex'},
@@ -728,7 +757,7 @@ def update_output(reset_click, n_clicks, input_1_value, input_2_value, input_3_v
                 # return "Error: Function name and input expression are required."
             
             # Create the buttons which will correspond to each subplot.
-            buttons_subplot_tab2 = fds.buttons_subplots("Figure-"+tab+"-subplot-", "Subplot ",
+            buttons_subplot_tab2 = fds.buttons_subplots("Figure-tab-2-subplot-", "Subplot ",
                                                         input_1_value, input_2_value, input_3_value, dark_dropdown_style, uniform_style)
             
             previous_clicks = [0] * input_1_value

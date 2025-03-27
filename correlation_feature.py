@@ -16,175 +16,325 @@ from statsmodels.formula.api import ols
 from termcolor import colored
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+import plotly.express as px
+import io
+import base64
+import matplotlib
+matplotlib.use('Agg')  # Use a non-interactive backend
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-def check_feature_type(df, feature, target, is_target_numeric, is_binary_target):
-    """ Check if the feature type is valid based on the target type. """
-    if is_binary_target or not is_target_numeric:
-        if not pd.api.types.is_numeric_dtype(df[feature]):
-            print(colored(f"ERROR: Feature '{feature}' must be numeric for a categorical target. Ignored for ANOVA.", "red"))
-            return False
-    else:
-        if not pd.api.types.is_categorical_dtype(df[feature]) and not pd.api.types.is_object_dtype(df[feature]):
-            print(colored(f"ERROR: Feature '{feature}' must be categorical for a numeric target. Ignored for ANOVA.", "red"))
-            return False
-    return True
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy import stats
+from dash import html
+from termcolor import colored
 
 def clean_data(df, feature, target):
-    """ Remove NaN values from the dataset. """
-    df_cleaned = df[[target, feature]].dropna()
-    nan_count = df.shape[0] - df_cleaned.shape[0]
-    print(f" Removed {nan_count} NaN values for feature {colored(feature, 'yellow')}.")
-    return df_cleaned
+    """Cleans data by removing rows with NaN values for the feature and target."""
+    return df[[feature, target]].dropna()
 
-def test_normality(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-    """Perform normality tests depending on the target type."""
-    normality_failed = False
+def check_outliers_z_score(df, feature):
+    """Detects outliers in the specified feature using the Z-score method."""
+    z_scores = np.abs(stats.zscore(df[feature]))
+    return np.where(z_scores > 3)
+
+def check_outliers_iqr(df, feature):
+    """Detects outliers in the specified feature using the IQR method."""
+    Q1 = df[feature].quantile(0.25)
+    Q3 = df[feature].quantile(0.75)
+    IQR = Q3 - Q1
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    outliers = df[(df[feature] < lower_bound) | (df[feature] > upper_bound)]
+    return outliers, lower_bound, upper_bound
+
+def check_outliers(df, feature):
+    """Detects outliers in the specified feature using the IQR method."""
+    outliers, lower_bound, upper_bound = check_outliers_iqr(df, feature)
+    
+    if not outliers.empty:
+        return (
+            f"❌ Outliers detected in {feature}: "
+            f"lower_bound = {lower_bound:.4e}  |  upper_bound = {upper_bound:.4e}\n{outliers}"
+        )
+    else:
+        return f"✅ No outliers detected in {feature}."
+
+def plot_normality(groups, feature, p_values):
+    """Creates QQ plots and histograms for each group for normality visualization, returning the figure for Dash."""
+    num_groups = len(groups)
+    fig = make_subplots(rows=2, cols=num_groups, subplot_titles=[f'Group {i + 1}' for i in range(num_groups)]
+                        +[f"p-value: {p_value:.4e}" for i, (group, p_value) in enumerate(zip(groups, p_values))])
+
+    plot_color = 'blue'
+
+    for i, (group, p_value) in enumerate(zip(groups, p_values)):
+        # QQ Plot Data
+        n = len(group)
+        qq_y = np.sort(group)
+        qq_x = stats.norm.ppf(np.linspace(0, 1, n, endpoint=False))
+        
+        print(qq_x.min(), qq_x.max())
+        # Create QQ scatter plot
+        scatter_fig = px.scatter(x=qq_x, y=qq_y, title=f'QQ Plot for Group {i + 1}', 
+                                 labels={'x': 'Theoretical Quantiles', 'y': 'Sample Quantiles'})
+        scatter_fig.add_trace(go.Scatter(x=[qq_x.min(), qq_x.max()], y=[qq_x.min(), qq_x.max()], 
+                                          mode='lines', line=dict(color='red', width=2),
+                                          name='y=x'))
+
+        for trace in scatter_fig.data:
+            fig.add_trace(trace, row=1, col=i + 1)
+
+        # Create Histogram Data
+        hist_fig = px.histogram(x=group, histnorm='probability density', 
+                                 title=f'Histogram for Group {i + 1}', 
+                                 labels={'x': feature, 'y': 'Density'})
+        
+        for trace in hist_fig.data:
+            fig.add_trace(trace, row=2, col=i + 1)
+
+    
+    # Update layout
+    fig.update_layout(title_text=f'Normality Plots for {feature}', height=600)
+
+    # Hide legend for all traces
+    # fig.for_each_trace(lambda t: t.update(showlegend=False))
+    
+    fig.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )
+
+    return fig
+
+
+# def plot_normality(groups, feature, p_values):
+#     """Creates QQ plots and histograms for each group for normality visualization, saving the figure as an image with a dark theme."""
+    
+#     # Set Seaborn's style to dark
+#     sns.set_style("darkgrid", {"axes.facecolor": "#2E2E2E", "figure.facecolor": "#2E2E2E"})
+    
+#     num_groups = len(groups)
+    
+#     fig, axes = plt.subplots(nrows=2, ncols=num_groups, figsize=(14, 7))
+    
+#     for i, (group, p_value) in enumerate(zip(groups, p_values)):
+#         # QQ Plot
+#         stats.probplot(group, dist="norm", plot=axes[0][i])
+#         axes[0][i].set_title(f'QQ Plot for {feature} (Group {i + 1})', color='white')
+#         axes[0][i].text(0.2, 0.90, f'p-value: {p_value:.4e}', fontsize=12, 
+#                         ha='center', va='center', color='white')  # Moved closer to the top
+
+#         # Histogram with density plot
+#         sns.histplot(group, kde=True, ax=axes[1][i], stat='density', color="lightblue")
+#         axes[1][i].set_title(f'Histogram & Density for {feature} (Group {i + 1})', color='white')
+
+#         # Set axis labels color
+#         axes[0][i].tick_params(axis='x', colors='white')
+#         axes[0][i].tick_params(axis='y', colors='white')
+#         axes[1][i].tick_params(axis='x', colors='white')
+#         axes[1][i].tick_params(axis='y', colors='white')
+
+#         # Change label colors
+#         axes[0][i].set_xlabel('Theoretical Quantiles', color='white')
+#         axes[0][i].set_ylabel('Sample Quantiles', color='white')
+#         axes[1][i].set_xlabel(feature, color='white')
+#         axes[1][i].set_ylabel('Density', color='white')
+
+#     # Adjust spacing: reduce space between top and bottom plots
+#     plt.subplots_adjust(hspace=0.3)  # Adjust vertical space between rows
+
+#     plt.tight_layout(pad=2.0)  # General tight layout adjustments
+    
+#     # Save the figure to a BytesIO object
+#     buf = io.BytesIO()
+#     plt.savefig(buf, format='png', facecolor=fig.get_facecolor())
+#     buf.seek(0)
+    
+#     # Encode it as base64 for Dash
+#     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+#     plt.close(fig)  # Close the figure after saving
+#     return f"data:image/png;base64,{image_base64}"
+
+
+
+def test_normality(df_cleaned, feature, target):
+    """Tests for normality using the Shapiro-Wilk test on the numeric target split by the categorical feature."""
+    groups = [group[target].values for name, group in df_cleaned.groupby(feature)]
+    groups = [g for g in groups if len(g) >= 3]
+    
+    if len(groups) < 2:
+        return "❌ Not enough groups for normality test."
+
     p_values = []
+    for group in groups:
+        _, p_value = stats.shapiro(group)
+        p_values.append(p_value)
 
-    if is_binary_target or not is_target_numeric:
-        groups = [df_cleaned[df_cleaned[target] == val][feature] for val in df_cleaned[target].unique()]
-        for i, group in enumerate(groups):
-            if len(group) > 3:
-                stat, p_value = stats.shapiro(group)
-                p_values.append((df_cleaned[target].unique()[i], p_value))
-                plot_normal_distribution(df_cleaned, feature)
-                if p_value < 0.05:
-                    normality_failed = True
+    fig = plot_normality(groups, feature, p_values)
+
+    overall_p_value = min(p_values)
+    if overall_p_value > 0.05:
+        return "✅ Normality assumption is satisfied.", fig
     else:
-        stat, p_value = stats.shapiro(df_cleaned[target])
-        p_values.append(("target", p_value))
-        plot_normal_distribution(df_cleaned, target)
-        if p_value < 0.05:
-            normality_failed = True
+        return f"❌ Normality assumption is not satisfied, overall_p_value = {overall_p_value:.4e} < 0.05", fig
+
+def test_variance_homogeneity(df_cleaned, feature, target):
+    """Tests for homogeneity of variances using Levene’s test."""
+    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]
     
-    if normality_failed:
-        for group, p_val in p_values:
-            print(colored(f"WARNING: Normality test failed for {group} (p-value = {p_val:.4f}). Switching to Kruskal-Wallis test.", "magenta"))
-    
-    return not normality_failed
-
-def plot_normal_distribution(df, feature):
-    """Plot a histogram of the data along with the fitted normal distribution curve."""
-    
-    data = df[feature].dropna()
-    
-    # Compute mean and standard deviation
-    mu, sigma = np.mean(data), np.std(data)
-    
-    # Create a range of values for the normal distribution
-    x = np.linspace(min(data), max(data), 100)
-    normal_curve = stats.norm.pdf(x, mu, sigma)
-
-    # Plot the histogram and fitted normal curve
-    plt.figure(figsize=(8, 5))
-    sns.histplot(data, bins=30, kde=True, color='blue', stat='density', label="Actual data")
-    plt.plot(x, normal_curve, 'r-', lw=2, label="Fitted normal distribution")
-    
-    plt.title(f"Comparison of '{feature}' distribution with a normal law")
-    plt.xlabel(feature)
-    plt.ylabel("Density")
-    plt.legend()
-    plt.show()
-
-    print(f"Mean of '{feature}': {mu:.4f}")
-    print(f"Standard deviation of '{feature}': {sigma:.4f}")
-    print("Check if the histogram aligns well with the normal distribution curve.")
-
-
-def check_outliers(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-    """ Detect outliers using Tukey's IQR method. """
-    col = feature if is_binary_target or not is_target_numeric else target
-    q1, q3 = df_cleaned[col].quantile([0.25, 0.75])
-    iqr = q3 - q1
-    lower_bound, upper_bound = q1 - 1.5 * iqr, q3 + 1.5 * iqr
-
-    if df_cleaned[col].lt(lower_bound).any() or df_cleaned[col].gt(upper_bound).any():
-        print(colored(f"ERROR: Outliers detected in '{col}'.", "red"))
-        return False
-    return True
-
-def test_variance_homogeneity(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-    """ Check variance homogeneity using Levene’s test. """
-    if is_binary_target or not is_target_numeric:
-        groups = [df_cleaned[df_cleaned[target] == val][feature] for val in df_cleaned[target].unique()]
-    else:
-        groups = [df_cleaned[df_cleaned[feature] == cat][target] for cat in df_cleaned[feature].unique()]
-
     stat, p_value = stats.levene(*groups)
+    
+    if p_value > 0.05:
+        return "✅ Homogeneity of variances assumption is satisfied."
+    else:
+        return f"❌ Homogeneity of variances assumption is not satisfied, p-value = {p_value:.4e} < 0.05"
+
+def check_class_balance(df_cleaned, feature, target):
+    """Checks balance between classes in the target variable."""
+    class_counts = df_cleaned[feature].value_counts()
+    min_count = class_counts.min()
+    total_count = class_counts.sum()
+    
+    balance_ratio = min_count / total_count
+
+    if balance_ratio < 0.1:
+        return f"❌ Class balance is not acceptable, balance_ratio = {balance_ratio:.4e} < 0.1"
+    return "✅ Class balance is acceptable."
+
+def perform_anova(df_cleaned, feature, target):
+    """Performs ANOVA test."""
+    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]
+    
+    f_stat, p_value = stats.f_oneway(*groups)
+
     if p_value < 0.05:
-        print(colored(f"ERROR: Variance homogeneity is not satisfied for feature '{feature}'.", "red"))
-        return False
-    return True
-
-def check_class_balance(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-    """ Ensure class sizes are sufficient. """
-    if is_binary_target or not is_target_numeric:
-        if df_cleaned[target].value_counts().min() < 5:
-            print(colored(f"ERROR: Insufficient class sizes for feature '{feature}'.", "red"))
-            return False
+        return f"⚖️ ANOVA Test Result: F-statistic = {f_stat:.4e}, p-value = {p_value:.4e}. ✅ Significance found between groups."
     else:
-        if df_cleaned[feature].value_counts().min() < 5:
-            print(colored(f"ERROR: Insufficient class sizes for target '{target}'.", "red"))
-            return False
-    return True
+        return f"⚖️ ANOVA Test Result: F-statistic = {f_stat:.4e}, p-value = {p_value:.4e}. ✅ No significant difference found between groups."
 
-def perform_anova(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-    """ Run the ANOVA test if all conditions are met. """
-    formula = f'{feature} ~ C({target})' if is_binary_target or not is_target_numeric else f'{target} ~ C({feature})'
-    model = ols(formula, data=df_cleaned).fit()
-    anova_table = sm.stats.anova_lm(model, typ=2)
-    print(colored(f"ANOVA result for feature '{feature}':\n", "green"), anova_table)
+def perform_mann_whitney(df, numerical_feature, ordinal_feature):
+    """Performs the Mann-Whitney U Test between a numerical feature and a binary ordinal feature."""
+    groups = [df[df[ordinal_feature] == category][numerical_feature].dropna() for category in df[ordinal_feature].unique()]
 
+    if len(groups) != 2:
+        return "❌ Mann-Whitney U Test requires exactly two groups."
+    
+    stat, p_value = stats.mannwhitneyu(groups[0], groups[1], alternative='two-sided')
 
-def perform_kruskal_wallis(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-    """Run the Kruskal-Wallis test when normality is not satisfied."""
-    if is_binary_target or not is_target_numeric:
-        groups = [df_cleaned[df_cleaned[target] == val][feature] for val in df_cleaned[target].unique()]
+    if p_value < 0.05:
+        return f"⚠️ Mann-Whitney U Test: ✅ Significant difference found between the groups (p-value = {p_value:.4e})."
     else:
-        groups = [df_cleaned[df_cleaned[feature] == cat][target] for cat in df_cleaned[feature].unique()]
+        return f"⚠️ Mann-Whitney U Test: ✅ No significant difference found between the groups (p-value = {p_value:.4e})."
 
+def perform_kruskal_wallis(df_cleaned, feature, target):
+    """Performs Kruskal-Wallis test."""
+    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]    
     stat, p_value = stats.kruskal(*groups)
-    print(colored(f"⚠️ Kruskal-Wallis test result for feature '{feature}':\nStatistic = {stat:.4f}, p-value = {p_value:.4f}", "cyan"))
 
+    if len(groups) < 2:
+        return "❌ Not enough groups to perform Kruskal-Wallis test."
 
-def anova_target(df, target):
+    if p_value < 0.05:
+        return f"⚠️ Kruskal-Wallis test: ✅ Significant differences found between groups (p-value = {p_value:.4e})."
+    else:
+        return f"⚠️ Kruskal-Wallis test: ❌ No significant differences found (p-value = {p_value:.4e})."
+
+def perform_welch_anova(df_cleaned, feature, target):
+    """Performs Welch's ANOVA when homogeneity of variances is not satisfied."""
+    groups = [df_cleaned[df_cleaned[feature] == cat][target].dropna().values for cat in df_cleaned[feature].unique() if len(df_cleaned[df_cleaned[feature] == cat]) > 0]
+    
+    if len(groups) < 2:
+        return "❌ Not enough groups to perform Welch's ANOVA."
+
+    f_stat, p_value = stats.f_oneway(*groups)
+
+    if p_value < 0.05:
+        return f"⚖️ Welch's ANOVA Test Result: ✅ Significance found between groups (p-value = {p_value:.4e})."
+    else:
+        return f"⚖️ Welch's ANOVA Test Result: ✅ No significant difference found between groups (p-value = {p_value:.4e})."
+
+def bootstrap_test(df_cleaned, feature, target, n_iterations=1000):
+    """Perform bootstrapping to compare group means."""
+    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]
+    means = np.array([np.mean(group) for group in groups])
+    observed_diff = means.max() - means.min()
+
+    bootstrap_diffs = []
+    
+    for _ in range(n_iterations):
+        bootstrapped_samples = [np.random.choice(group, size=len(group), replace=True) for group in groups]
+        boot_means = np.array([np.mean(sample) for sample in bootstrapped_samples])
+        bootstrap_diffs.append(boot_means.max() - boot_means.min())
+    
+    p_value = np.mean(np.array(bootstrap_diffs) >= observed_diff)
+    return f"🔄 Bootstrapping Test Result: Observed difference = {observed_diff}, p-value = {p_value:.4e}"
+
+def anova_target(df, target, feature):
     """Main function to test ANOVA conditions and perform either ANOVA or Kruskal-Wallis test."""
     
-    features = df.columns.difference([target])
+    messages = []  # To collect messages
+    messages.append(f"\n🔍 Checking conditions for ANOVA between {target} and {feature}")
+
+    # Step 1: Clean the data
+    df_cleaned = clean_data(df, feature, target)
+
+    # Count number of unique groups
+    num_groups = df_cleaned[feature].nunique()
+        
+    if num_groups == 2:
+        result = perform_mann_whitney(df_cleaned, target, feature)
+        messages.append(result)
+    elif num_groups < 2:
+        messages.append(f"❌ Not enough groups for analysis based on feature '{feature}'.")
+        return messages
+
+    # Check for outliers in the target
+    outlier_check = check_outliers(df_cleaned, target)
+    messages.append(outlier_check)  # Collect outlier check message
+    # if "❌" in outlier_check:
+        # kruskal_message = perform_kruskal_wallis(df_cleaned, feature, target)
+        # messages.append(kruskal_message)
+        # return messages
+
+    # Step 2: Check assumptions for ANOVA
+    normality_message, normality_fig = test_normality(df_cleaned, feature, target)
+
+    messages.append(normality_message)
+    if "❌" in normality_message:
+        kruskal_message = perform_kruskal_wallis(df_cleaned, feature, target)
+        messages.append(kruskal_message)
+        return messages, normality_fig
+
+    variance_message = test_variance_homogeneity(df_cleaned, feature, target)
+    messages.append(variance_message)
+    if "❌" in variance_message:
+        welch_message = perform_welch_anova(df_cleaned, feature, target)
+        messages.append(welch_message)
+        return messages, normality_fig
+
+    class_balance_message = check_class_balance(df_cleaned, feature, target)
+    messages.append(class_balance_message)
+    if "❌" in class_balance_message:
+        bootstrap_message = bootstrap_test(df_cleaned, feature, target)
+        messages.append(bootstrap_message)
+        return messages, normality_fig
     
-    # Determine if target is numeric or categorical
-    is_target_numeric = pd.api.types.is_numeric_dtype(df[target])
-    target_unique_values = df[target].unique()
-    is_binary_target = is_target_numeric and len(target_unique_values) <= 2 and all(isinstance(val, (int, np.integer)) for val in target_unique_values)
+    # Step 3: Perform ANOVA
+    anova_message = perform_anova(df_cleaned, feature, target)
+    messages.append(anova_message)
 
-    print(f"Target {colored(target, 'green')} is {'binary categorical' if is_binary_target else 'numerical' if is_target_numeric else 'categorical'}. Unique values: {target_unique_values}")
+    print(target, feature)
 
-    for feature in features:
-        print(f"\n🔍 Checking conditions for ANOVA between {colored(target, 'green')} and {colored(feature, 'yellow')}")
-
-        # Step 1: Validate feature type
-        if not check_feature_type(df, feature, target, is_target_numeric, is_binary_target):
-            continue
-
-        # Step 2: Clean the data
-        df_cleaned = clean_data(df, feature, target)
-
-        # Step 3: Check assumptions for ANOVA
-        normality_passed = test_normality(df_cleaned, feature, target, is_target_numeric, is_binary_target)
-        if not normality_passed:
-            # print(colored(f"⚠️ Kruskal-Wallis test result for feature '{feature}'", "cyan"))
-            # perform_kruskal_wallis(df_cleaned, feature, target, is_target_numeric, is_binary_target)
-            continue  # Skip ANOVA if Kruskal-Wallis was performed
-
-        if not check_outliers(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-            continue
-        if not test_variance_homogeneity(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-            continue
-        if not check_class_balance(df_cleaned, feature, target, is_target_numeric, is_binary_target):
-            continue
-
-        # Step 4: Perform ANOVA
-        perform_anova(df_cleaned, feature, target, is_target_numeric, is_binary_target)
+    return messages, normality_fig
