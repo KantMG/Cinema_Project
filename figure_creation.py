@@ -42,7 +42,6 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 
 import Function_dataframe as fd
-import Function_errors as fe
 import data_plot_preparation as dpp
 import figure_layout as fl
 import Machine_learning_functions as mlf

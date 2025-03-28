@@ -27,8 +27,6 @@ matplotlib.use('Agg')  # Use a non-interactive backend
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
-
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -174,8 +172,8 @@ def test_normality(df_cleaned, feature, target):
     groups = [group[target].values for name, group in df_cleaned.groupby(feature)]
     groups = [g for g in groups if len(g) >= 3]
     
-    if len(groups) < 2:
-        return "❌ Not enough groups for normality test."
+    # if len(groups) < 2:
+    #     return "❌ Not enough groups for normality test."
 
     p_values = []
     for group in groups:
@@ -213,6 +211,33 @@ def check_class_balance(df_cleaned, feature, target):
         return f"❌ Class balance is not acceptable, balance_ratio = {balance_ratio:.4e} < 0.1"
     return "✅ Class balance is acceptable."
 
+def check_expected_frequencies(contingency_table):
+    """Check if expected frequencies are sufficient for Chi-squared test."""
+    expected = contingency_table.values.sum() * contingency_table.divide(contingency_table.sum(axis=1), axis=0).fillna(0)
+    
+    if np.any(expected < 5):
+        return "❌ Expected frequencies are not adequate for Chi-squared test."
+    else:
+        return "✅ Expected frequencies are adequate for Chi-squared test."
+
+def perform_t_test(df_cleaned, feature, target):
+    """Performs independent t-test."""
+    # Check if the feature has exactly two unique categories
+    if df_cleaned[feature].nunique() != 2:
+        return "🚫 T-test requires exactly two groups for comparison."
+    
+    # Split the data into two groups based on the feature
+    group1 = df_cleaned[df_cleaned[feature] == df_cleaned[feature].unique()[0]][target].values
+    group2 = df_cleaned[df_cleaned[feature] == df_cleaned[feature].unique()[1]][target].values
+    
+    # Perform the t-test
+    t_stat, p_value = stats.ttest_ind(group1, group2, equal_var=True)  # Change equal_var=False for Welch's t-test
+
+    if p_value < 0.05:
+        return f"⚖️ T-test Result: t-statistic = {t_stat:.4e}, p-value = {p_value:.4e}. ✅ Significance found between groups."
+    else:
+        return f"⚖️ T-test Result: t-statistic = {t_stat:.4e}, p-value = {p_value:.4e}. ✅ No significant difference found between groups."
+
 def perform_anova(df_cleaned, feature, target):
     """Performs ANOVA test."""
     groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]
@@ -223,6 +248,22 @@ def perform_anova(df_cleaned, feature, target):
         return f"⚖️ ANOVA Test Result: F-statistic = {f_stat:.4e}, p-value = {p_value:.4e}. ✅ Significance found between groups."
     else:
         return f"⚖️ ANOVA Test Result: F-statistic = {f_stat:.4e}, p-value = {p_value:.4e}. ✅ No significant difference found between groups."
+
+def perform_chi_squared_test(df_cleaned, feature, target):
+    """Perform Chi-squared test based on the cleaned DataFrame."""
+    contingency_table = pd.crosstab(df_cleaned[feature], df_cleaned[target])
+    
+    expected_freq_message = check_expected_frequencies(contingency_table)
+    
+    if "❌" in expected_freq_message:
+        return expected_freq_message
+    
+    chi2_stat, p_value, dof, expected = stats.chi2_contingency(contingency_table)
+    
+    if p_value < 0.05:
+        return f"🔢 Chi-squared Test Result: Chi-squared statistic = {chi2_stat:.4f}, p-value = {p_value:.4e}. ✅ Significance found."
+    else:
+        return f"🔢 Chi-squared Test Result: Chi-squared statistic = {chi2_stat:.4f}, p-value = {p_value:.4e}. ✅ No significant difference found."
 
 def perform_mann_whitney(df, numerical_feature, ordinal_feature):
     """Performs the Mann-Whitney U Test between a numerical feature and a binary ordinal feature."""
@@ -281,60 +322,77 @@ def bootstrap_test(df_cleaned, feature, target, n_iterations=1000):
     p_value = np.mean(np.array(bootstrap_diffs) >= observed_diff)
     return f"🔄 Bootstrapping Test Result: Observed difference = {observed_diff}, p-value = {p_value:.4e}"
 
-def anova_target(df, target, feature):
-    """Main function to test ANOVA conditions and perform either ANOVA or Kruskal-Wallis test."""
+def Hypothesis_Testing_Methods(df, target, feature, target_type, feature_type):
+    """Main function to make an Hypothesis Testing Methods (t-test / ANOVA / chi2)."""
     
-    messages = []  # To collect messages
-    messages.append(f"\n🔍 Checking conditions for ANOVA between {target} and {feature}")
-
     # Step 1: Clean the data
     df_cleaned = clean_data(df, feature, target)
 
     # Count number of unique groups
     num_groups = df_cleaned[feature].nunique()
-        
-    if num_groups == 2:
-        result = perform_mann_whitney(df_cleaned, target, feature)
-        messages.append(result)
-    elif num_groups < 2:
+
+    print("teses")
+    if target_type == "Numerical" and num_groups==2:
+        Hypothesis_test = "t-test"
+    elif target_type == "Numerical" and num_groups>2:
+        Hypothesis_test = "ANOVA"
+    elif (target_type == "Ordinal" or target_type == "Nominal") and (feature_type == "Ordinal" or feature_type == "Nominal"):
+        Hypothesis_test = "chi2"
+    else:
         messages.append(f"❌ Not enough groups for analysis based on feature '{feature}'.")
-        return messages
+        return messages, None
+        
+    messages = []  # To collect messages
+    messages.append(f"\n🔍 Checking conditions for {Hypothesis_test} between {target} and {feature}")
 
-    # Check for outliers in the target
-    outlier_check = check_outliers(df_cleaned, target)
-    messages.append(outlier_check)  # Collect outlier check message
-    # if "❌" in outlier_check:
-        # kruskal_message = perform_kruskal_wallis(df_cleaned, feature, target)
-        # messages.append(kruskal_message)
-        # return messages
-
-    # Step 2: Check assumptions for ANOVA
-    normality_message, normality_fig = test_normality(df_cleaned, feature, target)
-
-    messages.append(normality_message)
-    if "❌" in normality_message:
-        kruskal_message = perform_kruskal_wallis(df_cleaned, feature, target)
-        messages.append(kruskal_message)
-        return messages, normality_fig
-
-    variance_message = test_variance_homogeneity(df_cleaned, feature, target)
-    messages.append(variance_message)
-    if "❌" in variance_message:
-        welch_message = perform_welch_anova(df_cleaned, feature, target)
-        messages.append(welch_message)
-        return messages, normality_fig
-
-    class_balance_message = check_class_balance(df_cleaned, feature, target)
-    messages.append(class_balance_message)
-    if "❌" in class_balance_message:
-        bootstrap_message = bootstrap_test(df_cleaned, feature, target)
-        messages.append(bootstrap_message)
-        return messages, normality_fig
+    if target_type != "Nominal":
+        # Check for outliers in the target
+        outlier_check = check_outliers(df_cleaned, target)
+        messages.append(outlier_check)  # Collect outlier check message
     
-    # Step 3: Perform ANOVA
-    anova_message = perform_anova(df_cleaned, feature, target)
-    messages.append(anova_message)
+    print("Hypothesis_test : ", Hypothesis_test)
+    
+    if Hypothesis_test == "t-test" or Hypothesis_test == "ANOVA":
 
-    print(target, feature)
+        # Step 2: Check assumptions
+        normality_message, normality_fig = test_normality(df_cleaned, feature, target)
+        messages.append(normality_message)
+        if "❌" in normality_message:
+            if Hypothesis_test == "t-test":
+                mann_whitney_message = perform_mann_whitney(df_cleaned, target, feature)
+                messages.append(mann_whitney_message)
+            else:
+                kruskal_message = perform_kruskal_wallis(df_cleaned, feature, target)
+                messages.append(kruskal_message)
+            return messages, normality_fig
+    
+        variance_message = test_variance_homogeneity(df_cleaned, feature, target)
+        messages.append(variance_message)
+        if "❌" in variance_message:               
+            welch_message = perform_welch_anova(df_cleaned, feature, target)
+            messages.append(welch_message)
+            return messages, normality_fig
+    
+        class_balance_message = check_class_balance(df_cleaned, feature, target)
+        messages.append(class_balance_message)
+        if "❌" in class_balance_message:
+            bootstrap_message = bootstrap_test(df_cleaned, feature, target)
+            messages.append(bootstrap_message)
+            return messages, normality_fig
+        
+        # Step 3: Perform test
+        if Hypothesis_test == "t-test":
+            t_test_message = perform_t_test(df_cleaned, feature, target)
+            messages.append(t_test_message)        
+        if Hypothesis_test == "t-test":
+            anova_message = perform_anova(df_cleaned, feature, target)
+            messages.append(anova_message)
+
+    elif Hypothesis_test == "chi2":
+        # Step 2: Check expectations and perform Chi-squared test
+        chi_squared_message = perform_chi_squared_test(df_cleaned, feature, target)
+        messages.append(chi_squared_message)
+        normality_fig = None
+
 
     return messages, normality_fig

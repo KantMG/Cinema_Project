@@ -142,36 +142,6 @@ def web_interface_style():
                                          # 'borderRight': '2px solid white',
                                      }
                                      ),
-                            # dcc.Tab(id='tabs-3', label='🔍 Data table', value='tab-3', 
-                            #          style={
-                            #              'backgroundColor': '#DAA520',
-                            #              'color': 'black',
-                            #              'border': 'none',
-                            #              'borderRadius': '10px 10px 10px 10px',  
-                            #              'width': '200px',                    # Width relative to container
-                            #              'height': '100px',                  # Adjusted height'
-                            #              'display': 'flex',
-                            #              'alignItems': 'center',            # Center vertically
-                            #              'justifyContent': 'center',        # Center horizontally
-                            #              'font-size': '20px',   #Text size */
-                            #              'font-weight': 'bold',   #Text size */
-                            #             },
-                            #          selected_style={
-                            #              'backgroundColor': '#228B22',
-                            #              'color': 'black',
-                            #              'border': 'none',
-                            #              'borderRadius': '10px 10px 10px 10px',  
-                            #              'width': '200px',                    # Width relative to container
-                            #              'height': '100px',                  # Adjusted height
-                            #              'display': 'flex',
-                            #              'alignItems': 'center',            # Center vertically
-                            #              'justifyContent': 'center',        # Center horizontally
-                            #              'font-size': '20px',   #Text size */
-                            #              'font-weight': 'bold',   #Text size */
-                            #              # 'borderBottom': '2px solid white',
-                            #              # 'borderRight': '2px solid white',
-                            #          }
-                            #          ),
                             ])
                 ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'flex-start', 'height': '50px', 'margin': '30px'}  # Adjust according to height
         

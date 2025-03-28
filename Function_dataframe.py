@@ -24,8 +24,6 @@ import Levenshtein
 import imageio
 import os
 
-import Function_errors as fe
-
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
@@ -211,7 +209,6 @@ def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted
     """    
         
     # # remove from the dataframe the index which cannot be eval
-    # y = Pivot_table[Pivot_table.index.to_series().apply(lambda x: isinstance(fe.myeval(x), int))] 
     y = Pivot_table
     
     # sort the data in function of column Para_sorted

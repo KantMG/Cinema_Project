@@ -41,7 +41,6 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 
 import Function_dataframe as fd
-import Function_errors as fe
 import data_plot_preparation as dpp
 import figure_layout as fl
 
@@ -120,33 +119,6 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
             )
             
         )
-        # if y_column is not None:
-        #     fig_json_serializable.update_layout(
-        #         updatemenus=[
-        #             dict(
-        #                 buttons=list([
-        #                     dict(
-        #                         args=[{"marker.colorscale": "Viridis", "coloraxis.colorbar.title": y_column}],
-        #                         label="Linear Scale",
-        #                         method="restyle"
-        #                     ),
-        #                     dict(
-        #                         args=[{"marker.colorscale": "Viridis", "marker.colors": data_for_plot[y_column].apply(lambda x: max(x, 1e-10)), "coloraxis.colorbar.title": y_column}],
-        #                         label="Log Scale",
-        #                         method="restyle"
-        #                     )
-        #                 ]),
-        #                 direction="down",
-        #                 pad={"r": 10, "t": 10},
-        #                 showactive=True,
-        #                 x=0.1,           # position of the dropdown
-        #                 xanchor="left",
-        #                 y=1.1,           # position of the dropdown
-        #                 yanchor="top"
-        #             ),
-        #         ],
-        #         coloraxis_colorbar=dict(title=y_column)  # Add the color bar title
-        #     )
         
     elif x_column is not None and d_column =="3D":
         fig_json_serializable.update_layout(

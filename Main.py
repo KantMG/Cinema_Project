@@ -51,7 +51,6 @@ import correlation_feature as cf
 
 import open_dataframe as od
 import Function_dataframe as fd
-import Function_errors as fe
 
 """#=============================================================================
    #=============================================================================
@@ -87,14 +86,14 @@ df1 = od.read_and_rename(
 
 
 
-from sklearn.datasets import load_diabetes, load_iris
-# Load the Iris dataset
-iris = load_iris()
-df1 = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-# Add the target variable as a column to the DataFrame
-df1['Species'] = iris.target
-# Map numeric target labels to species names for clarity
-df1['Species'] = df1['Species'].map({0: 'setosa', 1: 'versicolor', 2: 'virginica'})
+# from sklearn.datasets import load_diabetes, load_iris
+# # Load the Iris dataset
+# iris = load_iris()
+# df1 = pd.DataFrame(data=iris.data, columns=iris.feature_names)
+# # Add the target variable as a column to the DataFrame
+# df1['Species'] = iris.target
+# # Map numeric target labels to species names for clarity
+# df1['Species'] = df1['Species'].map({0: 'setosa', 1: 'versicolor', 2: 'virginica'})
 
 
 
@@ -156,11 +155,30 @@ df1_obj_description = df1_obj_description.reset_index()
 
 correlation_matrix = df1.corr(numeric_only=True)
 
+object_cols = df1.select_dtypes(include=['object', 'int64']).columns
+
+
+if len(object_cols) > 1:
+    List_crosstab, crosstab_titles, column_pairs = [], [], []
+    
+    # Create crosstabs for all pairs of object columns and store column pairs
+    for i in range(len(object_cols)):
+        for j in range(i + 1, len(object_cols)):
+            col1 = object_cols[i]
+            col2 = object_cols[j]
+            column_pairs.append((col1, col2))  # Store the column pairs
+            crosstab_titles.append(f"{col1} cross {col2}")
+
+    print(List_crosstab)
+    crosstab_options = [{'label': title, 'value': index} for index, title in enumerate(crosstab_titles)]
+
+
+
+
 
 info = df1.info()
 
 print(info)
-
 
 memory_info = df1.memory_usage(deep=True)  # Get memory usage of each column
 total_memory_kb = memory_info.sum() / 1024  # Convert bytes to KB
@@ -283,6 +301,26 @@ def tab1_content():
     data_table_df1_obj = tds.dropdown_table(df1_obj_description, 'table-df1', tab,
                                      dark_dropdown_style, uniform_style, False)[1]
     
+
+        
+    # Create the heatmap using Plotly Express
+    fig_correlation_heatmap = px.imshow(
+        correlation_matrix,
+        color_continuous_scale='RdBu',  # Color scale similar to Seaborn
+        labels=dict(x='Columns', y='Columns', color='Correlation'),
+        title='Correlation Matrix Heatmap',
+        zmin=-1,  # Set minimum value for the colorbar
+        zmax=1    # Set maximum value for the colorbar
+    )    
+    fig_correlation_heatmap.update_traces(text=correlation_matrix.round(2).values, texttemplate="%{text}", textfont={"size": 12})
+    fig_correlation_heatmap.update_layout(
+        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+        paper_bgcolor='#101820',  # Dark gray for the paper
+        font=dict(color='white'),  # White text color
+        # title = figname,
+        # title_font=dict(size=20, color='white')
+        )
+
     
     return html.Div([
         html.Div([
@@ -318,7 +356,6 @@ def tab1_content():
             ]
         ),
 
-
         html.Div([
             html.P("Numeric Summary:", style={"color": "#FFD700"}, className="text-light"),
             # html.P(Text5),
@@ -345,18 +382,97 @@ def tab1_content():
             html.H2("Feature/Target correlation:", style={"color": "#FFD700"}, className="text-light"),
         ]),
 
+
+        html.Div(
+            style={'display': 'flex', 'alignItems': 'flex-start'},  # Align at the top if needed
+            children=[
+                html.Div(
+                    [dcc.Graph(id='correlation-heatmap-df2', style={'width': '100%', 'height': '700px'},
+                               figure=fig_correlation_heatmap)],
+                    style={'flex': '1', 'margin-right': '5px'}  # Use flexbox to take full width and small margin
+                ),
+                html.Div(
+                    # Dropdown for selecting crosstab figures
+                    [
+                        dcc.Dropdown(
+                            id='crosstab-dropdown',
+                            options=crosstab_options,
+                            placeholder='Select a Crosstab Heatmap',
+                            style={'width': '100%'}  # Full width in the dropdown container
+                        ),
+                        html.Div(
+                            id='selected-crosstab-heatmap',
+                            style={'height': '700px', 'overflowY': 'scroll'}
+                        )
+                    ],
+                    style={'flex': '1', 'margin-left': '5px'}  # Use flex for equal width and consistent margin
+                ) if len(object_cols) > 1 else html.Div([
+                    html.P("One object column is not enough for crosstab visualization.", style={"color": "#FFD700"}, className="text-light"),
+                ]),
+            ]
+        ),
+
+
         html.Div([
+            html.H3("Hypothesis Testing Methods:", style={"color": "#FFD700"}, className="text-light"),
+            # html.P(Text5),
+        ]),
+                    
+                    
+        html.Div([
+            # Target Selection Section
             html.Div([
-                html.H3("Choose the target:", className="text-light"),
-            ], style={'display': 'inline-block', 'verticalAlign': 'middle', 'marginRight': '10px'}),  # Inline header
-            dcc.Dropdown(
-                id='target-value',
-                options=[{'label': val, 'value': val} for val in df1.columns],
-                placeholder='Target',
-                style={**dark_dropdown_style, **uniform_style, 'display': 'inline-block', 'width': '160px'}  # Adjust width as necessary
-            )
-              # Inline dynamic content
-        ], style={'display': 'flex', 'alignItems': 'center'}),
+                html.Div([
+                    html.P("Dependent variable:", className="text-light"),
+                ], style={'margin-right': '10px'}),  # Inline header
+        
+                dcc.Dropdown(
+                    id='target-value',
+                    options=[{'label': val, 'value': val} for val in df1.columns],
+                    placeholder='Select variable',
+                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                ),
+        
+                html.Div([
+                    html.P("Select the variable type:", className="text-light"),
+                ], style={'margin-left': '20px', 'margin-right': '10px'}),  # Inline header
+        
+                dcc.Dropdown(
+                    id='target-type',
+                    options=[{'label': val, 'value': val} for val in ["Numerical", "Ordinal", "Nominal"]],
+                    placeholder='Select Type',
+                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                )
+        
+            ], style={'display': 'flex', 'alignItems': 'center', 'margin-bottom': '20px'}),  # Added margin-bottom for section spacing
+        
+            # Feature Selection Section
+            html.Div([
+                html.Div([
+                    html.P("Independent variable:", className="text-light"),
+                ], style={'margin-right': '10px'}),  # Inline header
+        
+                dcc.Dropdown(
+                    id='feature-value',
+                    options=[{'label': val, 'value': val} for val in df1.columns],
+                    placeholder='Select variable',
+                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                ),
+        
+                html.Div([
+                    html.P("Select the variable type:", className="text-light"),
+                ], style={'margin-left': '20px', 'margin-right': '10px'}),  # Inline header
+        
+                dcc.Dropdown(
+                    id='feature-type',
+                    options=[{'label': val, 'value': val} for val in ["Numerical", "Ordinal", "Nominal"]],
+                    placeholder='Select Type',
+                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                )
+        
+            ], style={'display': 'flex', 'alignItems': 'center'})
+        ], style={'padding': '20px', 'border': '1px solid #ccc', 'border-radius': '5px', 'background-color': '#2E2E2E'}),  # Overall styling
+
         
         html.Div(id='dynamic-content-tab1')
 
@@ -364,136 +480,74 @@ def tab1_content():
     ], style={'padding': '20px'})
 
 
+@app.callback(
+    Output('selected-crosstab-heatmap', 'children'),
+    Input('crosstab-dropdown', 'value')
+)
+def update_crosstab_heatmap(selected_index):
+    if selected_index is not None:
+        # Retrieve col1 and col2 based on selected_index
+        col1, col2 = column_pairs[selected_index]
+
+        # Create crosstab result
+        crosstab_result = pd.crosstab(df1[col1], df1[col2])
+
+        # Create heatmap for the crosstab result
+        fig_crosstab_object_heatmap = px.imshow(
+            crosstab_result,
+            color_continuous_scale='RdBu',  # Color scale
+            labels=dict(x=col2, y=col1, color='Count'),
+            title=f'Crosstab Heatmap: {col1} vs {col2}'
+        )
+        fig_crosstab_object_heatmap.update_layout(
+            plot_bgcolor='#1e1e1e',  # Darker background for the plot area
+            paper_bgcolor='#101820',  # Dark gray for the paper
+            font=dict(color='white')   # White text color
+        )
+
+        return dcc.Graph(figure=fig_crosstab_object_heatmap)
+    
+    return html.Div("Please select a crosstab heatmap")
 
 
 # Callback to update UI based on input value in Tab 3
 @app.callback(
     Output('dynamic-content-tab1', 'children'),
-    Input('target-value', 'value')
+    Input('target-value', 'value'),
+    Input('feature-value', 'value'),
+    Input('target-type', 'value'),
+    Input('feature-type', 'value')
 )
-def update_target_value(input_value):
-    if not input_value:  # Return nothing if input is empty or None
-        return ''
+def update_feature_value_type(target_input_value, feature_input_value, target_input_type, feature_input_type):
 
-    target_value = input_value
+    if not feature_input_value or not target_input_type or not feature_input_type:  # Return nothing if input is empty or None
+        return ''
 
     print()
-    print(colored("------------ callback update_target_value ------------", "red"))
-
-    is_target_numeric = pd.api.types.is_numeric_dtype(df1[target_value])
-
-    if is_target_numeric != True:
+    print(colored("------------ callback update_feature_value_type ------------", "red"))
+ 
+    
+    messages, normality_fig = cf.Hypothesis_Testing_Methods(df1, target_input_value, feature_input_value, target_input_type, feature_input_type)
+    
+    if normality_fig != None:
         
-        cf.anova_target(df1, target_value)
-        
-        return ''
-        
-    tar_correlations = correlation_matrix[target_value]
+        html_output = html.Div([
+            html.P(msg, style={"color": "#FFD700"}, className="text-light") for msg in messages
+        ] + [
+            dcc.Graph(figure=normality_fig)  # Add the generated Plotly figure
+        ])    
     
-    # Optional: Sort the correlations
-    tar_correlations = tar_correlations.sort_values(ascending=True)[:-1]
-    
-    # Create a DataFrame for plotting
-    tar_correlation_df = tar_correlations.reset_index()
-
-
-    # Create the heatmap using Plotly Express
-    fig_correlation_heatmap = px.imshow(
-        correlation_matrix,
-        color_continuous_scale='RdBu',  # Color scale similar to Seaborn
-        labels=dict(x='Columns', y='Columns', color='Correlation'),
-        title='Correlation Matrix Heatmap',
-        zmin=-1,  # Set minimum value for the colorbar
-        zmax=1    # Set maximum value for the colorbar
-    )    
-    fig_correlation_heatmap.update_traces(text=correlation_matrix.round(2).values, texttemplate="%{text}", textfont={"size": 12})
-    fig_correlation_heatmap.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        # title = figname,
-        # title_font=dict(size=20, color='white')
-        )
-    
-    # Plotting
-    fig_tar_correlation = px.bar(
-        tar_correlation_df,
-        x=tar_correlation_df[target_value],  # Assuming 'tar' is a variable that contains the correlation values
-        y='index',
-        title='Correlation of Features with the target: '+target_value,
-        labels={'index': 'Features', target_value: 'Correlation Coefficient'},
-        orientation='h'  # Horizontal bar plot
-    )
-    
-    # Adding a vertical line for zero correlation (cannot be directly added in Plotly as in Matplotlib)
-    fig_tar_correlation.add_vline(x=0, line_color='grey', line_dash='dash')
-
-    fig_tar_correlation.update_layout(
-        plot_bgcolor='#1e1e1e',  # Darker background for the plot area
-        paper_bgcolor='#101820',  # Dark gray for the paper
-        font=dict(color='white'),  # White text color
-        # title = figname,
-        # title_font=dict(size=20, color='white')
-        )    
-    
-    # cf.check_anova_conditions(df1, target_value)
-    
-    messages, normality_fig = cf.anova_target(df1, target_value, "Species")
-    
-        
-    html_output = html.Div([
-        html.P(msg, style={"color": "#FFD700"}, className="text-light") for msg in messages
-    ] + [
-        dcc.Graph(figure=normality_fig)  # Add the generated Plotly figure
-    ])    
+    else:
+        html_output = html.Div([
+            html.P(msg, style={"color": "#FFD700"}, className="text-light") for msg in messages
+        ])           
         
     return html.Div([
-
-        html.Div([
-            html.P("Numeric Summary:", style={"color": "#FFD700"}, className="text-light"),
-            # html.P(Text5),
-        ]),
-
-        html.Div(
-            style={'display': 'flex'},
-            children=[
-                html.Div(
-                    [dcc.Graph(id='correlation-heatmap-df2', style={'width': '70%', 'height': '700px'},
-                               figure=fig_correlation_heatmap)],
-                    style={'margin-left': '10px', 'width': '70%'}
-                ),
-                html.Div(
-                    [dcc.Graph(id='nunique-df1', style={'width': '100%', 'height': '700px'},
-                               figure=fig_tar_correlation)], 
-                    style={'margin-left': '10px', 'width': '30%'}  # Adjust width as needed
-                ),
-            ]
-        ),
-
-
-        html.Div([
-            html.P("Bivariate Anova:", style={"color": "#FFD700"}, className="text-light"),
-            # html.P(Text5),
-        ]),
-        
+       
         html_output
-
-        # html.Div(
-        #     style={'display': 'flex'},
-        #     children=[
-        #         html.Div(
-        #             [dcc.Graph(id='correlation-heatmap-df2', style={'width': '70%', 'height': '700px'},
-        #                        figure=fig_correlation_heatmap)],
-        #             style={'margin-left': '10px', 'width': '70%'}
-        #         ),
-        #     ]
-        # )
-
 
 
     ], style={'padding': '20px'})
-
-
 
 
 
