@@ -193,12 +193,6 @@ def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_d
             'whiteSpace': 'nowrap',
             'textAlign': 'center',
         },
-        # style_data_conditional=[
-        #     {
-        #         'if': {'column_id': col},
-        #         'width': f'{column_widths[col]}px'
-        #     } for col in columns
-        # ]
     )
 
     return dropdowns_with_labels, data_table
@@ -268,12 +262,6 @@ def table_with_filter_action(df, id_table, tab, dark_dropdown_style, uniform_sty
             'whiteSpace': 'nowrap',
             'textAlign': 'center',
         },
-        # style_data_conditional=[
-        #     {
-        #         'if': {'column_id': col},
-        #         'width': f'{column_widths[col]}px'
-        #     } for col in columns
-        # ]
     )
 
     return data_table

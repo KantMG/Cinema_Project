@@ -158,17 +158,7 @@ def label_fig(x_column, y_column, z_column, t_column, yf_column, zf_column, g_co
     - ylabel: The ylabel of the axis (can be None).
     - zlabel: The zlabel of the axis (can be None).
     """
-    
-
-    # columns = [x_column, y_column, z_column]
-    
-    # # Replace 'tconst' with 'productions' in each element of the list, if it's not None
-    # columns = [col.replace('tconst', 'productions') if col is not None else col for col in columns]
-    
-    # # Unpack results back to original variables if needed
-    # x_column, y_column, z_column = columns
-    
-    
+        
     
     df_col_string = [col[:-6] if col.endswith('_split') else col for col in df_col_string]
 
@@ -275,14 +265,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
     y_axis = y_column
     z_axis = z_column
     t_axis = t_column
-    # if str(y_column)!='None' and yf_column != "Value in x_y interval":
-    #     z_axis = y_column
-    # if x_column in df_col_string:
-    #     x_axis = 'count'
-    #     y_axis = x_column
-
-
-
 
     if yf_column == "Avg":
         y_axis = 'avg_' + y_column
@@ -290,37 +272,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
         z_axis = 'avg_' + z_column
     if tf_column == "Avg":
         t_axis = 'avg_' + t_column
-
-    # if yf_column == "Avg on the ordinate":
-    #     x_axis = x_column
-    #     y_axis = 'avg_' + y_column
-    #     z_axis = 'count'
-    #     if x_column in df_col_string:
-    #         x_axis = 'avg_' + y_column
-    #         y_axis = x_column
-    #         z_axis = 'count'
-        
-    # if z_column is not None and zf_column == "Avg" and yf_column != "Value in x_y interval":
-    #     t_axis = 'avg_' + z_column
-    # if z_column is not None and zf_column == "Avg" and yf_column == "Value in x_y interval":
-    #     z_axis = 'avg_' + z_column
-    # if z_column is not None and zf_column == "Avg on the ordinate" and yf_column != "Value in x_y interval":
-    #     y_axis = 'avg_' + z_column
-    #     t_axis = 'count'
-    # if z_column is not None and zf_column == "Avg on the ordinate" and yf_column == "Value in x_y interval":
-    #     y_axis = 'avg_' + z_column
-    #     z_axis = 'count'
-        
-    # if z_column is not None and zf_column == "Weight on y":
-    #     # y_axis = 'sum_' + z_column
-    #     t_axis = 'standard_error'   
-
-    # if d_column=="2D" and g_column=="Colormesh":    
-    #     x_axis = x_column
-    #     y_axis = y_column
-    #     z_axis = 'count'
-    #     if z_column is not None:
-    #         z_axis = 'avg_' + z_column
 
     print("x_axis=", x_axis)
     print("y_axis=", y_axis)
@@ -361,6 +312,15 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                     # log_x=True,
                     size_max=60
                     )
+        
+        elif (str(z_column)=='No count' and str(t_column) == 'None'):
+
+            plotly_fig = px.scatter(
+                data_for_plot,
+                x=x_axis,
+                y=y_axis,
+                size_max=60
+                )  
         
         #Case where y_column is None and z_column is None
         elif (str(z_column)=='count' and str(t_column) == 'None') or (str(y_column)=='count' and str(z_column) != 'None' and str(t_column) == 'None'):           
@@ -446,6 +406,17 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                     x=x_axis, 
                     y=y_axis,
                     points=False)
+
+
+        elif str(t_column)=='No count':
+            plotly_fig = px.scatter(
+                data_for_plot,
+                x=x_axis,
+                y=y_axis,
+                size_max=60,
+                color=z_axis if "Movie" not in g_column else None,
+                animation_frame=z_axis if "Movie" in g_column else None
+            )                        
 
         #Case where z_column is not None
         elif str(t_column)=='count' or (str(y_column)=='count' and str(t_column) != 'None') or (str(z_column)=='count' and str(t_column) != 'None'):

@@ -26,6 +26,7 @@ import dask.dataframe as dd
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.figure_factory as pxf
+import plotly.io as pio
 from termcolor import colored
 import numpy as np
 import seaborn as sns
@@ -47,7 +48,7 @@ import table_dropdown_style as tds
 import figure_creation as fc
 import data_plot_preparation as dpp
 import figure_dropdown_style as fds
-import correlation_feature as cf
+import Hypothesis_Testing_Methods as htm
 
 import open_dataframe as od
 import Function_dataframe as fd
@@ -78,27 +79,25 @@ current_file_path = os.getcwd()+'/Main.py'
 start_time = time.time()
 
 
+# Large_file_memory = False
+# df1 = od.read_and_rename(
+#     Project_path+file_name,
+#     large_file=Large_file_memory
+# )
+
+
+from sklearn.datasets import load_diabetes, load_iris
+# Load the Iris dataset
+iris = load_iris()
+df1 = pd.DataFrame(data=iris.data, columns=iris.feature_names)
+# Add the target variable as a column to the DataFrame
+df1['Species'] = iris.target
+# Map numeric target labels to species names for clarity
+df1['Species'] = df1['Species'].map({0: 'setosa', 1: 'versicolor', 2: 'virginica'})
 Large_file_memory = False
-df1 = od.read_and_rename(
-    Project_path+file_name,
-    large_file=Large_file_memory
-)
 
 
 
-# from sklearn.datasets import load_diabetes, load_iris
-# # Load the Iris dataset
-# iris = load_iris()
-# df1 = pd.DataFrame(data=iris.data, columns=iris.feature_names)
-# # Add the target variable as a column to the DataFrame
-# df1['Species'] = iris.target
-# # Map numeric target labels to species names for clarity
-# df1['Species'] = df1['Species'].map({0: 'setosa', 1: 'versicolor', 2: 'virginica'})
-
-
-
-
-# tar = "Survived"
 
 shape_df1 = df1.shape
 nb_col_df1 = shape_df1[1]
@@ -526,9 +525,9 @@ def update_feature_value_type(target_input_value, feature_input_value, target_in
     print(colored("------------ callback update_feature_value_type ------------", "red"))
  
     
-    Hypothesis_test, messages, normality_fig, outlier_table = cf.Hypothesis_Testing_Methods(df1, target_input_value, feature_input_value, target_input_type, feature_input_type)
+    Hypothesis_test, messages, normality_fig, outlier_table = htm.Hypothesis_Testing_Methods(df1, target_input_value, feature_input_value, target_input_type, feature_input_type)
 
-    Hypothesis_test_explanation = cf.get_explanation_on_Hypothesis_test(Hypothesis_test)
+    Hypothesis_test_explanation = htm.get_explanation_on_Hypothesis_test(Hypothesis_test)
     
     return_block = html.Div([
         html.Div(style={'display': 'flex', 'alignItems': 'center'}),  # Flex container for alignment
@@ -619,6 +618,12 @@ def tab2_content():
                                                                      "Number of subplot", "Number of rows", "Number of columns",
                                                                      "Configuration of the subplot figure", dark_dropdown_style, uniform_style)
 
+    button_saving_figure_tab2 = fds.button_modal_input_text_dropdown("save-figure-"+tab,  "Save Figure", 
+                                                                     ["png", "jpeg", "webp", "svg", "pdf"], "Enter the figure name",
+                                                                     "png", "Save Figure", dark_dropdown_style, uniform_style)
+
+
+
     component_ids = dci.get_component_ids(app.layout)
     print("Component IDs:", component_ids)
     print(colored("==================== End Tab2_content ========================", "yellow"))
@@ -631,7 +636,8 @@ def tab2_content():
                                      button_dropdown_function_tab2,
                                      button_dropdown_regression_tab2,
                                      button_dropdown_smoothing_tab2,
-                                     button_subplot_tab2
+                                     button_subplot_tab2,
+                                     button_saving_figure_tab2
                                      )
         ], style={'padding': '20px'}),
         
@@ -653,8 +659,7 @@ def update_tableau_show(n_clic, *args):
     if not n_clic or n_clic % 2 == 0:
         return ''
 
-    print(n_clic)
-    print()
+
     print(colored("------------ callback update_tableau_show ------------", "red"))
 
     tab = "tab-2"
@@ -662,10 +667,6 @@ def update_tableau_show(n_clic, *args):
     filter_values = list(args[0:len(List_col_tab2)])
     filter_values = {List_col_tab2[i]: (filter_values[i] if filter_values[i] != '' else None) for i in range(min(len(List_col_tab2), len(filter_values)))}    
     df1_filtered = od.apply_filter(df1, filter_values)
-    
-# =============================================================================
-#     # First make the data filter as in input and then build the table
-# =============================================================================
     
     # Create the table with the appropriate dropdowns for each column
     data_table_df1_ta2 = tds.table_with_filter_action(df1_filtered, 'table-df1-tab2', tab, dark_dropdown_style, uniform_style, False)
@@ -770,6 +771,18 @@ def toggle_modal(open_clicks, submit_clicks, is_open):
     Output("modal-smoothing-tab-2", "is_open"),
     [Input("open-modal-smoothing-tab-2", "n_clicks"), Input("submit-button-smoothing-tab-2", "n_clicks")],
     [State("modal-smoothing-tab-2", "is_open")]
+)
+def toggle_modal(open_clicks, submit_clicks, is_open):
+    if open_clicks or submit_clicks:
+        return not is_open
+    return is_open
+
+#  -----------------------------------------------------------------
+
+@app.callback(
+    Output("modal-save-figure-tab-2", "is_open"),
+    [Input("open-modal-save-figure-tab-2", "n_clicks"), Input("submit-button-save-figure-tab-2", "n_clicks")],
+    [State("modal-save-figure-tab-2", "is_open")]
 )
 def toggle_modal(open_clicks, submit_clicks, is_open):
     if open_clicks or submit_clicks:
@@ -894,7 +907,7 @@ def update_value_default_tab2(selected_x, selected_y, selected_z, selected_t, se
 
 
 
-        elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_y != "count":
+        elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_y != "count" and selected_z != "No count":
             print("6")
             return dash.no_update, dash.no_update, dash.no_update, "count"
 
@@ -903,7 +916,7 @@ def update_value_default_tab2(selected_x, selected_y, selected_z, selected_t, se
             return dash.no_update, "count", dash.no_update, None
 
 
-        elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is not None and selected_t != "count":
+        elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is not None and selected_t != "count" and selected_t != "No count":
             print("8")
             return dash.no_update, "count", dash.no_update, dash.no_update
 
@@ -1009,7 +1022,7 @@ def update_yfunc_dropdown_tab2(selected_y, selected_tab):
             return [], []
         print(f"Selected Y: {selected_y}")  # Additional debugging
         
-        function_on_y = ["Avg", "Value in x_y interval"]
+        function_on_y = ["Avg"]
         
         return update_func_dropdown_utility(selected_y, function_on_y, None)
     return dash.no_update, dash.no_update
@@ -1122,7 +1135,9 @@ def update_graph_dropdown_tab2(selected_dim, selected_tab):
      Input("input_1-subplot-tab-2", "value"),
      Input("input_2-subplot-tab-2", "value"),
      Input("input_3-subplot-tab-2", "value"),
-     Input("hide-dropdowns-tab-2", "n_clicks"),
+     Input("dropdown-save-figure-tab-2", "value"),
+     Input("input-save-figure-tab-2", "value"),
+     Input("submit-button-save-figure-tab-2", "n_clicks"),     
      Input("submit-button-filter-tab-2", "n_clicks")] +
     [Input(f'fig-dropdown-{col}-tab-2', 'value') for col in List_col_tab2] +
     [Input({'type': 'subplot-button', 'index': ALL}, 'n_clicks')],
@@ -1134,7 +1149,8 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
                       reg_dropdown_value, reg_order_value, test_size_value, sub_bot_reg_value,
                       smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                       nb_subplots, nb_subplots_row, nb_subplots_col,
-                      hide_drop_fig, sub_bot_filter_value, *args):
+                      svf_dropdown_value, svf_order_value, sub_bot_svf_value,
+                      sub_bot_filter_value, *args):
 
     global previous_clicks, last_clicked_index
     
@@ -1159,13 +1175,15 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
     print("Triggered component:", triggered_id)
     print()
     
-    if triggered_id in ["dropdown-regression-tab-2", "input-regression-tab-2", "dropdown-smoothing-tab-2", "input-smoothing-tab-2", "input_1-subplot-tab-2", "input_2-subplot-tab-2", "input_3-subplot-tab-2"]:
+    if triggered_id in ["dropdown-regression-tab-2", "input-regression-tab-2", "dropdown-smoothing-tab-2", "input-smoothing-tab-2", "input_1-subplot-tab-2", "input_2-subplot-tab-2", "input_3-subplot-tab-2", "dropdown-save-figure-tab-2", "input-save-figure-tab-2" ]:
         return dash.no_update
 
     df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
     df_col_numeric.append('count')
+    df_col_numeric.append('No count')
     df_col_all = df1.columns.tolist()
     df_col_all.append('count')
+    df_col_all.append('No count')
     df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
     
     if t_dropdown_value is not None and t_dropdown_value not in df_col_numeric:
@@ -1187,15 +1205,13 @@ def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdo
                                                  reg_dropdown_value, reg_order_value, test_size_value,
                                                  current_fig, data_for_plot, df_col_string)
 
-    if  triggered_id == "hide-dropdowns-tab-2":
+    if  triggered_id == "submit-button-save-figure-tab-2":
         fig_json_serializable = go.Figure(current_fig)
-        if hide_drop_fig % 2 == 1:  # Check if the button has been clicked an odd number of times
-            # Remove the dropdowns
-            fig_json_serializable["layout"]["updatemenus"] = []
-        else:
-            # Restore dropdowns
-            fig_json_serializable.update_layout(updatemenus=fig_json_serializable["layout"]["updatemenus"])
-        return fig_json_serializable, data_for_plot
+        filename = svf_order_value
+        format_fig = svf_dropdown_value
+        fig_json_serializable["layout"]["updatemenus"] = []
+        pio.write_image(fig_json_serializable, f"{filename}.{format_fig}")
+        return dash.no_update
     
     print("Active Tab=", selected_tab)
     print("Time computation=", time.time()-start_time)
@@ -1275,6 +1291,7 @@ def update_y_dropdown_utility(selected_x, List_cols, exclude_cols):
     Utility function to generate dropdown options for the y-axis based on the selected x-axis column and dataframe.
     """
     List_cols.append('count')
+    List_cols.append('No count')
     return [{'label': col, 'value': col} for col in List_cols 
                     if col != selected_x and col not in exclude_cols]
 
@@ -1283,6 +1300,7 @@ def update_z_dropdown_utility(selected_x, selected_y, List_cols, exclude_cols):
     Utility function to generate dropdown options for the z-axis based on the selected x-axis and y-axis column and dataframe.
     """
     List_cols.append('count')
+    List_cols.append('No count')
     return [{'label': col, 'value': col} for col in List_cols 
                     if col not in (selected_x, selected_y) and col not in exclude_cols]
 
@@ -1291,6 +1309,7 @@ def update_t_dropdown_utility(selected_x, selected_y, selected_z, List_cols, exc
     Utility function to generate dropdown options for the t-axis based on the selected x-axis, y-axis and z-axis column and dataframe.
     """
     List_cols.append('count')
+    List_cols.append('No count')
     return [{'label': col, 'value': col} for col in List_cols 
                     if col not in (selected_x, selected_y, selected_z) and col not in exclude_cols]
 
@@ -1300,7 +1319,6 @@ def update_func_dropdown_utility(selected_y, function_on_axi, initial_value=None
     """
     
     df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    # df_col_numeric.append('count')
     
     if selected_y not in df_col_numeric:  # Check if y column is not numeric
         return [], None

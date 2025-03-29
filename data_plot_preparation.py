@@ -107,6 +107,11 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
         else:
             data_for_plot = df_temp.groupby([x_column, y_column]).size().reset_index(name='count')
 
+
+    elif str(z_column)=='No count' and str(t_column)=='None':   
+
+        data_for_plot = df_temp[[x_column, y_column]]
+
             
     # #Case where z_column is not None
     elif str(y_column)=='count' and str(t_column)!='None':   
@@ -272,6 +277,11 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
         else:
             data_for_plot = df_temp.groupby([x_column, y_column, z_column]).size().reset_index(name='count')
 
+
+    elif str(t_column)=='No count':   
+
+        data_for_plot = df_temp[[x_column, y_column, z_column]]
+
     
 
     if x_column in df_col_string:
@@ -367,6 +377,10 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, t_column
     elif str(z_column)=='count' and str(t_column)=='None':
         df_temp = df_temp[[x_column, y_column]]
         Para=[x_column, y_column, z_column]
+
+    elif str(z_column)=='No count' and str(t_column)=='None':
+        df_temp = df_temp[[x_column, y_column]]
+        Para=[x_column, y_column, z_column]
         
 
     elif str(x_column)=='count' and str(z_column)!='None' and str(t_column)!='None':
@@ -385,6 +399,9 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, t_column
         df_temp = df_temp[[x_column, y_column, z_column]]
         Para=[x_column, y_column, z_column, t_column]        
 
+    elif str(t_column)=='No count':
+        df_temp = df_temp[[x_column, y_column, z_column]]
+        Para=[x_column, y_column, z_column, t_column]  
     
     print("Para=",Para)
     
@@ -394,75 +411,3 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, t_column
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
-
-
-def count_value_x_y_interval(df, x_column, y_column, z_column, t_column):
-    
-    """
-    Goal: Analyze a dataset to count entities based on specified criteria over a defined range and calculate the average of a given attribute. 
-    The function processes temporary data to provide updated metrics and insights.
-
-    Parameters:
-    - df_temp: dataframe which has been created temporary.
-    - x_column: Column in the dataframe.
-    - y_column: Column in the dataframe (can be None).
-    - z_column: Column in the dataframe (can be None).
-    - t_column: Column in the dataframe (can be None).
-    
-    Returns:
-    - df_temp: dataframe which has been updated.
-    - x_column: Column in the dataframe (it could have change)
-    - y_column: Column in the dataframe (it could have change)
-    - z_column: Column in the dataframe (it could have change)
-    - t_column: Column in the dataframe (it could have change)
-    """    
-    
-    
-    # Determine the range for years based on birthYear and deathYear
-    min_x_column = int(df[x_column].min())
-    max_y_column = int(df[y_column].max())
-    New_x_column = range(min_x_column, max_y_column + 1)
-    
-    # Initialize arrays to store results
-    alive_counts = []
-    avg_new_z_column = []
-
-    # Create a DataFrame for all years
-    for new_x_value in New_x_column:
-        # Count alive directors: those whose x_column is less than or equal to the new_x_value
-        # and either y_column is greater than or equal to the new_x_value OR y_column is -1
-        alive_condition = (df[x_column] <= new_x_value) & ((df[y_column] >= new_x_value) | (df[y_column] == -1))
-        count_alive = alive_condition.sum()  # Count how many are alive
-        alive_counts.append({'Year': new_x_value, 'count': count_alive})
-
-        if z_column is not None:
-            # Calculate average z_column for those in count
-            avg_rating = df.loc[alive_condition, z_column].mean()
-            avg_new_z_column.append(avg_rating)
-        else:
-            avg_new_z_column.append(0)  # Append 0 if z_column is None
-
-    # Create the resulting DataFrame
-    alive_df = pd.DataFrame(alive_counts)
-    if z_column is not None:
-        alive_df['avg_' + z_column] = avg_new_z_column  # Add average NewRating
-
-    # Count NaN values in x_column and count -1 in y_column in a vectorized manner
-    nan_birth = df[x_column].isna().sum()
-    nan_death = (df[y_column] == -1).sum()
-    
-    # Count alive directors with y_column as -1 and valid x_column
-    alive_count_na = ((df[y_column] == -1) & (df[x_column].notna())).sum()
-
-    # Print results for diagnostics
-    print("nan_birth= ", nan_birth)
-    print("nan_death= ", nan_death)
-    print("alive_count_na= ", alive_count_na)
-
-    return alive_df, 'Year', 'count', z_column, t_column
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-

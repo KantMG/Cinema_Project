@@ -163,7 +163,7 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
         )
         
         # Add dropdowns
-        button_layer_1_height = 1.08
+        button_layer_1_height = 0.9
         
         updatemenus=[
             dict(
