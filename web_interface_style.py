@@ -146,6 +146,7 @@ def web_interface_style():
                 ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'flex-start', 'height': '50px', 'margin': '30px'}  # Adjust according to height
         
                ),
+            # html.Script(src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS_HTML"),
             ]
         ),
         

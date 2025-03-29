@@ -34,77 +34,159 @@ import seaborn as sns
 from scipy import stats
 from dash import html
 from termcolor import colored
+from dash import dcc, html, Input, Output, dash_table, callback, callback_context
 
-def clean_data(df, feature, target):
-    """Cleans data by removing rows with NaN values for the feature and target."""
-    return df[[feature, target]].dropna()
 
-def check_outliers_z_score(df, feature):
-    """Detects outliers in the specified feature using the Z-score method."""
-    z_scores = np.abs(stats.zscore(df[feature]))
+def clean_data(df, independent, dependent):
+    """Cleans data by removing rows with NaN values for the independent and dependent."""
+    return df[[independent, dependent]].dropna()
+
+def check_outliers_z_score(df, independent):
+    """Detects outliers in the specified independent using the Z-score method."""
+    z_scores = np.abs(stats.zscore(df[independent]))
     return np.where(z_scores > 3)
 
-def check_outliers_iqr(df, feature):
-    """Detects outliers in the specified feature using the IQR method."""
-    Q1 = df[feature].quantile(0.25)
-    Q3 = df[feature].quantile(0.75)
+def check_outliers_iqr(df, independent):
+    """Detects outliers in the specified independent using the IQR method."""
+    Q1 = df[independent].quantile(0.25)
+    Q3 = df[independent].quantile(0.75)
     IQR = Q3 - Q1
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
-    outliers = df[(df[feature] < lower_bound) | (df[feature] > upper_bound)]
+    outliers = df[(df[independent] < lower_bound) | (df[independent] > upper_bound)]
     return outliers, lower_bound, upper_bound
 
-def check_outliers(df, feature):
-    """Detects outliers in the specified feature using the IQR method."""
-    outliers, lower_bound, upper_bound = check_outliers_iqr(df, feature)
+def check_outliers(df, independent):
+    """Detects outliers in the specified independent using the IQR method."""
+    outliers, lower_bound, upper_bound = check_outliers_iqr(df, independent)
+    
+    print(outliers)
     
     if not outliers.empty:
+
+        # Create a DataFrame from outliers
+        outliers_df = pd.DataFrame(outliers)
+
+        # Transpose the DataFrame
+        transposed_outliers_df = outliers_df.T
+                
+        table = dash_table.DataTable(
+            data=transposed_outliers_df.reset_index().to_dict('records'),
+            # columns=[{'name': col, 'id': col} for col in transposed_outliers_df.columns],
+            fixed_rows={'headers': True},
+            style_table={
+                # 'className': 'table-container',  # Apply table container style
+                'overflowX': 'auto',
+                'paddingLeft': '2px',
+                'paddingRight': '20px',
+                'marginLeft': '8px'
+            },
+            style_header={
+                # 'className': 'table-header',    # Apply header style
+                'backgroundColor': '#343a40',
+                'color': 'white',
+                'whiteSpace': 'normal',
+                'textAlign': 'center',
+                'height': 'auto',
+            },
+            style_cell={
+                # 'className': 'table-cell',       # Apply cell style
+                'backgroundColor': '#1e1e1e',
+                'color': '#f8f9fa',
+                'overflow': 'hidden',
+                'textOverflow': 'ellipsis',
+                'whiteSpace': 'normal',
+                'textAlign': 'center',
+                'height': 'auto',
+            },
+            style_data={
+                'whiteSpace': 'nowrap',
+                'textAlign': 'center',
+            },
+        )
+
         return (
-            f"❌ Outliers detected in {feature}: "
-            f"lower_bound = {lower_bound:.4e}  |  upper_bound = {upper_bound:.4e}\n{outliers}"
+            f"⚠️ Outliers detected in {independent} using the IQR method (see table below): "
+            f"lower_bound = {lower_bound:.4e}  |  upper_bound = {upper_bound:.4e}", table
         )
     else:
-        return f"✅ No outliers detected in {feature}."
+        return f"✅ No outliers detected in {independent}.",  None
 
-def plot_normality(groups, feature, p_values):
-    """Creates QQ plots and histograms for each group for normality visualization, returning the figure for Dash."""
+
+
+def plot_normality(groups, independent, p_values):
+    """Creates QQ plots and histograms for each group for normality visualization using Plotly, with a dark theme."""
+
     num_groups = len(groups)
-    fig = make_subplots(rows=2, cols=num_groups, subplot_titles=[f'Group {i + 1}' for i in range(num_groups)]
-                        +[f"p-value: {p_value:.4e}" for i, (group, p_value) in enumerate(zip(groups, p_values))])
-
-    plot_color = 'blue'
+    
+    # Create subplot titles including p-values
+    subplot_titles = [
+        f'QQ Plot for {independent} (Group {i + 1})<br><span style="color: #FFD700;">p-value: {p_values[i]:.4e}</span>' 
+        for i in range(num_groups)
+    ]
+    
+    # Create subplots
+    fig = make_subplots(rows=2, cols=num_groups,
+                        subplot_titles=subplot_titles + 
+                                       [f'Histogram & Density for {independent} (Group {i + 1})' for i in range(num_groups)],
+                        specs=[[{'type': 'scatter'} for _ in range(num_groups)],
+                               [{'type': 'histogram'} for _ in range(num_groups)]])
 
     for i, (group, p_value) in enumerate(zip(groups, p_values)):
-        # QQ Plot Data
-        n = len(group)
-        qq_y = np.sort(group)
-        qq_x = stats.norm.ppf(np.linspace(0, 1, n, endpoint=False))
+        # Calculate QQ plot data
+        # Calculate QQ plot data
+        sorted_stats = np.sort(group)  # Sort the group data
+        theoretical_quantiles = stats.norm.ppf(np.linspace(0, 1, len(sorted_stats)))
         
-        print(qq_x.min(), qq_x.max())
-        # Create QQ scatter plot
-        scatter_fig = px.scatter(x=qq_x, y=qq_y, title=f'QQ Plot for Group {i + 1}', 
-                                 labels={'x': 'Theoretical Quantiles', 'y': 'Sample Quantiles'})
-        scatter_fig.add_trace(go.Scatter(x=[qq_x.min(), qq_x.max()], y=[qq_x.min(), qq_x.max()], 
-                                          mode='lines', line=dict(color='red', width=2),
-                                          name='y=x'))
-
-        for trace in scatter_fig.data:
-            fig.add_trace(trace, row=1, col=i + 1)
-
-        # Create Histogram Data
-        hist_fig = px.histogram(x=group, histnorm='probability density', 
-                                 title=f'Histogram for Group {i + 1}', 
-                                 labels={'x': feature, 'y': 'Density'})
         
-        for trace in hist_fig.data:
-            fig.add_trace(trace, row=2, col=i + 1)
+        # Add QQ plot
+        fig.add_trace(go.Scatter(x=theoretical_quantiles, y=sorted_stats, mode='markers', name='QQ Plot',
+                                 marker=dict(color='lightblue')),
+                      row=1, col=i + 1)
+        
+        # Add y=x reference line
+        # min_x = min(theoretical_quantiles[~np.isnan(theoretical_quantiles) & ~np.isinf(theoretical_quantiles)])
+        # max_x = max(theoretical_quantiles[~np.isnan(theoretical_quantiles) & ~np.isinf(theoretical_quantiles)])
+        # min_y = min(sorted_stats)
+        # max_y = max(sorted_stats)
+        # fig.add_trace(go.Scatter(x=[min_x, max_x], y=[min_y, max_y], mode='lines', name='y=x',
+        #                          line=dict(color='red', dash='dash')),
+        #               row=1, col=i + 1)
 
-    
+        # Add histogram & density
+        hist_data = []
+        for val in group:
+            hist_data.append(val)
+
+        # Plot histogram with density
+        fig.add_trace(go.Histogram(x=hist_data, histnorm='probability density', name='Histogram',
+                                    marker=dict(color='lightblue'), opacity=0.75),
+                      row=2, col=i + 1)
+
+        # Add density line
+        density_x = np.linspace(min(group), max(group), 100)
+        density_y = (1 / (group.std() * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((density_x - group.mean()) / group.std())**2)
+        
+        fig.add_trace(go.Scatter(x=density_x, y=density_y, mode='lines', name='Density',
+                                 line=dict(color='darkblue')),
+                      row=2, col=i + 1)
+
     # Update layout
-    fig.update_layout(title_text=f'Normality Plots for {feature}', height=600)
+    fig.update_layout(title_text='Normality Visualization', template="plotly_dark", height=800)
+    
+    # Update x and y axes labels
+    
+    fig.update_yaxes(title_text='Sample Quantiles', row=1, col=1)
+    for i in range(num_groups):
+        fig.update_xaxes(title_text='Theoretical Quantiles', row=1, col=i + 1)
+    fig.update_yaxes(title_text='Density', row=2, col=1)
+    for i in range(num_groups):
+        fig.update_xaxes(title_text='Sample Quantiles', row=2, col=i + 1)
+        
+
 
     # Hide legend for all traces
-    # fig.for_each_trace(lambda t: t.update(showlegend=False))
+    fig.for_each_trace(lambda t: t.update(showlegend=False))
     
     fig.update_layout(
         plot_bgcolor='#1e1e1e',  # Darker background for the plot area
@@ -113,63 +195,63 @@ def plot_normality(groups, feature, p_values):
         # title = figname,
         # title_font=dict(size=20, color='white')
         )
-
+    
     return fig
 
 
-# def plot_normality(groups, feature, p_values):
-#     """Creates QQ plots and histograms for each group for normality visualization, saving the figure as an image with a dark theme."""
+def plot_normality_seaborn(groups, independent, p_values):
+    """Creates QQ plots and histograms for each group for normality visualization, saving the figure as an image with a dark theme."""
     
-#     # Set Seaborn's style to dark
-#     sns.set_style("darkgrid", {"axes.facecolor": "#2E2E2E", "figure.facecolor": "#2E2E2E"})
+    # Set Seaborn's style to dark
+    sns.set_style("darkgrid", {"axes.facecolor": "#2E2E2E", "figure.facecolor": "#2E2E2E"})
     
-#     num_groups = len(groups)
+    num_groups = len(groups)
     
-#     fig, axes = plt.subplots(nrows=2, ncols=num_groups, figsize=(14, 7))
+    fig, axes = plt.subplots(nrows=2, ncols=num_groups, figsize=(14, 7))
     
-#     for i, (group, p_value) in enumerate(zip(groups, p_values)):
-#         # QQ Plot
-#         stats.probplot(group, dist="norm", plot=axes[0][i])
-#         axes[0][i].set_title(f'QQ Plot for {feature} (Group {i + 1})', color='white')
-#         axes[0][i].text(0.2, 0.90, f'p-value: {p_value:.4e}', fontsize=12, 
-#                         ha='center', va='center', color='white')  # Moved closer to the top
+    for i, (group, p_value) in enumerate(zip(groups, p_values)):
+        # QQ Plot
+        stats.probplot(group, dist="norm", plot=axes[0][i])
+        axes[0][i].set_title(f'QQ Plot for {independent} (Group {i + 1})', color='white')
+        axes[0][i].text(0.2, 0.90, f'p-value: {p_value:.4e}', fontsize=12, 
+                        ha='center', va='center', color='white')  # Moved closer to the top
 
-#         # Histogram with density plot
-#         sns.histplot(group, kde=True, ax=axes[1][i], stat='density', color="lightblue")
-#         axes[1][i].set_title(f'Histogram & Density for {feature} (Group {i + 1})', color='white')
+        # Histogram with density plot
+        sns.histplot(group, kde=True, ax=axes[1][i], stat='density', color="lightblue")
+        axes[1][i].set_title(f'Histogram & Density for {independent} (Group {i + 1})', color='white')
 
-#         # Set axis labels color
-#         axes[0][i].tick_params(axis='x', colors='white')
-#         axes[0][i].tick_params(axis='y', colors='white')
-#         axes[1][i].tick_params(axis='x', colors='white')
-#         axes[1][i].tick_params(axis='y', colors='white')
+        # Set axis labels color
+        axes[0][i].tick_params(axis='x', colors='white')
+        axes[0][i].tick_params(axis='y', colors='white')
+        axes[1][i].tick_params(axis='x', colors='white')
+        axes[1][i].tick_params(axis='y', colors='white')
 
-#         # Change label colors
-#         axes[0][i].set_xlabel('Theoretical Quantiles', color='white')
-#         axes[0][i].set_ylabel('Sample Quantiles', color='white')
-#         axes[1][i].set_xlabel(feature, color='white')
-#         axes[1][i].set_ylabel('Density', color='white')
+        # Change label colors
+        axes[0][i].set_xlabel('Theoretical Quantiles', color='white')
+        axes[0][i].set_ylabel('Sample Quantiles', color='white')
+        axes[1][i].set_xlabel(independent, color='white')
+        axes[1][i].set_ylabel('Density', color='white')
 
-#     # Adjust spacing: reduce space between top and bottom plots
-#     plt.subplots_adjust(hspace=0.3)  # Adjust vertical space between rows
+    # Adjust spacing: reduce space between top and bottom plots
+    plt.subplots_adjust(hspace=0.3)  # Adjust vertical space between rows
 
-#     plt.tight_layout(pad=2.0)  # General tight layout adjustments
+    plt.tight_layout(pad=2.0)  # General tight layout adjustments
     
-#     # Save the figure to a BytesIO object
-#     buf = io.BytesIO()
-#     plt.savefig(buf, format='png', facecolor=fig.get_facecolor())
-#     buf.seek(0)
+    # Save the figure to a BytesIO object
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png', facecolor=fig.get_facecolor())
+    buf.seek(0)
     
-#     # Encode it as base64 for Dash
-#     image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
-#     plt.close(fig)  # Close the figure after saving
-#     return f"data:image/png;base64,{image_base64}"
+    # Encode it as base64 for Dash
+    image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+    plt.close(fig)  # Close the figure after saving
+    return f"data:image/png;base64,{image_base64}"
 
 
 
-def test_normality(df_cleaned, feature, target):
-    """Tests for normality using the Shapiro-Wilk test on the numeric target split by the categorical feature."""
-    groups = [group[target].values for name, group in df_cleaned.groupby(feature)]
+def test_normality(df_cleaned, independent, dependent):
+    """Tests for normality using the Shapiro-Wilk test on the numeric dependent split by the categorical independent."""
+    groups = [group[dependent].values for name, group in df_cleaned.groupby(independent)]
     groups = [g for g in groups if len(g) >= 3]
     
     # if len(groups) < 2:
@@ -180,17 +262,17 @@ def test_normality(df_cleaned, feature, target):
         _, p_value = stats.shapiro(group)
         p_values.append(p_value)
 
-    fig = plot_normality(groups, feature, p_values)
+    fig = plot_normality(groups, independent, p_values)
 
     overall_p_value = min(p_values)
     if overall_p_value > 0.05:
-        return "✅ Normality assumption is satisfied.", fig
+        return "✅ Normality assumption is satisfied (see graphs below).", fig
     else:
-        return f"❌ Normality assumption is not satisfied, overall_p_value = {overall_p_value:.4e} < 0.05", fig
+        return f"❌ Normality assumption is not satisfied (see graphs below), overall_p_value = {overall_p_value:.4e} < 0.05", fig
 
-def test_variance_homogeneity(df_cleaned, feature, target):
+def test_variance_homogeneity(df_cleaned, independent, dependent):
     """Tests for homogeneity of variances using Levene’s test."""
-    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]
+    groups = [df_cleaned[df_cleaned[independent] == cat][dependent].values for cat in df_cleaned[independent].unique()]
     
     stat, p_value = stats.levene(*groups)
     
@@ -199,9 +281,9 @@ def test_variance_homogeneity(df_cleaned, feature, target):
     else:
         return f"❌ Homogeneity of variances assumption is not satisfied, p-value = {p_value:.4e} < 0.05"
 
-def check_class_balance(df_cleaned, feature, target):
-    """Checks balance between classes in the target variable."""
-    class_counts = df_cleaned[feature].value_counts()
+def check_class_balance(df_cleaned, independent, dependent):
+    """Checks balance between classes in the dependent variable."""
+    class_counts = df_cleaned[independent].value_counts()
     min_count = class_counts.min()
     total_count = class_counts.sum()
     
@@ -216,19 +298,19 @@ def check_expected_frequencies(contingency_table):
     expected = contingency_table.values.sum() * contingency_table.divide(contingency_table.sum(axis=1), axis=0).fillna(0)
     
     if np.any(expected < 5):
-        return "❌ Expected frequencies are not adequate for Chi-squared test."
+        return "❌ Expected frequencies are not adequate for χ² test."
     else:
-        return "✅ Expected frequencies are adequate for Chi-squared test."
+        return "✅ Expected frequencies are adequate for χ² test."
 
-def perform_t_test(df_cleaned, feature, target):
+def perform_t_test(df_cleaned, independent, dependent):
     """Performs independent t-test."""
-    # Check if the feature has exactly two unique categories
-    if df_cleaned[feature].nunique() != 2:
+    # Check if the independent has exactly two unique categories
+    if df_cleaned[independent].nunique() != 2:
         return "🚫 T-test requires exactly two groups for comparison."
     
-    # Split the data into two groups based on the feature
-    group1 = df_cleaned[df_cleaned[feature] == df_cleaned[feature].unique()[0]][target].values
-    group2 = df_cleaned[df_cleaned[feature] == df_cleaned[feature].unique()[1]][target].values
+    # Split the data into two groups based on the independent
+    group1 = df_cleaned[df_cleaned[independent] == df_cleaned[independent].unique()[0]][dependent].values
+    group2 = df_cleaned[df_cleaned[independent] == df_cleaned[independent].unique()[1]][dependent].values
     
     # Perform the t-test
     t_stat, p_value = stats.ttest_ind(group1, group2, equal_var=True)  # Change equal_var=False for Welch's t-test
@@ -238,20 +320,20 @@ def perform_t_test(df_cleaned, feature, target):
     else:
         return f"⚖️ T-test Result: t-statistic = {t_stat:.4e}, p-value = {p_value:.4e}. ✅ No significant difference found between groups."
 
-def perform_anova(df_cleaned, feature, target):
+def perform_anova(df_cleaned, independent, dependent):
     """Performs ANOVA test."""
-    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]
+    groups = [df_cleaned[df_cleaned[independent] == cat][dependent].values for cat in df_cleaned[independent].unique()]
     
     f_stat, p_value = stats.f_oneway(*groups)
 
     if p_value < 0.05:
         return f"⚖️ ANOVA Test Result: F-statistic = {f_stat:.4e}, p-value = {p_value:.4e}. ✅ Significance found between groups."
     else:
-        return f"⚖️ ANOVA Test Result: F-statistic = {f_stat:.4e}, p-value = {p_value:.4e}. ✅ No significant difference found between groups."
+        return f"⚖️ ANOVA Test Result: F-statistic = {f_stat:.4e}, p-value = {p_value:.4e}. 🚫 No significant difference found between groups."
 
-def perform_chi_squared_test(df_cleaned, feature, target):
+def perform_chi_squared_test(df_cleaned, independent, dependent):
     """Perform Chi-squared test based on the cleaned DataFrame."""
-    contingency_table = pd.crosstab(df_cleaned[feature], df_cleaned[target])
+    contingency_table = pd.crosstab(df_cleaned[independent], df_cleaned[dependent])
     
     expected_freq_message = check_expected_frequencies(contingency_table)
     
@@ -261,13 +343,13 @@ def perform_chi_squared_test(df_cleaned, feature, target):
     chi2_stat, p_value, dof, expected = stats.chi2_contingency(contingency_table)
     
     if p_value < 0.05:
-        return f"🔢 Chi-squared Test Result: Chi-squared statistic = {chi2_stat:.4f}, p-value = {p_value:.4e}. ✅ Significance found."
+        return f"⚖️ χ² Test Result: χ² statistic = {chi2_stat:.4f}, p-value = {p_value:.4e}. ✅ Significance found."
     else:
-        return f"🔢 Chi-squared Test Result: Chi-squared statistic = {chi2_stat:.4f}, p-value = {p_value:.4e}. ✅ No significant difference found."
+        return f"⚖️ χ² Test Result: χ² statistic = {chi2_stat:.4f}, p-value = {p_value:.4e}. 🚫 No significant difference found."
 
-def perform_mann_whitney(df, numerical_feature, ordinal_feature):
-    """Performs the Mann-Whitney U Test between a numerical feature and a binary ordinal feature."""
-    groups = [df[df[ordinal_feature] == category][numerical_feature].dropna() for category in df[ordinal_feature].unique()]
+def perform_mann_whitney(df, numerical_independent, ordinal_independent):
+    """Performs the Mann-Whitney U Test between a numerical independent and a binary ordinal independent."""
+    groups = [df[df[ordinal_independent] == category][numerical_independent].dropna() for category in df[ordinal_independent].unique()]
 
     if len(groups) != 2:
         return "❌ Mann-Whitney U Test requires exactly two groups."
@@ -275,26 +357,26 @@ def perform_mann_whitney(df, numerical_feature, ordinal_feature):
     stat, p_value = stats.mannwhitneyu(groups[0], groups[1], alternative='two-sided')
 
     if p_value < 0.05:
-        return f"⚠️ Mann-Whitney U Test: ✅ Significant difference found between the groups (p-value = {p_value:.4e})."
+        return f"⚖️ Mann-Whitney U Test: ✅ Significant difference found between the groups (p-value = {p_value:.4e})."
     else:
-        return f"⚠️ Mann-Whitney U Test: ✅ No significant difference found between the groups (p-value = {p_value:.4e})."
+        return f"⚖️ Mann-Whitney U Test: 🚫 No significant difference found between the groups (p-value = {p_value:.4e})."
 
-def perform_kruskal_wallis(df_cleaned, feature, target):
+def perform_kruskal_wallis(df_cleaned, independent, dependent):
     """Performs Kruskal-Wallis test."""
-    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]    
+    groups = [df_cleaned[df_cleaned[independent] == cat][dependent].values for cat in df_cleaned[independent].unique()]    
     stat, p_value = stats.kruskal(*groups)
 
     if len(groups) < 2:
         return "❌ Not enough groups to perform Kruskal-Wallis test."
 
     if p_value < 0.05:
-        return f"⚠️ Kruskal-Wallis test: ✅ Significant differences found between groups (p-value = {p_value:.4e})."
+        return f"⚖️ Kruskal-Wallis test: ✅ Significant differences found between groups (p-value = {p_value:.4e})."
     else:
-        return f"⚠️ Kruskal-Wallis test: ❌ No significant differences found (p-value = {p_value:.4e})."
+        return f"⚖️ Kruskal-Wallis test: 🚫 No significant differences found (p-value = {p_value:.4e})."
 
-def perform_welch_anova(df_cleaned, feature, target):
+def perform_welch_anova(df_cleaned, independent, dependent):
     """Performs Welch's ANOVA when homogeneity of variances is not satisfied."""
-    groups = [df_cleaned[df_cleaned[feature] == cat][target].dropna().values for cat in df_cleaned[feature].unique() if len(df_cleaned[df_cleaned[feature] == cat]) > 0]
+    groups = [df_cleaned[df_cleaned[independent] == cat][dependent].dropna().values for cat in df_cleaned[independent].unique() if len(df_cleaned[df_cleaned[independent] == cat]) > 0]
     
     if len(groups) < 2:
         return "❌ Not enough groups to perform Welch's ANOVA."
@@ -304,11 +386,11 @@ def perform_welch_anova(df_cleaned, feature, target):
     if p_value < 0.05:
         return f"⚖️ Welch's ANOVA Test Result: ✅ Significance found between groups (p-value = {p_value:.4e})."
     else:
-        return f"⚖️ Welch's ANOVA Test Result: ✅ No significant difference found between groups (p-value = {p_value:.4e})."
+        return f"⚖️ Welch's ANOVA Test Result: 🚫 No significant difference found between groups (p-value = {p_value:.4e})."
 
-def bootstrap_test(df_cleaned, feature, target, n_iterations=1000):
+def bootstrap_test(df_cleaned, independent, dependent, n_iterations=1000):
     """Perform bootstrapping to compare group means."""
-    groups = [df_cleaned[df_cleaned[feature] == cat][target].values for cat in df_cleaned[feature].unique()]
+    groups = [df_cleaned[df_cleaned[independent] == cat][dependent].values for cat in df_cleaned[independent].unique()]
     means = np.array([np.mean(group) for group in groups])
     observed_diff = means.max() - means.min()
 
@@ -322,77 +404,157 @@ def bootstrap_test(df_cleaned, feature, target, n_iterations=1000):
     p_value = np.mean(np.array(bootstrap_diffs) >= observed_diff)
     return f"🔄 Bootstrapping Test Result: Observed difference = {observed_diff}, p-value = {p_value:.4e}"
 
-def Hypothesis_Testing_Methods(df, target, feature, target_type, feature_type):
-    """Main function to make an Hypothesis Testing Methods (t-test / ANOVA / chi2)."""
+def Hypothesis_Testing_Methods(df, dependent, independent, dependent_type, independent_type):
+    """Main function to make an Hypothesis Testing Methods (t-test / ANOVA / χ²)."""
     
     # Step 1: Clean the data
-    df_cleaned = clean_data(df, feature, target)
+    df_cleaned = clean_data(df, independent, dependent)
 
     # Count number of unique groups
-    num_groups = df_cleaned[feature].nunique()
-
-    print("teses")
-    if target_type == "Numerical" and num_groups==2:
-        Hypothesis_test = "t-test"
-    elif target_type == "Numerical" and num_groups>2:
-        Hypothesis_test = "ANOVA"
-    elif (target_type == "Ordinal" or target_type == "Nominal") and (feature_type == "Ordinal" or feature_type == "Nominal"):
-        Hypothesis_test = "chi2"
-    else:
-        messages.append(f"❌ Not enough groups for analysis based on feature '{feature}'.")
-        return messages, None
-        
+    num_groups = df_cleaned[independent].nunique()
+    
     messages = []  # To collect messages
-    messages.append(f"\n🔍 Checking conditions for {Hypothesis_test} between {target} and {feature}")
+    
+    if dependent_type == "Numerical" and num_groups==2:
+        Hypothesis_test = "t-test"
+    elif dependent_type == "Numerical" and num_groups>2:
+        Hypothesis_test = "ANOVA"
+    elif (dependent_type == "Ordinal" or dependent_type == "Nominal") and (independent_type == "Ordinal" or independent_type == "Nominal"):
+        Hypothesis_test = "χ²"
+    elif (dependent_type == "Ordinal" or dependent_type == "Nominal") and (independent_type == "Numerical" ):
+        messages.append(f"⚠️ The Dependent and Independent variable must be interchange!")
+        messages.append(f" Cannot have {independent_type} as Independent varaible when the Dependent variable is {dependent_type}.")
+        Hypothesis_test = None
+        return Hypothesis_test, messages, None, None
+    else:
+        messages.append(f"❌ Not enough groups in {independent} to get the analysis.")
+        Hypothesis_test = None
+        return Hypothesis_test, messages, None, None
+        
+    
+    messages.append(f"\n🔍 Checking conditions for {Hypothesis_test} between {dependent} and {independent}")
 
-    if target_type != "Nominal":
-        # Check for outliers in the target
-        outlier_check = check_outliers(df_cleaned, target)
+    if dependent_type != "Nominal":
+        # Check for outliers in the dependent
+        outlier_check, outlier_table = check_outliers(df_cleaned, dependent)
         messages.append(outlier_check)  # Collect outlier check message
+    else:
+        outlier_table = None
     
     print("Hypothesis_test : ", Hypothesis_test)
     
     if Hypothesis_test == "t-test" or Hypothesis_test == "ANOVA":
 
         # Step 2: Check assumptions
-        normality_message, normality_fig = test_normality(df_cleaned, feature, target)
+        normality_message, normality_fig = test_normality(df_cleaned, independent, dependent)
         messages.append(normality_message)
         if "❌" in normality_message:
             if Hypothesis_test == "t-test":
-                mann_whitney_message = perform_mann_whitney(df_cleaned, target, feature)
+                messages.append(get_explanation_on_Hypothesis_test('Mann-Whitney U Test'))
+                mann_whitney_message = perform_mann_whitney(df_cleaned, dependent, independent)
                 messages.append(mann_whitney_message)
             else:
-                kruskal_message = perform_kruskal_wallis(df_cleaned, feature, target)
+                messages.append(get_explanation_on_Hypothesis_test('Kruskal-Wallis test'))
+                kruskal_message = perform_kruskal_wallis(df_cleaned, independent, dependent)
                 messages.append(kruskal_message)
-            return messages, normality_fig
+            return Hypothesis_test, messages, normality_fig, outlier_table
     
-        variance_message = test_variance_homogeneity(df_cleaned, feature, target)
+        variance_message = test_variance_homogeneity(df_cleaned, independent, dependent)
         messages.append(variance_message)
-        if "❌" in variance_message:               
-            welch_message = perform_welch_anova(df_cleaned, feature, target)
+        if "❌" in variance_message:       
+            messages.append(get_explanation_on_Hypothesis_test('Welch\'s ANOVA'))
+            welch_message = perform_welch_anova(df_cleaned, independent, dependent)
             messages.append(welch_message)
-            return messages, normality_fig
+            return Hypothesis_test, messages, normality_fig, outlier_table
     
-        class_balance_message = check_class_balance(df_cleaned, feature, target)
+        class_balance_message = check_class_balance(df_cleaned, independent, dependent)
         messages.append(class_balance_message)
         if "❌" in class_balance_message:
-            bootstrap_message = bootstrap_test(df_cleaned, feature, target)
+            bootstrap_message = bootstrap_test(df_cleaned, independent, dependent)
             messages.append(bootstrap_message)
-            return messages, normality_fig
+            return Hypothesis_test, messages, normality_fig, outlier_table
         
         # Step 3: Perform test
         if Hypothesis_test == "t-test":
-            t_test_message = perform_t_test(df_cleaned, feature, target)
+            t_test_message = perform_t_test(df_cleaned, independent, dependent)
             messages.append(t_test_message)        
         if Hypothesis_test == "t-test":
-            anova_message = perform_anova(df_cleaned, feature, target)
+            anova_message = perform_anova(df_cleaned, independent, dependent)
             messages.append(anova_message)
 
-    elif Hypothesis_test == "chi2":
+    elif Hypothesis_test == "χ²":
         # Step 2: Check expectations and perform Chi-squared test
-        chi_squared_message = perform_chi_squared_test(df_cleaned, feature, target)
+        chi_squared_message = perform_chi_squared_test(df_cleaned, independent, dependent)
         messages.append(chi_squared_message)
         normality_fig = None
+        
+    else:
+        messages.append(f"❌ No Hypothesis test possible {dependent_type} / {independent_type}.")
+        return Hypothesis_test, messages, None, outlier_table
+    
+
+    return Hypothesis_test, messages, normality_fig, outlier_table
+
+def get_explanation_on_Hypothesis_test(hypothesis_test):
+    explanations = {
+        't-test': (
+            "A **t-test** determines if there is a significant difference between the means of two groups.\n"
+            "### Equation:\n"
+            "$$t = \\frac{\\bar{x}_1 - \\bar{x}_2}{s_p \\sqrt{\\frac{1}{n_1} + \\frac{1}{n_2}}}$$\n"
+            "where:\n"
+            "- \\($$\\bar{x}_1$$, $$\\bar{x}_2$$\\) are the sample means\n"
+            "- \\($$s_p = \\sqrt{\\frac{(n_1 - 1)s_1^2 + (n_2 - 1)s_2^2}{n_1 + n_2 - 2}}$$\\) is the pooled standard deviation\n"
+            "- \\($$n_1$$, $$n_2$$\\) are the sample sizes."
+        ),
+        'ANOVA': (
+            "ANOVA tests for differences among three or more group means.\n"
+            "### Equation:\n"
+            "$$F = \\frac{MS_{between}}{MS_{within}}$$\n"
+            "where:\n"
+            "- \\($$MS_{between}=\\frac{\\sum_{i=1}^{k} n_{i} (\\bar{x}_{i} - \\bar{x})^{2}}{k - 1}$$\\) is the mean square between groups\n"
+            "- \\($$MS_{within}=\\frac{\\sum_{i=1}^{k} \\sum_{j=1}^{n_{i}} (x_{ij} - \\bar{x}_{i})^{2}}{N - k}$$\\) is the mean square within groups."
+        ),
+        'χ²': (
+            "The chi-squared test assesses how likely it is that an observed distribution is due to chance.\n"
+            "### Equation:\n"
+            "$$\\chi^2 = \\sum \\frac{(O_i - E_i)^2}{E_i}$$\n"
+            "where:\n"
+            "- \\($$O_i$$\\) is the observed frequency\n"
+            "- \\($$E_i$$\\) is the expected frequency."
+        ),
+        'Welch\'s ANOVA': (
+            "Welch's ANOVA is a variation of ANOVA that is used when the assumption of equal variances is not met.\n"
+            "### Equation:\n"
+            "$$F = \\frac{S_{between}^2}{S_{within}^2}$$\n"
+            "where:\n"
+            "- \\($$S_{between}^2$$\\) is the weighted mean square between groups\n"
+            "- \\($$S_{within}^2$$\\) is the weighted mean square within groups.\n"
+            "It uses separate estimates of variance for each group, leading to a more robust test."
+        ),
+        'Kruskal-Wallis test': (
+            "The Kruskal-Wallis test is a non-parametric method for comparing three or more independent groups.\n"
+            "### Equation:\n"
+            "$$H = \\frac{12}{N(N + 1)} \\sum_{i=1}^{k} \\frac{n_i(R_i^2)}{n_i - 1}$$\n"
+            "where:\n"
+            "- \\($$N$$\\) is the total number of observations\n"
+            "- \\($$n_i$$\\) is the number of observations in group \\(i\\)\n"
+            "- \\($$R_i$$\\) is the sum of ranks for group \\(i\\).\n"
+            "It assesses whether the median ranks differ across groups."
+        ),
+        'Mann-Whitney U Test': (
+            "The Mann-Whitney U Test is a non-parametric test for assessing whether two independent samples come from the same distribution.\n"
+            "### Equation:\n"
+            "$$U = R_1 - \\frac{n_1(n_1 + 1)}{2}$$\n"
+            "where:\n"
+            "- \\($$R_1$$\\) is the rank sum of the first group\n"
+            "- \\($$n_1$$\\) is the number of observations in the first group.\n"
+            "It determines if one of the two groups tends to have higher values than the other."
+        ),
+    }
+    return explanations.get(hypothesis_test, "No explanation available for this test.")
 
 
-    return messages, normality_fig
+
+
+
+

@@ -323,38 +323,31 @@ def tab1_content():
 
     
     return html.Div([
-        html.Div([
-            html.H2(file_name, style={"color": "#4682B4", 'fontSize': '34px'}, className="text-light"),
-            
-            # print(f"Total memory usage: {total_memory_kb:.2f} KB")
-            html.P(f"Total memory usage: {total_memory_kb:.2f} KB", style={'fontSize': '24px'}),
 
-            html.P("Columns / Rows : "+str(nb_col_df1)+" / "+str(nb_row_df1), style={'fontSize': '24px'})
-        ]),
         html.Div([
-            html.H2("Feature characteristics:", style={"color": "#FFD700"}, className="text-light"),
-            # html.P(Text5),
+            html.H2(file_name, style={"color": "#4682B4", 'fontSize': '36px'}, className="text-light"),
+            html.P(f"Total memory usage: {total_memory_kb:.2f} KB", style={'fontSize': '24px'}),
+            html.P(f"Columns / Rows: {nb_col_df1} / {nb_row_df1}", style={'fontSize': '24px'}),
+        ], style={"margin-bottom": "20px"}),  # Added margin bottom
+            
+        html.Div([
+            html.H2("Feature Characteristics:", style={"color": "#FFD700"}, className="text-light"),
+        ], style={"margin-bottom": "20px"}),  # Added margin bottom
+
+        html.Div(style={'display': 'flex', 'justify-content': 'space-between', 'margin-bottom': '20px'}, children=[
+            # Graph on the left for data types distribution
+            html.Div(
+                [dcc.Graph(id='dtype-df1', style={'height': '500px'},
+                           figure=fig_dtype_df1)], 
+                style={'width': '48%'}
+            ),
+            # Graph on the right for missing values bar chart
+            html.Div(
+                [dcc.Graph(id='heatmap-df1', style={'height': '500px'},
+                           figure=fig_missing_bar)], 
+                style={'width': '48%'}
+            ),
         ]),
-        
-        
-        
-        html.Div(
-            style={'display': 'flex'}, 
-            children=[
-                # Graph on the left for data types distribution
-                html.Div(
-                    [dcc.Graph(id='dtype-df1', style={'width': '80%', 'height': '500px'},
-                               figure=fig_dtype_df1)], 
-                    style={'margin-left': '20px', 'width': '45%'}  # Adjust width as needed
-                ),
-                # Graph on the right for missing values heatmap
-                html.Div(
-                    [dcc.Graph(id='heatmap-df1', style={'width': '90%', 'height': '500px'},
-                               figure=fig_missing_bar)], 
-                    style={'margin-left': '20px', 'width': '45%'}  # Adjust width as needed
-                ),
-            ]
-        ),
 
         html.Div([
             html.P("Numeric Summary:", style={"color": "#FFD700"}, className="text-light"),
@@ -418,60 +411,65 @@ def tab1_content():
             # html.P(Text5),
         ]),
                     
-                    
+                            
         html.Div([
-            # Target Selection Section
+            # Container Div for Target and Feature Selection
             html.Div([
+                # Target Selection Section
                 html.Div([
-                    html.P("Dependent variable:", className="text-light"),
-                ], style={'margin-right': '10px'}),  # Inline header
+                    html.Div([
+                        html.P("Dependent variable:", className="text-light"),
+                    ], style={'margin-right': '10px'}),  # Inline header
         
-                dcc.Dropdown(
-                    id='target-value',
-                    options=[{'label': val, 'value': val} for val in df1.columns],
-                    placeholder='Select variable',
-                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
-                ),
+                    dcc.Dropdown(
+                        id='target-value',
+                        options=[{'label': val, 'value': val} for val in df1.columns],
+                        placeholder='Select variable',
+                        style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                    ),
         
+                    html.Div([
+                        html.P("Select the variable type:", className="text-light"),
+                    ], style={'margin-left': '20px', 'margin-right': '10px'}),  # Inline header
+        
+                    dcc.Dropdown(
+                        id='target-type',
+                        options=[{'label': val, 'value': val} for val in ["Numerical", "Ordinal", "Nominal"]],
+                        placeholder='Select Type',
+                        style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                    )
+                ], style={'display': 'flex', 'alignItems': 'center', 'margin-bottom': '20px'}),  # Spacing
+        
+                # Feature Selection Section
                 html.Div([
-                    html.P("Select the variable type:", className="text-light"),
-                ], style={'margin-left': '20px', 'margin-right': '10px'}),  # Inline header
+                    html.Div([
+                        html.P("Independent variable:", className="text-light"),
+                    ], style={'margin-right': '10px'}),  # Inline header
         
-                dcc.Dropdown(
-                    id='target-type',
-                    options=[{'label': val, 'value': val} for val in ["Numerical", "Ordinal", "Nominal"]],
-                    placeholder='Select Type',
-                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
-                )
+                    dcc.Dropdown(
+                        id='feature-value',
+                        options=[{'label': val, 'value': val} for val in df1.columns],
+                        placeholder='Select variable',
+                        style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                    ),
         
-            ], style={'display': 'flex', 'alignItems': 'center', 'margin-bottom': '20px'}),  # Added margin-bottom for section spacing
+                    html.Div([
+                        html.P("Select the variable type:", className="text-light"),
+                    ], style={'margin-left': '20px', 'margin-right': '10px'}),  # Inline header
         
-            # Feature Selection Section
-            html.Div([
-                html.Div([
-                    html.P("Independent variable:", className="text-light"),
-                ], style={'margin-right': '10px'}),  # Inline header
+                    dcc.Dropdown(
+                        id='feature-type',
+                        options=[{'label': val, 'value': val} for val in ["Numerical", "Ordinal", "Nominal"]],
+                        placeholder='Select Type',
+                        style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
+                    )
+                ], style={'display': 'flex', 'alignItems': 'center'}),
+            ], style={'flex': '1', 'display': 'flex', 'flexDirection': 'column'}),  # Column layout for sections
         
-                dcc.Dropdown(
-                    id='feature-value',
-                    options=[{'label': val, 'value': val} for val in df1.columns],
-                    placeholder='Select variable',
-                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
-                ),
-        
-                html.Div([
-                    html.P("Select the variable type:", className="text-light"),
-                ], style={'margin-left': '20px', 'margin-right': '10px'}),  # Inline header
-        
-                dcc.Dropdown(
-                    id='feature-type',
-                    options=[{'label': val, 'value': val} for val in ["Numerical", "Ordinal", "Nominal"]],
-                    placeholder='Select Type',
-                    style={**dark_dropdown_style, **uniform_style, 'width': '160px'}  # Adjust width as necessary
-                )
-        
-            ], style={'display': 'flex', 'alignItems': 'center'})
-        ], style={'padding': '20px', 'border': '1px solid #ccc', 'border-radius': '5px', 'background-color': '#2E2E2E'}),  # Overall styling
+            # Result Brace Div (the "}" character)
+            html.Div(id='result-brace'),
+            # html.Script(src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-AMS_HTML")
+        ], style={'display': 'flex', 'alignItems': 'center', 'padding': '20px', 'border': '1px solid #ccc', 'border-radius': '5px', 'background-color': '#2E2E2E'}),  # Overall styling
 
         
         html.Div(id='dynamic-content-tab1')
@@ -512,7 +510,8 @@ def update_crosstab_heatmap(selected_index):
 
 # Callback to update UI based on input value in Tab 3
 @app.callback(
-    Output('dynamic-content-tab1', 'children'),
+    [Output('dynamic-content-tab1', 'children'),
+    Output('result-brace', 'children')],
     Input('target-value', 'value'),
     Input('feature-value', 'value'),
     Input('target-type', 'value'),
@@ -521,33 +520,56 @@ def update_crosstab_heatmap(selected_index):
 def update_feature_value_type(target_input_value, feature_input_value, target_input_type, feature_input_type):
 
     if not feature_input_value or not target_input_type or not feature_input_type:  # Return nothing if input is empty or None
-        return ''
+        return '', ''
 
     print()
     print(colored("------------ callback update_feature_value_type ------------", "red"))
  
     
-    messages, normality_fig = cf.Hypothesis_Testing_Methods(df1, target_input_value, feature_input_value, target_input_type, feature_input_type)
+    Hypothesis_test, messages, normality_fig, outlier_table = cf.Hypothesis_Testing_Methods(df1, target_input_value, feature_input_value, target_input_type, feature_input_type)
+
+    Hypothesis_test_explanation = cf.get_explanation_on_Hypothesis_test(Hypothesis_test)
     
-    if normality_fig != None:
-        
+    return_block = html.Div([
+        html.Div(style={'display': 'flex', 'alignItems': 'center'}),  # Flex container for alignment
+        # Hypothesis test result without color on "} "
+        html.Span("} ", style={'fontSize': '100px', 'color': 'white'}),  # This part is in plain color
+        html.Span(Hypothesis_test, style={'fontSize': '70px', 'color': '#006400'}),  # Dark green color
+        html.Div(style={'width': '5px', 'backgroundColor': '#FFD700', 'height': '120px', 'marginLeft': '20px', 'marginRight': '20px'}),  # Vertical dark blue line
+        # Explanation of the test with equations
+        dcc.Markdown(
+            Hypothesis_test_explanation, mathjax=True,  # Get the explanation text
+            style={'color': 'white', 'fontSize': '20px', 'marginLeft': '10px'}  # Style for the explanation block
+        )
+    ], style={'display': 'flex', 'alignItems': 'center'})
+    
+    
+    html_output = html.Div([
+        dcc.Markdown(msg, className="text-light", mathjax=True) for msg in messages
+    ]) 
+    # Check if outlier_table is not None
+    if outlier_table is not None:
         html_output = html.Div([
-            html.P(msg, style={"color": "#FFD700"}, className="text-light") for msg in messages
+            html_output,  # The existing output containing messages and the graph
+            html.Div(style={'display': 'flex', 'margin-top': '10px', 'overflowX': 'auto'}, children=[
+                html.Div(outlier_table, style={'width': '100%'})  # Adjusted to take full width
+            ])
+        ])    
+
+    if normality_fig is not None:
+        # Prepare the HTML output with messages and the normality figure
+        html_output = html.Div([
+            html_output
         ] + [
             dcc.Graph(figure=normality_fig)  # Add the generated Plotly figure
-        ])    
-    
-    else:
-        html_output = html.Div([
-            html.P(msg, style={"color": "#FFD700"}, className="text-light") for msg in messages
-        ])           
+        ])
         
     return html.Div([
        
         html_output
 
 
-    ], style={'padding': '20px'})
+    ], style={'padding': '20px'}), return_block
 
 
 
